@@ -4,9 +4,10 @@ ClickMouse命令行工具
 
 import argparse
 from . import click_mouse
+from .version import version
 
 # 常量
-__version__ = '0.1.0'
+__version__ = version
 
 def main():
     """

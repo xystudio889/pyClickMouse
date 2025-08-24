@@ -37,6 +37,7 @@
 #### python
 wxpython：对于gui界面，他是图形核心框架
 pyautogui：鼠标连点器核心
+requests：用于检查版本号
 ### 打包或编译
 nuitka：打包为gui或~~交互式命令行~~的库
 ~~cython：打包为pyd或dll的库~~暂时不使用，敬请期待
@@ -75,7 +76,10 @@ import clickmouse
 
 clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms，
 ```
-命令行调用
+~~命令行调用~~
+```bash
+ClickMouse.exe /h # 查看帮助
+```
 
 
 ## 功能
@@ -84,6 +88,9 @@ clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间�
 
 ## 下载
 前往releases下载，更新需要替换clickMouse.exe文件。
+
+## 再次编译的注意事项
+再次编译时候，需要在key.json文件内添加api key
 
 ## 使用方法
 鼠标连点，目前支持左键和右键。
@@ -99,7 +106,7 @@ A[exe] --> B[交互式命令行]
 ```mermaid
 graph LR
 A[python] --> B[pyd调用] --> D[命令行调用]
-C[C/C++] --> D
+C[C/C++] --> E[dll调用] --> D
 ```
 鼠标连点器会一直保持运行，直到关闭程序或手动停止。
 目前支持暂停和停止功能。

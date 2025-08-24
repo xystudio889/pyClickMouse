@@ -10,7 +10,7 @@ import setuptools
 # 定义setup函数
 setuptools.setup(
     name="ClickMouse", # 包名
-    version="0.1.1", # 版本号
+    version="2.1.0", # 版本号
     author="xystudio", # 作者
     author_email="173288240@qq.com", # 作者邮箱 
     description="基于Python的鼠标连点工具", # 包描述
