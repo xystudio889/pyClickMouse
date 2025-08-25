@@ -10,7 +10,7 @@ import setuptools
 # 定义setup函数
 setuptools.setup(
     name="ClickMouse", # 包名
-    version="2.1.0", # 版本号
+    version="2.1.1", # 版本号
     author="xystudio", # 作者
     author_email="173288240@qq.com", # 作者邮箱 
     description="基于Python的鼠标连点工具", # 包描述
@@ -24,7 +24,7 @@ setuptools.setup(
         "Operating System :: OS Independent",# 系统
     ],
     keywords=["mouse", "click", "automation", "clickmouse"], # 包的关键字列表
-    python_requires='>=3', # python版本要求
+    python_requires='>=3.8', # python版本要求
     install_requires=['pyautogui'], # 依赖的包列表
     entry_points={ # 脚本入口
         "console_scripts": [

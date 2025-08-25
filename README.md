@@ -33,23 +33,22 @@
 这个软件可以有较多的版本，基本都是C/C++调用版本、python调用版本和命令行交互版本。
 
 ## 使用的第三方库和使用的功能
-### 核心库
-#### python
+### python
 wxpython：对于gui界面，他是图形核心框架
 pyautogui：鼠标连点器核心
 requests：用于检查版本号
-### 打包或编译
 nuitka：打包为gui或~~交互式命令行~~的库
-~~cython：打包为pyd或dll的库~~暂时不使用，敬请期待
+cython：打包为pyd的库
 setuptools：打包为python包的库
 ### 快速安装
 输入`pip install -r requirements.txt`安装
 
 ## 支持调用的工具
 - [x] C/C++头文件调用 使用原本C++版本的clickMouse改装而来 速度最快，兼容性最好，但是使用失效的可能性最大。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
-- [ ] 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)~~可以从[releases](https://github.com/xystudio889/pyClickMouse)下载~~ 暂时没有该版本，敬请期待
+- [x] 使用原本C++版本的clickMouse 速度最快，兼容性最好，但是使用失效的可能性最大，但是以停止更新，可以从[releases](https://github.com/xystudio889/pyClickMouse)下载，[之前的clickmouse项目](https://github.com/xystudio889/ClickMouse)
+- [x] 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
 - [x] (开发人员推荐)python调用 速度中等，兼容性最好，使用失效的可能性最小。可以使用`pip install clickmouse`下载
-- [ ] 使用.pyd调用 基于python语言，速度较快，兼容性较差（不同版本的python可能不兼容），使用失效的可能性较小。~~可以从[releases](https://github.com/xystudio889/pyClickMouse)下载~~ 暂时没有该版本，敬请期待
+- [x] 使用.pyd调用 基于python语言，速度较快，兼容性较差（不同版本的python可能不兼容），使用失效的可能性较小。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载(单独编译仅需编译cython/目录)
 - [x] (普通用户推荐)使用exe 使用 基于交互式命令行添加了gui。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
 - [ ] 使用交互式命令行 使用 基于python语言，比gui轻便。~~可以从[releases](https://github.com/xystudio889/pyClickMouse)下载~~ 暂时没有该版本，敬请期待
 - [ ] 使用标准命令行 使用 基于python语言。~~将会自带在除了C++版本外的所有发行版~~ 暂时没有该版本，敬请期待
@@ -80,7 +79,29 @@ clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间�
 ```bash
 ClickMouse.exe /h # 查看帮助
 ```
-
+## 再次编译方法
+请先`cd`到这个项目的根目录
+### C/C++
+#### 头文件
+仅需修改头文件，就可以被调用
+#### dll调用
+使用visual studio修改`./dll/dll.sln`里的`源文件/dllmain.cpp`
+#### gui旧版本
+>[!NOTE]
+>gui旧版本的再编译不接受pull request
+使用visual studio修改`./ClickMouse-old/ClickMouse.sln`里的`源文件/clickmouse.cpp`
+### python
+建议先执行`pip install -r requirements.txt`
+#### python库调用
+修改`clickmouse/`下的代码，运行`pip install .`安装
+#### pyd调用
+修改`cython/main.py`的代码，然后执行
+```python cython-setup.py build_ext --inplace```
+编译结束后，该目录下应该会有个以`.pyd`结尾的文件。
+#### gui版本
+使用python打包工具打包，注意需要添加`res/`目录。
+如：
+`python -m nuitka --onefile --remove-output --msvc=latest --windows-console-mode="disable"  --company-name="xystudio" --file-description="鼠标连点器" --file-version="2.1.0.5" --product-version="2.1.0" --product-name="ClickMouse" --copyright="Copyright © 2025 xystudio" --trademarks="®xystudio™"  --windows-icon-from-ico=gui/res/icons/icon.ico --include-data-dir=gui/res=res gui/main.py`
 
 ## 功能
 - 鼠标连点
@@ -88,9 +109,6 @@ ClickMouse.exe /h # 查看帮助
 
 ## 下载
 前往releases下载，更新需要替换clickMouse.exe文件。
-
-## 再次编译的注意事项
-再次编译时候，需要在key.json文件内添加api key
 
 ## 使用方法
 鼠标连点，目前支持左键和右键。
@@ -115,6 +133,6 @@ C[C/C++] --> E[dll调用] --> D
 - [x] 输入间隔
 - [ ] 热键启动
 - [ ] 输入次数
-- [ ] 自动更新
+- [x] 自动更新
 - [ ] 设置
 - [ ] 命令行参数

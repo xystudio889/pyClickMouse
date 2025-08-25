@@ -15,11 +15,7 @@ clickmouse.click_mouse(clickmouse.RIGHT, 100, 100, 10) # 鼠标右键点击10次
 import pyautogui
 from typing import Literal
 from time import sleep
-from .version import version
-
-# 内置变量
-__version__ = version
-__author__ = 'xystudio'
+from .version import __version__, __author__ # 导入版本号和作者信息
 
 # 常量
 INFINITE = -1

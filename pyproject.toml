@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,7 +10,7 @@ authors = [
 ]
 description = "基于Python的鼠标连点工具"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 keywords = ["mouse", "click", "automation", "clickmouse"]
 classifiers = [
     "Programming Language :: Python :: 3",
