@@ -6,7 +6,7 @@ import threading # 用于鼠标点击
 from time import sleep, time # 延迟
 from webbrowser import open as open_url # 关于作者
 import wx # GUI库
-import version # 版本信息
+from version import __version__, __author__ # 版本信息
 import log # 日志系统
 from check_update import check_update # 更新检查
 from datetime import datetime # 用于检查缓存的时间和现在相差的时间
@@ -74,10 +74,6 @@ def should_check_update():
     return False
 
 log.info("加载库成功")
-
-# 版本信息
-__version__ = version.get_version()
-__author__ = "xystudio"
 
 # 自定义的事件
 ID_UPDATE = wx.NewIdRef()
@@ -235,14 +231,14 @@ class MainWindow(wx.Frame):
         if should_check_update_res:
             result = check_update_thread.result()
         else:
-            result = (update_cache["should_update"], update_cache["latest_version"]) # 使用缓存
+            result = (update_cache["should_update"], update_cache["latest_version"], update_cache["update_info"]) # 使用缓存
         # 停止定时器
         self.check_update_timer.Stop()
         
         # 检查结果处理
         if result[1] != -1:  # -1表示函数出错
             if should_check_update_res:
-                save_update_cache(should_update=result[0], latest_version=result[1]) # 缓存最新版本
+                save_update_cache(should_update=result[0], latest_version=result[1], update_info=result[2]) # 缓存最新版本
             if result[0]:  # 检查到需要更新
                 log.info("检查到更新")
                 # 弹出更新窗口
@@ -425,11 +421,11 @@ class UpdateLogWindow(wx.Dialog):
 
         point_y = 5 # 初始y坐标
         update_logs: dict[str, list[str, wx.Size]] = {
-            "2025/08/04    v1.1.0.0" : ["对'关于'界面更新：\n\t添加了\"支持作者\"按钮\n\t移动'更新按钮'到主窗口的'帮助'菜单\n添加了找不到焦点提示", self.size(70)],
             "2025/08/08    v1.1.2.0" : ["添加了“更新日志”界面", self.size()],
             "2025/08/12    v1.1.2.3" : ["修改了部分显示字符\n修复了当关闭\"更新日志\"时，主窗口一并关闭的问题", self.size(60)],
             "2025/08/21    v2.0.0.4" : ["使用python重构代码", self.size()],
             "2025/08/24    v2.1.0.5" : ["添加了日志和自动更新系统", self.size()],
+            "2025/08/25    v2.1.1.6" : ["修复了不显示更新日志的问题\n添加了更新日志显示公告", self.size()],
         } # 将日志存储在字典中，方便管理
 
         # 创建面板
@@ -464,21 +460,38 @@ class UpdateLogWindow(wx.Dialog):
 
 class UpdateWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
-        super().__init__(parent, title="发现更新", size=(200, 180)) # 初始化
+        super().__init__(parent, title="发现更新", size=(250, 300)) # 初始化
+
         # 创建面板
         panel = wx.Panel(self)
         # 面板控件
         wx.StaticText(panel, -1, f"发现新版本", wx.Point(5, 5)).SetFont(wx.Font(16, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        wx.StaticText(panel, -1, f"当前版本：{__version__}\n最新版本：{result[1]}\n暂时不显示更新日志，请手动到github releases查看。", wx.Point(5, 30), wx.Size(180, 70))
+        wx.StaticText(panel, -1, f"当前版本：{__version__}\n最新版本：{result[1]}", wx.Point(5, 30), wx.Size(180, 40))
+        self.update_text = wx.StaticText(panel, -1, f"更新内容：\n{result[2].split('##')[1][7:]}", wx.Point(5, 70), wx.Size(230, 100))# 截取更新内容
+        # 动态计算高度
+        line_count = self.get_line_count()
+        self.SetSize(wx.Size(250, 120+ line_count))
+        # 调整更新内容的高度
+        text_height = line_count - 34 
+        self.update_text.SetSize(wx.Size(230, text_height))
         # 按钮
-        wx.Button(panel, ID_UPDATE, "更新", wx.Point(5, 110))
-        wx.Button(panel, wx.ID_CANCEL, "取消", wx.Point(100, 110))
+        wx.Button(panel, ID_UPDATE, "更新", wx.Point(5, 86+text_height))
+        wx.Button(panel, wx.ID_CANCEL, "取消", wx.Point(155, 86+text_height))
         # 绑定事件
         self.Bind(wx.EVT_BUTTON, self.on_update, id=ID_UPDATE)
 
     def on_update(self, event):
         """更新"""
         open_url("https://github.com/xystudio889/pyClickMouse/releases")
+
+    def get_line_count(self):
+        font = self.update_text.GetFont()
+        
+        dc = wx.ScreenDC()
+        dc.SetFont(font)
+        full_height = dc.GetMultiLineTextExtent(self.update_text.GetLabel())[1]  # 获取单行高度
+        
+        return full_height
 
 # 显示窗口
 def main():
