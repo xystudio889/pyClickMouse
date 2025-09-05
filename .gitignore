@@ -405,6 +405,10 @@ FodyWeavers.xsd
 *.dwo
 
 mkpyd.bat
+cache/
+apps/
+data/
+logs/
 key.json
 # data file
 data/

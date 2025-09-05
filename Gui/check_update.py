@@ -1,22 +1,21 @@
 """检查更新"""
 from packaging.version import parse
-from clickmouse.version import __version__
+from version import __version__
 import requests
 import json
 from pathlib import Path
 
-folder = Path(__file__).parent.resolve() / "res" # 获取资源文件夹
+folder = Path(__file__).parent.resolve() # 获取资源文件夹
 
 # 加载敏感信息
 try:
     with open(folder / "key.json", "r") as f:
         keys = json.load(f)
+    GITHUB_API_KEY = keys['GITHUB_API_KEY']
+    GITEE_API_KEY = keys['GITEE_API_KEY']
 except FileNotFoundError:
     GITEE_API_KEY = None
     GITHUB_API_KEY = None
-
-GITHUB_API_KEY = keys['GITHUB_API_KEY']
-GITEE_API_KEY = keys['GITEE_API_KEY']
 
 # 检察更新的函数
 def get_version(website: str="github", include_prerelease: bool=False, header: None | dict=None, condition: callable = lambda x: x.get("prerelease", False), release_tag_condition:tuple[int, str] = (-1, "tag_name", "body")) -> str | None:

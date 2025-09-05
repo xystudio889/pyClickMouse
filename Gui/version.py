@@ -1,4 +1,5 @@
 """读取版本号信息"""
 
-__version__ = "2.1.1.6"
+with open("res/version", "r") as f:
+    __version__ = f.read()
 __author__ = "xystudio"

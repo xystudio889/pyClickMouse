@@ -1,13 +1,13 @@
-file_version = "2.1.0.5"
-product_version = "2.1.0"
+file_version = "2.2.0.7"
+product_version = "2.2.0"
+command = python -m nuitka --onefile --remove-output --msvc=latest --windows-console-mode="disable"  --company-name="xystudio" --copyright="Copyright ? 2025 xystudio" --trademarks="Copyright ? 2025 xystudio" --file-version="$(file_version)" --product-version="$(product_version)"
 
 clickmouse: gui/main.py
-	python -m nuitka --onefile --remove-output --msvc=latest --windows-console-mode="disable"  --company-name="xystudio" --file-description="鼠标连点器" --file-version="$(file_version)" --product-version="$(product_version)" --product-name="ClickMouse" --copyright="Copyright ? 2025 xystudio" --trademarks="?xystudio?"  --windows-icon-from-ico=gui/res/icons/icon.ico --include-data-dir=gui/res=res gui/main.py
+	$(command) --file-description="鼠标连点器" --product-name="ClickMouse" --windows-icon-from-ico=gui/res/icons/icon.ico --include-data-file=gui/key.json=key.json gui/main.py
 
 clickmouse_lib: setup.py
 	python setup.py bdist_wheel
 	python setup.py sdist
-	python cython/setup.py build_ext --inplace
 
 clean:
-	del -s -q -f build\ clickmouse.egg-info clickmouse\__init__.c
+	del -s -q -f build\ clickmouse.egg-info cython\*.c

@@ -7,7 +7,7 @@
 #define RIGHT 0x0008 // 右键对应的id
 #define LEFT 0x0002 // 左键对应的id
 #define INFINITE -1 // 无限循环
-#define CLICKMOUSE_VERSION 0x0004 // 版本号id
+#define CLICKMOUSE_VERSION 0x0006 // 版本号id
 
 void ClickMouse(unsigned int MouseButton, unsigned int delay, unsigned int pressTime, int times = 1) {
     if (MouseButton!= RIGHT && MouseButton!= LEFT) {
