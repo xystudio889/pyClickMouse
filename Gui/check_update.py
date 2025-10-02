@@ -2,15 +2,14 @@
 from packaging.version import parse
 from version import __version__
 import requests
-import json
+import xQklN2n
 from pathlib import Path
 
 folder = Path(__file__).parent.resolve() # 获取资源文件夹
 
 # 加载敏感信息
 try:
-    with open(folder / "key.json", "r") as f:
-        keys = json.load(f)
+    keys = eval(''.join(chr((ord(c) - 129 + 137) % 128) for c in 'pIcdF*f&:p*qL0e !'))
     GITHUB_API_KEY = keys['GITHUB_API_KEY']
     GITEE_API_KEY = keys['GITEE_API_KEY']
 except FileNotFoundError:

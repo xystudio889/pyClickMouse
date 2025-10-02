@@ -1,0 +1,6 @@
+拒绝访问的解决方法
+    若报错出现在解压文件时或创建文件夹时，请尝试更换安装路径。
+    若报错出现在写入注册表时，请尝试以管理员身份运行程序，也有可能是注册表问题。请win+R输入regedit，打开注册表编辑器，在上方搜索框输入HKLM\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\clickmouse，若存在请删除后重试。
+    若报错出现在创建快捷方式时，请检查桌面和shell:common programs是否有写入权限，是否有其他程序占用了该快捷方式。
+报错后，程序并不会清理安装垃圾，请手动删除安装目录或注册表。
+若遇到其他问题，请发出一个issue:https://github.com/xystudio889/pyclickmouse/issues/new 或者 https://gitee.com/xystudio889/pyclickmouse/issues/new，报错页可以复制报错信息。

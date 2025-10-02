@@ -40,6 +40,7 @@ requests：用于检查版本号
 nuitka：打包为gui或~~交互式命令行~~的库
 cython：打包为pyd的库
 setuptools：打包为python包的库
+pywin32:创建快捷方式库
 ### 快速安装
 输入`pip install -r requirements.txt`安装
 
@@ -69,7 +70,11 @@ int main(){
     return 0;
 }
 ```
-python调用或~~.pyd调用~~可以直接使用以下代码调用：
+
+> [!IMPORTANT]
+> 下载基于pyd的文件时候需要注意:必须下载是你python版本的文件(如`lickmouse.cp39-win_amd64.pyd`)仅支持python3.9(cp后面的是版本，如果你使用python3.13以后的版本，不需要下载后面有t的版本(除非你使用free thread开发))
+
+python调用或.pyd调用可以直接使用以下代码调用：
 ```python
 import clickmouse
 

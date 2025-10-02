@@ -407,11 +407,14 @@ FodyWeavers.xsd
 mkpyd.bat
 cache/
 apps/
-data/
+Gui/data/*
+xQklN2n.py
 logs/
-key.json
-# data file
-data/
+tests/
+key*
+default_key
+*-dev*
+res/packages
 
 # nuitka build file
 *.build/
@@ -596,3 +599,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+!xQklN2n.cp313-win_amd64.pyd

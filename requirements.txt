@@ -3,4 +3,6 @@ pyautogui>=0.9.53
 requests>=2.26.0
 setuptools>=61.0.0
 cython >= 0.29.24
+pywin32>=303
+pyperclip >= 1.5.2
 clickmouse
