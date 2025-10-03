@@ -62,3 +62,6 @@ def get_resource_path(*paths):
     except Exception as e:
         _show_message(f'资源文件损坏: {e}', '错误', wx.OK | wx.ICON_ERROR)
         exit(1)
+        
+def is_in_dev(file):
+    return file.endswith('.py')

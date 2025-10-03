@@ -15,6 +15,7 @@ import os # 系统库
 import shutil # 用于删除文件夹
 import sys # 系统库
 import uiStyles # 软件界面样式
+import sharelibs # 共享库
 
 logger = Logger('主程序日志')
 
@@ -63,10 +64,17 @@ update_cache_path = cache_path / 'update.json'
 # 创建文件夹（如果不存在）
 data_path.mkdir(parents=True, exist_ok=True)
 cache_path.mkdir(parents=True, exist_ok=True)
-    
+
+def replace_extension(filepath):
+    """将文件路径最后一段的.py替换为.exe"""
+    base, ext = os.path.splitext(filepath)
+    if ext == '.py':
+        return base + '.exe'
+    return filepath
+
 def restart():
     '''执行应用程序重启'''
-    python = sys.executable
+    python = sys.executable if os.path.exists(sys.executable) else replace_extension(__file__)
     os.execl(python, python, *sys.argv)
     
 def load_update_cache():
@@ -537,8 +545,8 @@ class AboutWindow(wx.Dialog):
         
         # 按钮
         logger.debug('创建按钮')
-        wx.Button(panel, wx.ID_OK, '确定', wx.Point(200, 150))
-        wx.Button(panel, ID_SUPPORT_AUTHOR, '支持作者', wx.Point(0, 150))
+        wx.Button(panel, wx.ID_OK, get_lang('1e'), wx.Point(200, 150))
+        wx.Button(panel, ID_SUPPORT_AUTHOR, get_lang('20'), wx.Point(0, 150))
 
         # 绑定事件
         logger.debug('绑定事件')
@@ -714,11 +722,11 @@ class CleanCacheWindow(wx.Dialog):
         total = len(self.cache_size_checkbox_list)
         
         if checked_count == 0:
-            self.btn_all.SetLabel(self.select_mode_text['part'])
+            self.btn_all.SetLabel(self.select_mode_text['none'])
         elif checked_count == total:
             self.btn_all.SetLabel(self.select_mode_text['all'])
         else:
-            self.btn_all.SetLabel(self.select_mode_text['none'])
+            self.btn_all.SetLabel(self.select_mode_text['part'])
             
     def on_scan_cache(self, event):
         '''扫描缓存'''
@@ -996,23 +1004,9 @@ class SettingWindow(uiStyles.SelectUI):
         if event.GetSelection() == settings.get('select_lang', 0):
             return  # 选择相同的语言，不作处理
 
-        lang_restart = uiStyles.MoreButtonDialog(self, self.get_lang_after_setting('16'), self.get_lang_after_setting('4b'), [self.get_lang_after_setting('4c'), self.get_lang_after_setting('4d'), self.get_lang_after_setting('1f')], uiStyles.Style.QUESTION, wx.DEFAULT_DIALOG_STYLE & ~(wx.CLOSE_BOX))
+        lang_restart = uiStyles.MoreButtonDialog(self, self.get_lang_after_setting('16'), self.get_lang_after_setting('4f'), [self.get_lang_after_setting('1e'), self.get_lang_after_setting('4b')], uiStyles.Style.WARNING, wx.DEFAULT_DIALOG_STYLE & ~(wx.CLOSE_BOX))
         result = lang_restart.ShowModal()
-        if result == 0:
-            dlg = uiStyles.MoreButtonDialog(self, self.get_lang_after_setting('16'), self.get_lang_after_setting('4e'), [self.get_lang_after_setting('4f'), self.get_lang_after_setting('50'), self.get_lang_after_setting('1f')], uiStyles.Style.QUESTION, wx.DEFAULT_DIALOG_STYLE & ~(wx.CLOSE_BOX))
-            result = dlg.ShowModal()
-            if result == 0:
-                if self.on_save(event) == -1:
-                    return  # 保存失败，取消关闭操作
-            elif result == 1:
-                settings.update({'select_lang': self.cache_setting.get('select_lang', 0)}) # 仅保存语言设置
-                save_settings(settings)
-            elif result == 2:
-                self.on_change(event, 'select_lang', 0, settings.get, ('select_lang', 0)) # 恢复选择框
-                self.lang_choice.SetSelection(settings.get('select_lang', 0)) # 恢复选择框
-                return  # 取消关闭操作
-            restart()
-        elif result == 2:
+        if result == 1:
             self.on_change(event, 'select_lang', 0, settings.get, ('select_lang', 0)) # 恢复选择框
             self.lang_choice.SetSelection(settings.get('select_lang', 0)) # 恢复选择框
             return  # 取消关闭操作

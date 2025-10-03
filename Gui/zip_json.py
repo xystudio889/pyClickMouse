@@ -1,9 +1,11 @@
 from sharelibs import get_resource_path
 import json
 
-if __name__ == "__main__":
-    # 压缩语言包
-    with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
+def zip_json(json_file):
+    with open(json_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    with open(get_resource_path('langs.json'), 'w', encoding='utf-8') as f:
+    with open(json_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False)
+
+if __name__ == "__main__":
+    zip_json(get_resource_path('langs.json'))
