@@ -15,10 +15,14 @@ import os # 系统库
 import shutil # 用于删除文件夹
 import sys # 系统库
 import uiStyles # 软件界面样式
-import sharelibs # 共享库
+from sharelibs import (run_software)
+import pyperclip # 剪切板操作库
+import zipfile # 压缩库
 
 logger = Logger('主程序日志')
+logger.info('日志系统启动')
 
+logger.debug('定义函数')
 def get_resource_path(*paths):
     '''
     获取资源文件路径
@@ -33,9 +37,6 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         wx.MessageBox(f'{get_lang('12')}{e}', get_lang('14'), wx.OK | wx.ICON_ERROR)
         exit(1)
-        
-with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
 
 def get_lang(lang_package_id, lang_id = None):
     lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
@@ -55,15 +56,6 @@ def get_lang(lang_package_id, lang_id = None):
     
 def fitter_hotkey(text:str):
     return text.split('(')[0]
-
-# 定义数据路径
-data_path = Path('data')
-cache_path = Path('cache')
-update_cache_path = cache_path / 'update.json'
-
-# 创建文件夹（如果不存在）
-data_path.mkdir(parents=True, exist_ok=True)
-cache_path.mkdir(parents=True, exist_ok=True)
 
 def replace_extension(filepath):
     """将文件路径最后一段的.py替换为.exe"""
@@ -139,6 +131,27 @@ def save_settings(settings):
     logger.info('保存设置')
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
+        
+def get_packages():
+    list_packages = [] # 包名列表
+    lang_index = [] # 语言包索引
+    package_path = [] # 包路径列表
+    package_index = [] # 包索引
+    
+    # 加载包信息
+    for package in packages:
+        list_packages.append(package.get('package_name', None))
+        lang_index.append(package.get('package_name_lang_index', None))
+        package_path.append(package.get('install_location', None))
+        package_index.append(package.get('package_id', None))
+    return (list_packages, lang_index, package_path, package_index)
+
+def extract_zip(file_path, extract_path):
+    '''
+    解压zip文件
+    '''
+    with zipfile.ZipFile(file_path, 'r') as f:
+        f.extractall(extract_path)
 
 class ResultThread(threading.Thread):
     '''带有返回值的线程'''
@@ -155,9 +168,10 @@ class ResultThread(threading.Thread):
     def result(self):
         return self._result
 
-logger.info('加载库成功')
-
+# 变量
 # 自定义的事件
+logger.debug('定义资源')
+logger.debug('定义广播')
 ID_UPDATE = wx.NewIdRef()
 ID_UPDATE_LOG = wx.NewIdRef()
 ID_SUPPORT_AUTHOR = wx.NewIdRef()
@@ -168,52 +182,49 @@ ID_CLEAN_CACHE = wx.NewIdRef()
 ID_OPEN_UPDATE_LOG = wx.NewIdRef()
 ID_SETTING = wx.NewIdRef()
 ID_SCAN_CACHE = wx.NewIdRef()
+ID_OFFICAL_ENTENSIONS = wx.NewIdRef()
+logger.debug('定义广播完成')
+logger.debug('定义数据路径和创建文件夹')
 
+# 定义数据路径
+data_path = Path('data')
+cache_path = Path('cache')
+update_cache_path = cache_path / 'update.json'
 
+# 创建文件夹（如果不存在）
+data_path.mkdir(parents=True, exist_ok=True)
+cache_path.mkdir(parents=True, exist_ok=True)
+
+# 创建资源
 should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
+with open('packages.json', 'r', encoding='utf-8') as f:
+    packages = json.load(f)
 
+package_list, old_indexes, install_location, old_package_id = get_packages()
+indexes = []
+package_id = []
+package_list = package_list[1:]
+install_location = install_location[1:]
+indexes = list(filter(lambda x: x is not None, old_indexes)) # 过滤掉没有语言包的包
+package_id = list(filter(lambda x: x is not None, old_package_id)) # 过滤掉没有安装的包
+del old_package_id, old_indexes
+
+logger.debug('定义语言包')
+with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
+    langs = json.load(f)
+logger.debug('定义资源完成')
+
+logger.debug('检查更新')
 # 检查更新
 if should_check_update_res:
     shutil.rmtree(str(cache_path), ignore_errors=True) # 删除旧缓存
     check_update_thread = ResultThread(target=check_update, args=('gitee', False), deamon=True)
     check_update_thread.start()
-    
-class SelectLanguage(wx.Frame):
-    def __init__(self, parent=None):
-        # 初始化
-        logger.info('初始化选择语言窗口')
-        super().__init__(parent, title='Please select language.', size=(300, 150),style=wx.DEFAULT_FRAME_STYLE & ~(wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.CLOSE_BOX))
+logger.debug('检查更新完成')
 
-        # 窗口初始化
-        self.Icon = wx.Icon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')), wx.BITMAP_TYPE_ICO)
-
-        # 创建面板
-        logger.debug('创建选择语言面板')
-        panel = wx.Panel(self)
-
-        # 面板控件
-        logger.debug('创建控件')
-        wx.StaticText(panel, -1, 'Please select language.', pos=(60, 0))
-        choices = [i['lang_name'] for i in langs]
-
-        nxt_btn = wx.Button(panel, -1, 'next', (200, 80))
-        
-        self.lang_choice = wx.Choice(panel, -1, (75, 30), choices=choices)
-        self.lang_choice.SetSelection(0)
-        
-        self.lang_choice.Bind(wx.EVT_CHOICE, self.on_choice_change)
-        nxt_btn.Bind(wx.EVT_BUTTON, self.on_nxt_btn)
-        logger.info('页面加载完成')
-        
-    def on_choice_change(self, event):
-        settings['select_lang'] = self.lang_choice.GetSelection()
-        save_settings(settings)
-        
-    def on_nxt_btn(self, event):
-        self.Close()
-
+logger.debug('加载ui')
 # 主窗口绘制和事件监听
 class MainWindow(wx.Frame):
     def __init__(self, parent=None):
@@ -314,8 +325,10 @@ class MainWindow(wx.Frame):
         logger.info('主窗口初始化完成')
         
     def create_menu(self):
+        '''创建菜单栏'''
         menubar = wx.MenuBar()
 
+        # 文件菜单
         file_menu = wx.Menu()
         file_menu.Append(ID_CLEAN_CACHE, get_lang('02'))
         file_menu.Append(wx.ID_EXIT, get_lang('03'))
@@ -324,12 +337,26 @@ class MainWindow(wx.Frame):
         help_menu = wx.Menu()
         help_menu.Append(wx.ID_ABOUT, get_lang('0a'))
         
+        # 更新菜单
         update_menu = wx.Menu()
         update_menu.Append(ID_UPDATE, get_lang('07'))
         update_menu.Append(ID_UPDATE_LOG, get_lang('08'))
 
+        # 设置菜单
         view_menu = wx.Menu()
         view_menu.Append(ID_SETTING, get_lang('05'))
+        
+        # 扩展菜单
+        extension_menu = wx.Menu()
+        offical_extension_menu = wx.Menu()
+        extension_menu.AppendSubMenu(offical_extension_menu, '官方扩展(&O)')
+        if not(package_list):
+            # 无官方扩展提示
+            offical_extension_menu.Append(wx.ID_ANY, '暂无官方扩展').Enable(False)
+        else:
+            # 加载官方扩展菜单
+            for index, id_data in zip(indexes, package_id):
+                offical_extension_menu.Append(id_data, get_lang(index)) # 给菜单项添加ID，方便绑定事件
         
         # 添加菜单到菜单栏
         logger.debug('添加菜单到菜单栏')
@@ -337,6 +364,9 @@ class MainWindow(wx.Frame):
         menubar.Append(view_menu, get_lang('04'))
         menubar.Append(update_menu, get_lang('06'))
         menubar.Append(help_menu, get_lang('09'))
+        menubar.Append(extension_menu, '扩展(&X)')
+        
+        extension_menu.Bind(wx.EVT_MENU, self.on_parse_offical_extension)
         
         # 设置菜单栏
         self.SetMenuBar(menubar)
@@ -348,7 +378,7 @@ class MainWindow(wx.Frame):
         # 判断是否需要检查更新
         if should_check_update_res:
             if check_update_thread.is_alive():
-                logger.info('更新检查仍在进行中，忽略')
+                logger.debug('更新检查仍在进行中，忽略')
                 return
         else:
             logger.info('距离上次更新检查不到1天，使用缓存')
@@ -457,7 +487,7 @@ class MainWindow(wx.Frame):
             if delay < 1:
                 raise ValueError
         except ValueError:
-            if settings.get('click_delay') == '':
+            if settings.get('click_delay', '') == '':
                 wx.MessageBox(get_lang('1a'), get_lang('14'), wx.ICON_ERROR)
                 logger.error('用户输入错误：请输入有效的正整数延迟')
                 return
@@ -469,7 +499,7 @@ class MainWindow(wx.Frame):
                 else:
                     wx.MessageBox(get_lang('1a'), get_lang('14'), wx.ICON_ERROR)
                     logger.error('用户输入错误：请输入有效的正整数延迟')
-                    # return
+                    return
 
         # 创建独立线程避免阻塞GUI
         def click_loop():
@@ -523,6 +553,13 @@ class MainWindow(wx.Frame):
         setting_window = SettingWindow(self)
         setting_window.ShowModal()
         setting_window.Destroy()
+
+    def on_parse_offical_extension(self, event: wx.CommandEvent):
+        '''解析官方扩展'''
+        logger.info('打开官方扩展')
+        id_num = event.GetId()
+        if id_num == 0: # 测试扩展
+            run_software(f'{install_location[0]}/hello.py', f'{install_location[0]}/entension_test.exe')
 
 class AboutWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
@@ -1086,6 +1123,367 @@ class SettingWindow(uiStyles.SelectUI):
                 return  # 取消关闭操作
         self.Destroy()
 
+class InstallFrame(wx.Frame):
+    # 常量定义
+    PAGE_START = 0
+    PAGE_SET_COMPONENT = 1
+    PAGE_CHECK_COMPONENT = 2
+    PAGE_INSTALL = 3
+    PAGE_FINISH = 4
+    PAGE_CANCEL = 5
+    PAGE_ERROR = 6
+    
+    def __init__(self):
+        super().__init__(None, title='clickMouse 安装向导', size=(400, 300), style = wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
+        # 初始化
+        self.pages = []
+        self.current_page = 0
+        self.total_pages = 7
+        self.status = ''
+        self.error = ''
+        
+        # 主面板
+        main_panel = wx.Panel(self)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        # 创建内容面板容器
+        self.content_panel = wx.Panel(main_panel)
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.content_panel.SetSizer(self.content_sizer)
+        
+        # 创建按钮面板
+        btn_panel = wx.Panel(main_panel)
+        
+        # 创建按钮
+        self.btn_prev = wx.Button(btn_panel, label='上一步', pos = (0,5))
+        self.btn_next = wx.Button(btn_panel, label='下一步', pos = (100, 5))
+        self.btn_cancel = wx.Button(btn_panel, label='取消', pos = (200, 5))
+        self.btn_exit = wx.Button(btn_panel, label='退出', pos = (200, 5))
+        self.btn_copy_err = wx.Button(btn_panel, label='复制错误信息', pos = (100, 5))
+        self.btn_show_sol = wx.Button(btn_panel, label='显示解决方案', pos = (0, 5))
+        self.btn_exit.Hide()
+        
+        # 创建页面内容
+        self.create_pages()
+        
+        # 创建标题面板
+        title_panel = wx.Panel(main_panel)
+        title_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
+        title_panel.SetWindowStyle(wx.BORDER_SIMPLE)
+        title_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        title_panel.SetSizer(title_sizer)
+        
+        # 创建标题
+        wx.StaticText(title_panel, label='clickMouse 安装向导', pos=(0, 0)).SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.SetIcon(wx.Icon(get_resource_path('icons', 'clickmouse', 'init.ico')))
+        # 绘制icon在标题栏
+        title_icon = wx.Bitmap(get_resource_path('icons', 'clickmouse', 'icon.png'), wx.BITMAP_TYPE_PNG).ConvertToImage().Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
+        wx.StaticBitmap(title_panel, -1, wx.Bitmap(title_icon), pos=(340, 0))
+        
+        # 主布局调整
+        main_sizer.Add(title_panel, 1, wx.EXPAND | wx.TOP | wx.Center, 5)
+        main_sizer.Add(self.content_panel, 5, wx.EXPAND)
+        main_sizer.Add(btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
+        main_panel.SetSizer(main_sizer)
+        
+        # 绑定事件
+        self.btn_prev.Bind(wx.EVT_BUTTON, self.on_prev)
+        self.btn_next.Bind(wx.EVT_BUTTON, self.on_next)
+        self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_cancel)
+        self.btn_exit.Bind(wx.EVT_BUTTON, self.on_close)
+        self.btn_copy_err.Bind(wx.EVT_BUTTON, self.on_copy_err)
+        self.btn_show_sol.Bind(wx.EVT_BUTTON, lambda e: os.startfile(get_resource_path('errnote.txt')))
+        
+        self.update_buttons()
+            
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+    
+    def create_pages(self):    
+        for i in range(self.total_pages):
+            panel = wx.Panel(self.content_panel)
+            match i:
+                case self.PAGE_START:
+                    wx.StaticText(panel, label='欢迎使用 clickMouse 扩展更改向导!\n\n这个程序将简单的使用几分钟时间，帮助你完成更改扩展。\n点击下一步开启安装助手。', pos=(5, 0))
+                case self.PAGE_SET_COMPONENT:
+                    self.selected_components = ['clickmouse 主程序']
+                    self.protected_item = None
+                    self.current_mode = '完整'
+                    
+                    sizer = wx.BoxSizer(wx.VERTICAL)
+                    select_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                    
+                    # 左侧未选择树形控件
+                    self.unselected_tree = self.create_tree(panel, '未安装组件')
+                    select_sizer.Add(self.unselected_tree, 3, wx.EXPAND | wx.ALL, 5)
+                    
+                    # 中间按钮区域
+                    btn_panel = wx.Panel(panel)
+                    btn_sizer = wx.BoxSizer(wx.VERTICAL)
+                    
+                    # 添加模板选择器
+                    choises = ['完整', '默认', '仅主程序', '自定义']
+                    self.template_choice = wx.Choice(btn_panel, choices=choises)
+                    self.template_choice.SetSelection(choises.index(self.current_mode))  # 默认选中'默认'模板
+                    self.template_choice.Bind(wx.EVT_CHOICE, self.on_template_change)
+                    btn_sizer.Add(self.template_choice, 0, wx.ALL | wx.EXPAND, 5)
+                    
+                    btn_sizer.AddStretchSpacer()
+                    self.add_btn = wx.Button(btn_panel, label='添加 >>', size=(120, -1))
+                    self.remove_btn = wx.Button(btn_panel, label='<< 移除', size=(120, -1))
+                    btn_sizer.Add(self.add_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
+                    btn_sizer.Add(self.remove_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
+                    btn_sizer.AddStretchSpacer()
+                    btn_panel.SetSizer(btn_sizer)
+                    select_sizer.Add(btn_panel, 1, wx.EXPAND)
+                    
+                    # 右侧已选择树形控件
+                    self.selected_tree = self.create_tree(panel, '已安装组件')
+                    select_sizer.Add(self.selected_tree, 3, wx.EXPAND | wx.ALL, 5)
+                    
+                    sizer.Add(wx.StaticText(panel, label='请选择你要安装的组件，然后点击确认选择。', pos=(5, 0)), 1, wx.EXPAND | wx.ALL, 1)
+                    sizer.Add(select_sizer, 15, wx.EXPAND | wx.ALL, 1)
+                    panel.SetSizer(sizer)
+                    
+                    # 绑定事件
+                    self.add_btn.Bind(wx.EVT_BUTTON, self.on_add)
+                    self.remove_btn.Bind(wx.EVT_BUTTON, self.on_remove)
+                    
+                    # 初始化树数据
+                    self.init_tree_data()
+                    self.apply_template('完整')
+                case self.PAGE_CHECK_COMPONENT:
+                    sizer = wx.BoxSizer(wx.VERTICAL)
+                    
+                    title = wx.StaticText(panel, label='您已选择的组件：')
+                    sizer.Add(title, 1, wx.ALL | wx.EXPAND, 10)
+                    
+                    self.text = wx.StaticText(panel, label='正在加载组件列表...', pos=(5, 30))
+                    sizer.Add(self.text, 15, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
+                    
+                    panel.SetSizer(sizer)
+                case self.PAGE_INSTALL:
+                    wx.StaticText(panel, label='正在安装clickmouse, 请稍候...', pos=(5, 0))
+                    self.status_text = wx.StaticText(panel, label='安装进度', pos=(5, 30))
+                case self.PAGE_FINISH:
+                    wx.StaticText(panel, label='安装完成！点击确定退出安装向导。', pos=(5, 0))
+                    self.launch_checkbox = wx.CheckBox(panel, label='启动clickmouse', pos=(5, 30))
+                    self.launch_checkbox.SetValue(True)
+                case self.PAGE_CANCEL:
+                    wx.StaticText(panel, label='安装已取消！点击确定退出安装向导。', pos=(5, 0))
+                case self.PAGE_ERROR:
+                    wx.StaticText(panel, label='安装失败！点击确定退出安装向导。', pos=(5, 0))
+                    self.error_text = wx.StaticText(panel, label=f'错误信息：\n在{self.status}时候错误\n错误信息：{self.error}', pos=(5, 30))
+            panel.Hide()
+            self.content_sizer.Add(panel, 1, wx.EXPAND)  # 将页面加入Sizer
+            self.pages.append(panel)
+    
+        self.pages[0].Show()
+        
+    def create_tree(self, parent, root_label):
+        tree = wx.TreeCtrl(parent, style=wx.TR_DEFAULT_STYLE)
+        img_list = wx.ImageList(16, 16)
+        img_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, size=(16,16)))
+        img_list.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, size=(16,16)))
+        tree.AssignImageList(img_list)
+        tree.AddRoot(root_label, image=0)
+        return tree
+    
+    def init_tree_data(self):
+        self.components = ['clickmouse 扩展测试']
+        root = self.unselected_tree.GetRootItem()
+        for comp in self.components:
+            self.unselected_tree.AppendItem(root, comp, 1)
+        self.unselected_tree.Expand(root)
+        
+        installed_root = self.selected_tree.GetRootItem()
+        self.protected_item = self.selected_tree.AppendItem(installed_root, 'clickmouse主程序', 1)
+        self.selected_tree.Expand(installed_root)
+    
+    def apply_template(self, template_name):
+        self.current_mode = template_name
+        root = self.selected_tree.GetRootItem()
+        
+        # 清除所有非保护项
+        item, cookie = self.selected_tree.GetFirstChild(root)
+        while item.IsOk():
+            if item != self.protected_item:
+                next_item, cookie = self.selected_tree.GetNextChild(root, cookie)
+                comp_name = self.selected_tree.GetItemText(item)
+                self.unselected_tree.AppendItem(self.unselected_tree.GetRootItem(), comp_name, 1)
+                self.selected_tree.Delete(item)
+                item = next_item
+            else:
+                item, cookie = self.selected_tree.GetNextChild(root, cookie)
+        
+        # 根据模板添加组件
+        if template_name == '完整':
+            for comp in self.components:
+                self.add_component(comp)
+        elif template_name == '默认':
+            self.add_component(self.get_component_list(0))
+        elif template_name == '仅主程序':
+            pass  # 仅保留基础模块
+    
+    def get_component_list(self, index):
+        return self.selected_components[index]
+    
+    def add_component(self, comp_name):
+        root = self.unselected_tree.GetRootItem()
+        item, cookie = self.unselected_tree.GetFirstChild(root)
+        while item.IsOk():
+            if self.unselected_tree.GetItemText(item) == comp_name:
+                self.unselected_tree.Delete(item)
+                self.selected_tree.AppendItem(self.selected_tree.GetRootItem(), comp_name, 1)
+                break
+            item, cookie = self.unselected_tree.GetNextChild(root, cookie)
+        self.selected_components.append(comp_name)
+    
+    def on_template_change(self, event):
+        selected = self.template_choice.GetStringSelection()
+        if selected != '自定义':
+            self.apply_template(selected)
+    
+    def on_add(self, event):
+        if self.current_mode != '自定义':
+            self.template_choice.SetSelection(3)  # 切换到自定义模式
+            self.current_mode = '自定义'
+        
+        item = self.unselected_tree.GetSelection()
+        if not item or item == self.unselected_tree.GetRootItem():
+            wx.MessageBox('请先选择要添加的未安装组件', '提示', wx.OK|wx.ICON_INFORMATION)
+            return
+        
+        comp_name = self.unselected_tree.GetItemText(item)
+        root = self.selected_tree.GetRootItem()
+        self.selected_tree.AppendItem(root, comp_name, 1)
+        self.unselected_tree.Delete(item)
+    
+    def on_remove(self, event):
+        if self.current_mode != '自定义':
+            self.template_choice.SetSelection(3)  # 切换到自定义模式
+            self.current_mode = '自定义'
+        
+        item = self.selected_tree.GetSelection()
+        if not item or item == self.selected_tree.GetRootItem():
+            wx.MessageBox('请先选择要移除的已安装组件', '提示', wx.OK|wx.ICON_INFORMATION)
+            return
+        
+        if item == self.protected_item:
+            wx.MessageBox('基础模块是系统默认组件，不可移除！', '警告', wx.OK|wx.ICON_WARNING)
+            return
+        
+        comp_name = self.selected_tree.GetItemText(item)
+        root = self.unselected_tree.GetRootItem()
+        self.unselected_tree.AppendItem(root, comp_name, 1)
+        self.selected_tree.Delete(item)
+        
+    def setStatus(self, text):
+        self.status = text
+        self.status_text.SetLabel(text)
+    
+    def on_copy_err(self, event):
+        ''' 复制错误信息'''
+        pyperclip.copy(f'在{self.status}出现错误，错误信息：\n{self.error}')
+        wx.MessageBox('错误信息已复制到剪贴板', '提示', wx.OK | wx.ICON_INFORMATION)
+        
+    def on_update_button(self, event):
+        '''更新按钮状态'''
+        self.update_buttons()
+        
+    def on_checkbox_toggle(self, event):
+        '''同意协议'''
+        self.not_create_in_start_menu = self.set_start_menu_checkbox.GetValue()
+        self.update_buttons()
+
+    def update_buttons(self):
+        '''更新按钮状态'''
+        self.btn_prev.Show(self.current_page > 0)
+        
+        if self.current_page >= self.PAGE_FINISH:
+            self.btn_next.Hide()
+            self.btn_prev.Hide()
+            self.btn_cancel.Hide()
+            self.btn_exit.Show()
+        else:
+            self.btn_next.Show()
+            self.btn_prev.Show()
+            self.btn_cancel.Show()
+            self.btn_exit.Hide()
+        
+        if self.current_page == self.PAGE_START:  # 开始页面
+            self.btn_prev.Hide()
+        elif self.current_page == self.PAGE_SET_COMPONENT:  # 组件页面
+            self.text.SetLabel('\n'.join(self.selected_components))
+        elif self.current_page == self.PAGE_INSTALL:  # 进度页面
+            self.btn_next.Hide()
+            self.btn_prev.Hide()
+            self.btn_cancel.Hide()
+
+            self.install()
+        if self.current_page == self.PAGE_ERROR: # 错误页面
+            self.error_text.SetLabel(f'错误信息：\n在{self.status}\n错误：{self.error}')
+            self.btn_copy_err.Show()
+            self.btn_show_sol.Show()
+        else:
+            self.btn_next.Enable(True)  # 其他页面保持可用
+            self.btn_copy_err.Hide()
+            self.btn_show_sol.Hide()
+        
+        self.content_panel.Layout()
+        self.Layout()
+        
+    def on_close(self, event):
+        if self.current_page == self.PAGE_INSTALL:
+            wx.MessageBox('正在安装，请等待完成后再退出', '提示', wx.OK | wx.ICON_INFORMATION)
+            return
+        if self.current_page >= self.PAGE_FINISH:
+            self.Destroy()
+        else:
+            self.update_page(self.PAGE_CANCEL)
+
+    def install(self):
+        '''安装程序'''
+        # 创建文件夹
+        try:
+            pass
+        except Exception as e:
+            self.error = e
+            wx.MessageBox(f'安装失败: {e}', '错误', wx.OK | wx.ICON_ERROR)
+            self.update_page(self.PAGE_ERROR)
+    
+    def on_confirm(self, event):
+        '''确认按钮'''
+        self.selected_components = [] # 清空已选组件
+        root = self.selected_tree.GetRootItem() # 遍历已选组件
+        item, cookie = self.selected_tree.GetFirstChild(root) # 遍历已选组件
+        while item.IsOk():
+            self.selected_components.append(self.selected_tree.GetItemText(item)) # 添加组件名称到列表
+            item, cookie = self.selected_tree.GetNextChild(root, cookie) # 遍历已选组件
+
+    def on_prev(self, event):
+        '''上一步按钮'''
+        if self.current_page > 0:
+            self.update_page(self.current_page - 1)
+
+    def on_next(self, event):
+        '''下一步按钮'''
+        if self.current_page == self.PAGE_SET_COMPONENT:
+            self.on_confirm(None)
+        if self.current_page < self.total_pages - 1:
+            self.update_page(self.current_page + 1)
+    
+    def on_cancel(self, event):
+        '''取消按钮'''
+        self.update_page(self.PAGE_CANCEL)
+    
+    def update_page(self, page_index):
+        '''更新页面'''
+        self.pages[self.current_page].Hide()
+        self.current_page = page_index
+        self.pages[self.current_page].Show()
+        self.update_buttons()
+
+logger.debug('加载ui完成')
 # 显示窗口
 def main(app_name=MainWindow):
     frame = app_name()
@@ -1099,18 +1497,16 @@ def command():
     print('ClickMouse命令行工具未实现，敬请期待')
 
 if __name__ == '__main__':
+    logger.info('加载完成')
     if argv[1:]:
         # 调用命令行工具
         command()
     else:
         # 调用GUI工具
-        app = wx.App()
-        if not(data_path / 'runonce.json').exists():
-            main(SelectLanguage)
-            with open(data_path / 'runonce.json', 'w', encoding='utf-8') as f:
-                json.dump({'run_first': False}, f, ensure_ascii=False)
-        main()
-        app.MainLoop()
-        logger.info('程序退出')
-
-    app.MainLoop()
+        if not (data_path / 'first_run').exists():
+            run_software()
+        else:
+            app = wx.App()
+            main(InstallFrame)
+            app.MainLoop()
+            logger.info('程序退出')

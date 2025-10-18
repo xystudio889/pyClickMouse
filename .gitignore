@@ -406,15 +406,17 @@ FodyWeavers.xsd
 
 mkpyd.bat
 cache/
-apps/
 Gui/data/*
 xQklN2n.py
 logs/
 tests/
 key*
 default_key
-*-dev*
+gui/dev_list/*
+!gui/dev_list/in_dev
 res/packages
+packages.json
+extensions/
 
 # nuitka build file
 *.build/

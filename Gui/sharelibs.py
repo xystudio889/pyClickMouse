@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 import wx
+import os
+import subprocess
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -62,6 +64,11 @@ def get_resource_path(*paths):
     except Exception as e:
         _show_message(f'资源文件损坏: {e}', '错误', wx.OK | wx.ICON_ERROR)
         exit(1)
-        
-def is_in_dev(file):
-    return file.endswith('.py')
+
+in_dev = os.path.exists('dev_list/in_dev') # 是否处于开发模式
+
+def run_software(code_path, exe_path):
+    '''
+    运行软件
+    '''
+    subprocess.Popen(f'python {code_path}' if in_dev else f'start {exe_path}')

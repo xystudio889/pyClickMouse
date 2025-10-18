@@ -10,8 +10,8 @@ folder = Path(__file__).parent.resolve() # 获取资源文件夹
 # 加载敏感信息
 try:
     keys = eval(''.join(chr((ord(c) - 129 + 137) % 128) for c in 'pIcdF*f&:p*qL0e !'))
-    GITHUB_API_KEY = keys['GITHUB_API_KEY']
-    GITEE_API_KEY = keys['GITEE_API_KEY']
+    GITHUB_API_KEY = keys.get('github_api_key', None)
+    GITEE_API_KEY = keys.get('gitee_api_key', None)
 except FileNotFoundError:
     GITEE_API_KEY = None
     GITHUB_API_KEY = None

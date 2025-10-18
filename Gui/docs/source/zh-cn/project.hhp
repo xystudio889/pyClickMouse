@@ -1,0 +1,18 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=project.chm
+Contents file=contents.hhc
+Default topic=welcome.htm
+Display compile progress=No
+Index file=project.hhk
+Language=0x804 简体中文(中国大陆)
+
+
+[FILES]
+welcome.htm
+clickmouse maindocs\clickmouse dev.htm
+clickmouse maindocs\clickmouse user.htm
+clickmouse maindocs\index.htm
+
+[INFOTYPES]
+

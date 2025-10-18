@@ -12,7 +12,7 @@
         <img src="https://img.shields.io/github/license/xystudio889/pyclickmouse" alt="license">
     </a>
     <a href="https://github.com/xystudio889/pyclickmouse/commits/master">
-        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse/master" alt="commit">
+        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
     </a>
     <a href="https://github.com/sponsors/xystudio889">
         <img src="https://img.shields.io/badge/%E2%9D%A4-Sponsor%20me-%23c96198?style=flat&logo=GitHub"
@@ -66,7 +66,7 @@ using namespace std;
 
 int main(){
     cout << CLICKMOUSE_VERSION << endl; // 打印版本信息,若成功输出一串数字，则安装成功
-    clickMouse(LEFT, 1000, 10, 10); // 连点10次左键，间隔为1000ms，按下时间为10ms，
+    clickMouse(LEFT, 1000, 10, 10); // 连点10次左键，间隔为1000ms，按下时间为10ms
     return 0;
 }
 ```
@@ -78,7 +78,7 @@ python调用或.pyd调用可以直接使用以下代码调用：
 ```python
 import clickmouse
 
-clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms，
+clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms
 ```
 ~~命令行调用~~
 ```bash
@@ -105,8 +105,6 @@ ClickMouse.exe /h # 查看帮助
 编译结束后，该目录下应该会有个以`.pyd`结尾的文件。
 #### gui版本
 使用python打包工具打包，注意需要添加`res/`目录。
-如：
-`python -m nuitka --onefile --remove-output --msvc=latest --windows-console-mode="disable"  --company-name="xystudio" --file-description="鼠标连点器" --file-version="2.1.0.5" --product-version="2.1.0" --product-name="ClickMouse" --copyright="Copyright © 2025 xystudio" --trademarks="®xystudio™"  --windows-icon-from-ico=gui/res/icons/icon.ico --include-data-dir=gui/res=res gui/main.py`
 
 ## 功能
 - 鼠标连点
@@ -141,3 +139,6 @@ C[C/C++] --> E[dll调用] --> D
 - [x] 自动更新
 - [ ] 设置
 - [ ] 命令行参数
+- [ ] 扩展
+- [ ] 官方安装助手
+- [ ] 包管理

@@ -8,12 +8,24 @@ import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
 import sys # 运行权限
-from sharelibs import * # 获取资源路径
-from datetime import datetime # 获取当前时间
+from sharelibs import (get_resource_path, settings, run_software) # 共享库
 
-lang_path = 'res/init_langs.json'
-with open(lang_path, 'r', encoding='utf-8') as f:
+with open('res/init_langs.json', 'r', encoding='utf-8') as f:
     langs = json.load(f)
+    
+software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
+
+def get_lang(lang_package_id, lang_id = None):
+    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
+    for i in langs:
+        if i['lang_id'] == 0: # 设置默认语言包
+            lang_text = i['lang_package']
+        if i['lang_id'] == lang_id: # 设置目前语言包
+            lang_text = i['lang_package']
+    try:
+        return lang_text[lang_package_id]
+    except KeyError:
+        return 'Language not found'
 
 def save_settings(settings):
     '''
@@ -23,9 +35,6 @@ def save_settings(settings):
         json.dump(settings, f)
 
 data_path = Path('data')
-
-with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
 
 def create_shortcut(path, target, description, work_dir = None, icon_path = None):
     # 创建快捷方式
@@ -55,7 +64,7 @@ def run_as_admin():
     sys.exit(0)
     
 def get_install_size():
-    return os.path.getsize(get_resource_path('packages', 'clickmouse.7z'))
+    pass
         
 def extract_zip(file_path, extract_path):
     '''
@@ -78,6 +87,24 @@ def read_reg_key(key, value):
     except:
         return None
 
+def get_system_language():
+    '''通过Windows注册表获取系统语言'''
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International")
+        lang, _ = winreg.QueryValueEx(key, "LocaleName")
+        return lang
+    except Exception:
+        return 'en-US'
+    
+def parse_system_language_to_lang_id():
+    '''将系统语言转换为语言ID'''
+    system_lang = get_system_language()
+    for i in langs:
+        if i['is_official']:
+            if i['lang_info'].get('lang_system_name', 'en-US') == system_lang:
+                return i['lang_id']
+    return 0
+    
 class InstallFrame(wx.Frame):
     # 常量定义
     PAGE_START = 0
@@ -102,8 +129,6 @@ class InstallFrame(wx.Frame):
         self.error = ''
         self.not_create_in_start_menu = False
         self.create_desktop_shortcut = False
-        self.run_clickmouse = False
-        self.software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
         
         # 主面板
         main_panel = wx.Panel(self)
@@ -138,8 +163,7 @@ class InstallFrame(wx.Frame):
         
         # 创建标题
         wx.StaticText(title_panel, label='clickMouse 安装向导', pos=(0, 0)).SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        icon = wx.Icon(get_resource_path('icons', 'clickmouse', 'icon.ico'), wx.BITMAP_TYPE_ICO)
-        self.SetIcon(icon)
+        self.SetIcon(wx.Icon(get_resource_path('icons', 'clickmouse', 'init.ico')))
         # 绘制icon在标题栏
         title_icon = wx.Bitmap(get_resource_path('icons', 'clickmouse', 'icon.png'), wx.BITMAP_TYPE_PNG).ConvertToImage().Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
         wx.StaticBitmap(title_panel, -1, wx.Bitmap(title_icon), pos=(340, 0))
@@ -159,7 +183,7 @@ class InstallFrame(wx.Frame):
         self.btn_show_sol.Bind(wx.EVT_BUTTON, lambda e: os.startfile(get_resource_path('errnote.txt')))
         
         self.update_buttons()
-        if check_reg_key(self.software_reg_key):
+        if check_reg_key(software_reg_key):
             self.update_page(self.PAGE_IS_INSTALLED)
             
         self.Bind(wx.EVT_CLOSE, self.on_close)
@@ -199,7 +223,6 @@ class InstallFrame(wx.Frame):
                     # 绑定事件
                     self.set_start_menu_checkbox.Bind(wx.EVT_CHECKBOX, self.on_update_button) # 选择不在开始菜单中显示
                     self.set_start_menu_textctrl.Bind(wx.EVT_TEXT, self.on_update_button) # 快捷方式名称改变
-                    self.desktop_shortcut.Bind(wx.EVT_CHECKBOX, self.on_desktop_toggle) # 创建桌面快捷方式
                 case self.PAGE_SET_COMPONENT:
                     self.selected_components = ['clickmouse 主程序']
                     self.protected_item = None
@@ -270,14 +293,16 @@ class InstallFrame(wx.Frame):
                     wx.StaticText(panel, label='安装失败！点击确定退出安装向导。', pos=(5, 0))
                     self.error_text = wx.StaticText(panel, label=f'错误信息：\n在{self.status}时候错误\n错误信息：{self.error}', pos=(5, 30))
                 case self.PAGE_IS_INSTALLED:
-                    location = read_reg_key(self.software_reg_key, 'InstallLocation')
+                    location = read_reg_key(software_reg_key, 'InstallLocation')
                     wx.StaticText(panel, label=f'clickMouse 已经安装，位于{location if location else '未知路径'}', pos=(5, 0))
                     self.launch_installed_checkbox = wx.CheckBox(panel, label='启动clickmouse', pos=(5, 30))
+                    self.launch_installed_checkbox.SetValue(True)
                     cannot_select_note = wx.StaticText(panel, label='无法确认clickmouse的位置，请手动启动。', pos=(120, 30))
                     cannot_select_note.Hide()
                     if not location:
                         cannot_select_note.Show()
-                        self.launch_installed_checkbox.Enable(False) # 未知路径无法启动
+                        self.launch_installed_checkbox.Enable(False) # 未知路径无法选择
+                        self.launch_installed_checkbox.SetValue(False) # 未知路径无法启动
             panel.Hide()
             self.content_sizer.Add(panel, 1, wx.EXPAND)  # 将页面加入Sizer
             self.pages.append(panel)
@@ -294,7 +319,7 @@ class InstallFrame(wx.Frame):
         return tree
     
     def init_tree_data(self):
-        self.components = ['clickmouse cli']
+        self.components = ['clickmouse 扩展测试']
         root = self.unselected_tree.GetRootItem()
         for comp in self.components:
             self.unselected_tree.AppendItem(root, comp, 1)
@@ -399,14 +424,6 @@ class InstallFrame(wx.Frame):
         '''同意协议'''
         self.not_create_in_start_menu = self.set_start_menu_checkbox.GetValue()
         self.update_buttons()
-        
-    def on_run_toggle(self, event):
-        '''运行clickmouse选择框更新'''
-        self.run_clickmouse = self.run_checkbox.GetValue()
-
-    def on_desktop_toggle(self, event):
-        '''创建桌面快捷方式'''
-        self.create_desktop_shortcut = self.desktop_shortcut.GetValue()
 
     def update_buttons(self):
         '''更新按钮状态'''
@@ -427,7 +444,7 @@ class InstallFrame(wx.Frame):
             self.btn_prev.Hide()
         if self.current_page == self.PAGE_READ_LICENSE:  # 说明页面
             self.btn_next.Enable(self.allow_checkbox.GetValue())
-        elif self.current_page == 2:  # 路径页面
+        elif self.current_page == self.PAGE_SET_INSTALL_PATH:  # 路径页面
             if os.path.exists('\\'.join(self.path_picker.GetPath().split('\\')[:-1])):
                 self.btn_next.Enable(True)
             else:
@@ -459,19 +476,25 @@ class InstallFrame(wx.Frame):
         
         self.content_panel.Layout()
         self.Layout()
+    
+    def run_clickmouse(self, checkbox: wx.CheckBox):
+        if checkbox.GetValue():
+            try:
+                run_software(fr'{self.path_picker.GetPath()}\main.py', fr'{self.path_picker.GetPath()}\main.py')
+                with open(data_path / 'first_run', 'w', encoding='utf-8'):pass
+            except Exception as e:
+                wx.MessageBox(f'启动失败：{e}，将会关闭此窗口', '提示', wx.OK | wx.ERROR)
+        else:
+            exit(0)
         
     def on_close(self, event):
         if self.current_page == self.PAGE_INSTALL:
             wx.MessageBox('正在安装，请等待完成后再退出', '提示', wx.OK | wx.ICON_INFORMATION)
             return
         if self.current_page == self.PAGE_FINISH:
-            if not(self.launch_checkbox.GetValue()):
-                exit(0)
-            with open(data_path / 'runonce.json', 'w', encoding='utf-8') as f:
-                json.dump({'firstRun':True}, f)
+            self.run_clickmouse(self.launch_checkbox)
         if self.current_page == self.PAGE_IS_INSTALLED:
-            if not(self.launch_installed_checkbox.GetValue()):
-                exit(0)
+            self.run_clickmouse(self.launch_installed_checkbox)
         if self.current_page >= self.PAGE_CANCEL and self.current_page < self.PAGE_IS_INSTALLED:
             self.Destroy()
             exit(0)
@@ -484,59 +507,60 @@ class InstallFrame(wx.Frame):
         '''安装程序'''
         # 创建文件夹
         try:
-            self.setStatus('正在创建文件夹...')
+            self.setStatus('初始化...')
             install_path = self.path_picker.GetPath()
-            os.makedirs(install_path, 'packages', exist_ok=True)
-            self.setStatus('解压安装包...')
             self.setStatus('正在创建包管理器文件...')
+            package = [
+                {'package_name' : 'clickmouse','install_location' : f'{install_path}','create_in_start_menu' : not self.set_start_menu_checkbox.GetValue(),'create_desktop_shortcut' : self.desktop_shortcut.GetValue(),'start_menu_name' : self.set_start_menu_textctrl.GetValue() if not self.set_start_menu_checkbox.GetValue() else None,}
+            ]
+            self.setStatus('解压安装包...')
+            if 'clickmouse 扩展测试' in self.selected_components:
+                package.append({'package_name' : 'clickmouse extension test','install_location' : f'{install_path}/extensions/offical/clickmouse_cli', 'package_name_lang_index': '54', 'package_id': 0})
+                extract_zip(get_resource_path('packages', 'clickmouse_cli.zip'), f'{install_path}/extensions/offical/clickmouse_cli')
+            self.setStatus('正在写入包管理器文件...')
             with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
-                package = [
-                    {
-                        'package_name' : 'clickmouse',
-                        'install_location' : f'{install_path}',
-                        'create_in_start_menu' : not self.not_create_in_start_menu,
-                        'create_desktop_shortcut' : self.create_desktop_shortcut,
-                        'start_menu_name' : self.set_start_menu_textctrl.GetValue() if not self.set_start_menu_checkbox.GetValue() else None,
-                    }
-                ]
                 json.dump(package, f)
-            self.setStatus('正在创建安装信息...')
-            key = winreg.CreateKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
-            )
-            winreg.SetValue(key, '', winreg.REG_SZ, fr'{install_path}\clickmouse.exe')
-            winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
-            winreg.CloseKey(key)
+            # 卸载信息暂时不启用，卸载程序未完成
+            # self.setStatus('正在创建安装信息...')
+            # key = winreg.CreateKey(
+            #     winreg.HKEY_LOCAL_MACHINE,
+            #     r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
+            # )
+            # winreg.SetValue(key, '', winreg.REG_SZ, fr'{install_path}\clickmouse.exe')
+            # winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
+            # winreg.CloseKey(key)
 
-            self.setStatus('正在创建卸载信息...')
-            uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
-            winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
-            winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
-            winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
-            winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, fr'{install_path}\uninstall.exe')
-            winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
-            with open(get_resource_path('version'), 'r', encoding='utf-8') as f:
-                version = f.read()
-            winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
-            winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(str(f'{os.path.getsize(fr'{install_path}\clickmouse.exe') // 1024 :.0f}')))
-            winreg.SetValueEx(uninstall_key, 'NoModify', 0, winreg.REG_DWORD, 1)
-            winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
-            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
-            winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
+            # self.setStatus('正在创建卸载信息...')
+            # uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
+            # winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
+            # winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
+            # winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
+            # winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, fr'{install_path}\uninstall.exe')
+            # winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
+            # with open(get_resource_path('version'), 'r', encoding='utf-8') as f:
+            #     version = f.read()
+            # winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
+            # try:
+            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(os.path.getsize(fr'{install_path}\clickmouse.exe') // 1024))
+            # except:
+            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(0))
+            # winreg.SetValueEx(uninstall_key, 'NoModify', 0, winreg.REG_DWORD, 1)
+            # winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
+            # winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
+            # winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
 
-            winreg.CloseKey(uninstall_key)
+            # winreg.CloseKey(uninstall_key)
 
             self.setStatus('正在创建快捷方式...')
             if package[0]['create_in_start_menu']:
                 create_shortcut(fr'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\{package[0]['start_menu_name']}.lnk', fr'{install_path}\clickmouse.exe', '鼠标连点器')
             if package[0]['create_desktop_shortcut']:
                 create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\clickmouse.exe', '鼠标连点器')
-            self.on_next(None)
+            self.update_page(self.PAGE_FINISH)
         except Exception as e:
             self.error = e
             wx.MessageBox(f'安装失败: {e}', '错误', wx.OK | wx.ICON_ERROR)
-        self.update_page(self.PAGE_FINISH)    
+            self.update_page(self.PAGE_ERROR)
     
     def on_confirm(self, event):
         '''确认按钮'''
@@ -561,7 +585,7 @@ class InstallFrame(wx.Frame):
     
     def on_cancel(self, event):
         '''取消按钮'''
-        self.update_page(8)
+        self.update_page(self.PAGE_CANCEL)
     
     def update_page(self, page_index):
         '''更新页面'''
@@ -574,6 +598,10 @@ class SelectLanguage(wx.Frame):
     def __init__(self, parent=None):
         # 初始化
         super().__init__(parent, title='Please select language.', size=(300, 150),style=wx.DEFAULT_FRAME_STYLE & ~(wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.CLOSE_BOX))
+        system_lang = parse_system_language_to_lang_id()
+        settings['select_lang'] = system_lang
+        save_settings(settings)
+        self.SetTitle(get_lang('01', system_lang))
 
         # 窗口初始化
         self.Icon = wx.Icon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')), wx.BITMAP_TYPE_ICO)
@@ -582,13 +610,13 @@ class SelectLanguage(wx.Frame):
         panel = wx.Panel(self)
 
         # 面板控件
-        wx.StaticText(panel, -1, 'Please select language.', pos=(60, 0))
+        wx.StaticText(panel, -1, get_lang('01', system_lang), pos=(60, 0))
         choices = [i['lang_name'] for i in langs]
 
-        nxt_btn = wx.Button(panel, -1, 'next', (200, 80))
+        nxt_btn = wx.Button(panel, -1, get_lang('02', system_lang), (200, 80))
         
         self.lang_choice = wx.Choice(panel, -1, (75, 30), choices=choices)
-        self.lang_choice.SetSelection(0)
+        self.lang_choice.SetSelection(system_lang)
         
         self.lang_choice.Bind(wx.EVT_CHOICE, self.on_choice_change)
         nxt_btn.Bind(wx.EVT_BUTTON, self.on_nxt_btn)
@@ -609,28 +637,23 @@ def main(app_name):
 if __name__ == '__main__':
     app = wx.App()
     # 调用GUI工具
-    if not(data_path / 'runonce.json').exists():
-        # 第一次运行，压缩语言包
-        with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        with open(get_resource_path('langs.json'), 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False)
-        if not get_resource_path('packages'):
-            wx.MessageBox('由于每个版本都会更新安装包，未防止git文件夹过大，安装包不会添加，请自行打包（格式必须为zip）并放入inst_res/packages文件夹下。', '错误', wx.OK | wx.ICON_ERROR)
-        if is_admin():  # 管理员权限
-            if os.path.exists('run_as_admin.json'):
-                os.remove('run_as_admin.json')
+    if not get_resource_path('packages'):
+        wx.MessageBox('由于每个版本都会更新安装包，未防止git文件夹过大，安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。', '错误', wx.OK | wx.ICON_ERROR)
+    if is_admin():  # 管理员权限
+        if os.path.exists('run_as_admin.json'):
+            os.remove('run_as_admin.json')
+        if not(check_reg_key(software_reg_key)):
             main(SelectLanguage)
-            main(InstallFrame)
-        else:
-            try:
-                with open('run_as_admin.json', 'r') as f:
-                    data = json.load(f).get('is_not_admin', 0)
-            except:
-                data = 0
-            if data == 0:
-                run_as_admin() # 请求管理员权限
-            elif data == 1:
-                wx.MessageBox('错误', '程序已请求提升权限，但是仍然以非管理员权限运行，请联系系统管理员', wx.OK | wx.ICON_ERROR)
-                os.remove('run_as_admin.json')
+        main(InstallFrame)
+    else:
+        try:
+            with open('run_as_admin.json', 'r') as f:
+                data = json.load(f).get('is_not_admin', 0)
+        except:
+            data = 0
+        if data == 0:
+            run_as_admin() # 请求管理员权限
+        elif data == 1:
+            wx.MessageBox('错误', '程序已请求提升权限，但是仍然以非管理员权限运行，请联系系统管理员', wx.OK | wx.ICON_ERROR)
+            os.remove('run_as_admin.json')
     app.MainLoop()
