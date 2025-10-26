@@ -8,4 +8,4 @@ def zip_json(json_file):
         json.dump(data, f, ensure_ascii=False)
 
 if __name__ == "__main__":
-    zip_json(get_resource_path('init_langs.json'))
+    zip_json(get_resource_path('langs.json'))

@@ -138,5 +138,5 @@ if __name__ == "__main__":
         if data == 0:
             run_as_admin()
         elif data == 1:
-            messagebox.showerror("错误", "程序已请求提升权限，但是仍然以非管理员权限运行，请联系系统管理员")
+            messagebox.showerror("错误", "请以管理员身份运行！")
             os.remove('run_as_admin.json')

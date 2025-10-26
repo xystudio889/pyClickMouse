@@ -9,6 +9,7 @@ import zipfile # 解压文件
 import json # 读写json文件
 import sys # 运行权限
 from sharelibs import (get_resource_path, settings, run_software) # 共享库
+from datetime import datetime
 
 with open('res/init_langs.json', 'r', encoding='utf-8') as f:
     langs = json.load(f)
@@ -104,6 +105,14 @@ def parse_system_language_to_lang_id():
             if i['lang_info'].get('lang_system_name', 'en-US') == system_lang:
                 return i['lang_id']
     return 0
+    
+def get_dir_size_for_reg(dir):
+    size = 0
+    
+    for root, dirs, files in os.walk(dir):
+        for file in files:
+            size += os.path.getsize(file)
+    return size // 1024
     
 class InstallFrame(wx.Frame):
     # 常量定义
@@ -226,6 +235,7 @@ class InstallFrame(wx.Frame):
                 case self.PAGE_SET_COMPONENT:
                     self.selected_components = ['clickmouse 主程序']
                     self.protected_item = None
+                    self.cmd_tool_item = None
                     self.current_mode = '完整'
                     
                     sizer = wx.BoxSizer(wx.VERTICAL)
@@ -327,6 +337,7 @@ class InstallFrame(wx.Frame):
         
         installed_root = self.selected_tree.GetRootItem()
         self.protected_item = self.selected_tree.AppendItem(installed_root, 'clickmouse主程序', 1)
+        # self.cmd_tool_item = self.selected_tree.AppendItem(installed_root, 'clickmouse命令行', 1) # 暂时禁用
         self.selected_tree.Expand(installed_root)
     
     def apply_template(self, template_name):
@@ -336,7 +347,7 @@ class InstallFrame(wx.Frame):
         # 清除所有非保护项
         item, cookie = self.selected_tree.GetFirstChild(root)
         while item.IsOk():
-            if item != self.protected_item:
+            if item not in {self.protected_item, self.cmd_tool_item}:
                 next_item, cookie = self.selected_tree.GetNextChild(root, cookie)
                 comp_name = self.selected_tree.GetItemText(item)
                 self.unselected_tree.AppendItem(self.unselected_tree.GetRootItem(), comp_name, 1)
@@ -349,15 +360,19 @@ class InstallFrame(wx.Frame):
         if template_name == '完整':
             for comp in self.components:
                 self.add_component(comp)
+            self.set_component(self.components)
         elif template_name == '默认':
-            self.add_component(self.get_component_list(0))
-        elif template_name == '仅主程序':
-            pass  # 仅保留基础模块
+            self.set_component(['clickmouse cmd tools'])
+        elif template_name == '精简':
+            self.set_component(['clickmouse cmd tools'])
     
     def get_component_list(self, index):
         return self.selected_components[index]
     
     def add_component(self, comp_name):
+        '''
+        配置模板选项
+        '''
         root = self.unselected_tree.GetRootItem()
         item, cookie = self.unselected_tree.GetFirstChild(root)
         while item.IsOk():
@@ -366,8 +381,11 @@ class InstallFrame(wx.Frame):
                 self.selected_tree.AppendItem(self.selected_tree.GetRootItem(), comp_name, 1)
                 break
             item, cookie = self.unselected_tree.GetNextChild(root, cookie)
-        self.selected_components.append(comp_name)
-    
+
+    def set_component(self, components: list):
+        '''设置加载组件'''
+        self.selected_components = ['clickmouse 主程序'] + components
+        
     def on_template_change(self, event):
         selected = self.template_choice.GetStringSelection()
         if selected != '自定义':
@@ -385,7 +403,10 @@ class InstallFrame(wx.Frame):
         
         comp_name = self.unselected_tree.GetItemText(item)
         root = self.selected_tree.GetRootItem()
-        self.selected_tree.AppendItem(root, comp_name, 1)
+        if comp_name == 'clickmouse命令行':
+            self.cmd_tool_item = self.selected_tree.AppendItem(root, 'clickmouse命令行', 1)
+        else:
+            self.selected_tree.AppendItem(root, comp_name, 1)
         self.unselected_tree.Delete(item)
     
     def on_remove(self, event):
@@ -401,6 +422,11 @@ class InstallFrame(wx.Frame):
         if item == self.protected_item:
             wx.MessageBox('基础模块是系统默认组件，不可移除！', '警告', wx.OK|wx.ICON_WARNING)
             return
+        
+        if item == self.cmd_tool_item:
+            unis_cmdtools_ans = wx.MessageDialog(self, '如果删除命令行工具，将会有部分功能不可用，但是卸载它可以精简clickmouse，是否卸载？', '警告', wx.YES_NO | wx.ICON_WARNING).ShowModal()
+            if unis_cmdtools_ans == wx.ID_NO:
+                return
         
         comp_name = self.selected_tree.GetItemText(item)
         root = self.unselected_tree.GetRootItem()
@@ -457,7 +483,7 @@ class InstallFrame(wx.Frame):
                 self.btn_next.Enable(bool(self.set_start_menu_textctrl.GetValue()))
     
             self.set_start_menu_textctrl.Enable(not self.set_start_menu_checkbox.GetValue())
-        elif self.current_page == self.PAGE_SET_COMPONENT:  # 组件页面
+        elif self.current_page == self.PAGE_CHECK_COMPONENT:  # 组件页面
             self.text.SetLabel('\n'.join(self.selected_components))
         elif self.current_page == self.PAGE_INSTALL:  # 进度页面
             self.btn_next.Hide()
@@ -483,7 +509,7 @@ class InstallFrame(wx.Frame):
                 run_software(fr'{self.path_picker.GetPath()}\main.py', fr'{self.path_picker.GetPath()}\main.py')
                 with open(data_path / 'first_run', 'w', encoding='utf-8'):pass
             except Exception as e:
-                wx.MessageBox(f'启动失败：{e}，将会关闭此窗口', '提示', wx.OK | wx.ERROR)
+                wx.MessageBox(f'启动失败：{e}，将会关闭此窗口', '提示', wx.OK | wx.ICON_ERROR)
         else:
             exit(0)
         
@@ -511,45 +537,49 @@ class InstallFrame(wx.Frame):
             install_path = self.path_picker.GetPath()
             self.setStatus('正在创建包管理器文件...')
             package = [
-                {'package_name' : 'clickmouse','install_location' : f'{install_path}','create_in_start_menu' : not self.set_start_menu_checkbox.GetValue(),'create_desktop_shortcut' : self.desktop_shortcut.GetValue(),'start_menu_name' : self.set_start_menu_textctrl.GetValue() if not self.set_start_menu_checkbox.GetValue() else None,}
+                {'package_name' : 'clickmouse','install_location' : f'{install_path}','create_in_start_menu' : not self.set_start_menu_checkbox.GetValue(),'create_desktop_shortcut' : self.desktop_shortcut.GetValue(),'start_menu_name' : self.set_start_menu_textctrl.GetValue() if not self.set_start_menu_checkbox.GetValue() else None,'package_name_lang_index': '55', 'package_id': 0}
             ]
             self.setStatus('解压安装包...')
             if 'clickmouse 扩展测试' in self.selected_components:
-                package.append({'package_name' : 'clickmouse extension test','install_location' : f'{install_path}/extensions/offical/clickmouse_cli', 'package_name_lang_index': '54', 'package_id': 0})
+                package.append({'package_name' : 'clickmouse extension test','install_location' : f'{install_path}/extensions/offical/clickmouse_cli', 'package_name_lang_index': '54', 'package_id': 1})
                 extract_zip(get_resource_path('packages', 'clickmouse_cli.zip'), f'{install_path}/extensions/offical/clickmouse_cli')
+                
+            if 'clickmouse命令行' in self.selected_components:
+                package.append({'package_name' : 'clickmouse command','install_location' : f'{install_path}/extensions/offical/clickmouse_command', 'package_name_lang_index': '56', 'package_id': 2})
+                extract_zip(get_resource_path('packages', 'clickmouse_command.zip'), f'{install_path}/extensions/offical/clickmouse_command')
             self.setStatus('正在写入包管理器文件...')
             with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
                 json.dump(package, f)
-            # 卸载信息暂时不启用，卸载程序未完成
-            # self.setStatus('正在创建安装信息...')
-            # key = winreg.CreateKey(
-            #     winreg.HKEY_LOCAL_MACHINE,
-            #     r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
-            # )
-            # winreg.SetValue(key, '', winreg.REG_SZ, fr'{install_path}\clickmouse.exe')
-            # winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
-            # winreg.CloseKey(key)
 
-            # self.setStatus('正在创建卸载信息...')
-            # uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
-            # winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
-            # winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
-            # winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
-            # winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, fr'{install_path}\uninstall.exe')
-            # winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
-            # with open(get_resource_path('version'), 'r', encoding='utf-8') as f:
-            #     version = f.read()
-            # winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
-            # try:
-            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(os.path.getsize(fr'{install_path}\clickmouse.exe') // 1024))
-            # except:
-            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(0))
-            # winreg.SetValueEx(uninstall_key, 'NoModify', 0, winreg.REG_DWORD, 1)
-            # winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
-            # winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
-            # winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
+            self.setStatus('正在创建安装信息...')
+            key = winreg.CreateKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
+            )
+            winreg.SetValue(key, '', winreg.REG_SZ, fr'{install_path}\clickmouse.exe')
+            winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
+            winreg.CloseKey(key)
 
-            # winreg.CloseKey(uninstall_key)
+            self.setStatus('正在创建卸载信息...')
+            uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
+            winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
+            winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
+            winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
+            winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, f'cmd /c echo 卸载功能敬请期待，请前往clickmouse安装路径:{install_path}删除目录后删除这个项。')
+            winreg.SetValueEx(uninstall_key, 'ModifyString', 0, winreg.REG_SZ, f'cmd /c echo 修改功能敬请期待，请启动clickmouse，找到扩展--官方扩展--修改(未完成)中修改。')
+            winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
+            with open(get_resource_path('versions.json'), 'r', encoding='utf-8') as f:
+                version = json.load(f)['clickmouse']
+            winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
+            try:
+                winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
+            except:
+                winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(0))
+            winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
+            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
+            winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
+
+            winreg.CloseKey(uninstall_key)
 
             self.setStatus('正在创建快捷方式...')
             if package[0]['create_in_start_menu']:

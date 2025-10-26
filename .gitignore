@@ -414,9 +414,10 @@ key*
 default_key
 gui/dev_list/*
 !gui/dev_list/in_dev
-res/packages
+res/packages/
 packages.json
 extensions/
+gui/res/docs/*
 
 # nuitka build file
 *.build/

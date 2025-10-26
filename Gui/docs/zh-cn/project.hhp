@@ -10,9 +10,13 @@ Language=0x804 简体中文(中国大陆)
 
 [FILES]
 welcome.htm
-clickmouse maindocs\clickmouse dev.htm
-clickmouse maindocs\clickmouse user.htm
-clickmouse maindocs\index.htm
+clickmouse_maindocs\clickmouse_dev.htm
+clickmouse_maindocs\clickmouse_user.htm
+clickmouse_maindocs\index.htm
+clickmouse_usage\index.htm
+clickmouse_packages\index.htm
+clickmouse_usage\main_ui.htm
+clickmouse_packages\main.htm
 
 [INFOTYPES]
 

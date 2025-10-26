@@ -6,3 +6,4 @@ cython >= 0.29.24
 pywin32>=303
 pyperclip >= 1.5.2
 clickmouse
+ClickMouse_api
