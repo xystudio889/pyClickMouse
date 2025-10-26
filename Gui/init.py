@@ -250,7 +250,7 @@ class InstallFrame(wx.Frame):
                     btn_sizer = wx.BoxSizer(wx.VERTICAL)
                     
                     # 添加模板选择器
-                    choises = ['完整', '默认', '仅主程序', '自定义']
+                    choises = ['完整', '默认', '精简', '自定义']
                     self.template_choice = wx.Choice(btn_panel, choices=choises)
                     self.template_choice.SetSelection(choises.index(self.current_mode))  # 默认选中'默认'模板
                     self.template_choice.Bind(wx.EVT_CHOICE, self.on_template_change)
@@ -362,9 +362,9 @@ class InstallFrame(wx.Frame):
                 self.add_component(comp)
             self.set_component(self.components)
         elif template_name == '默认':
-            self.set_component(['clickmouse cmd tools'])
+            self.set_component([])
         elif template_name == '精简':
-            self.set_component(['clickmouse cmd tools'])
+            self.set_component([])
     
     def get_component_list(self, index):
         return self.selected_components[index]
@@ -560,26 +560,27 @@ class InstallFrame(wx.Frame):
             winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
             winreg.CloseKey(key)
 
-            self.setStatus('正在创建卸载信息...')
-            uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
-            winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
-            winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
-            winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
-            winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, f'cmd /c echo 卸载功能敬请期待，请前往clickmouse安装路径:{install_path}删除目录后删除这个项。')
-            winreg.SetValueEx(uninstall_key, 'ModifyString', 0, winreg.REG_SZ, f'cmd /c echo 修改功能敬请期待，请启动clickmouse，找到扩展--官方扩展--修改(未完成)中修改。')
-            winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
-            with open(get_resource_path('versions.json'), 'r', encoding='utf-8') as f:
-                version = json.load(f)['clickmouse']
-            winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
-            try:
-                winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
-            except:
-                winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(0))
-            winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
-            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
-            winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
+            # 卸载功能敬请期待
+            # self.setStatus('正在创建卸载信息...')
+            # uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
+            # winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
+            # winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
+            # winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
+            # winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, f'cmd /k echo 卸载功能敬请期待，请前往删除clickmouse安装路径：{install_path}。')
+            # winreg.SetValueEx(uninstall_key, 'ModifyString', 0, winreg.REG_SZ, f'cmd /k echo 修改功能敬请期待，请启动clickmouse，找到扩展--官方扩展--修改(未完成)中修改。')
+            # winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
+            # with open(get_resource_path('versions.json'), 'r', encoding='utf-8') as f:
+            #     version = json.load(f)['clickmouse']
+            # winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
+            # try:
+            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
+            # except:
+            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(0))
+            # winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
+            # winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
+            # winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
 
-            winreg.CloseKey(uninstall_key)
+            # winreg.CloseKey(uninstall_key)
 
             self.setStatus('正在创建快捷方式...')
             if package[0]['create_in_start_menu']:

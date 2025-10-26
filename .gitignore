@@ -417,7 +417,8 @@ gui/dev_list/*
 res/packages/
 packages.json
 extensions/
-gui/res/docs/*
+Gui/res/docs/*
+Gui/docs/*/*.chm
 
 # nuitka build file
 *.build/
