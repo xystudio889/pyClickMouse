@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ClickMouse_api"
+version = "1.0.1"
+authors = [
+    {name = "xystudio", email = "173288240@qq.com"}
+]
+description = "基于Python的鼠标连点工具扩展api"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+keywords = ["mouse", "click", "automation", "clickmouse", "api"]
+dependencies = [
+    "wxpython"
+]
+
+[project.urls]
+Homepage = "https://github.com/xystudio889/pyClickMouse"
+
+[project.scripts]
+clickmouse = "clickmouse.__main__:main"
+
+[project.optional-dependencies]
+clickmouse_control = ["clickmouse"]
+
+[project.classifiers]
+Programming-Language = ["Python :: 3"]
+License = ["OSI Approved :: MIT License"]
+Operating-System = ["OS Independent"]

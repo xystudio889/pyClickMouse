@@ -69,8 +69,8 @@ class MoreButtonDialog(wx.Dialog):
         return buttons
 
 class SelectUI(wx.Dialog):
-    def __init__(self, title, size, parent=None):
-        super().__init__(parent, title=title, size=size)
+    def __init__(self, title, size, parent=None, **kwargs):
+        super().__init__(parent, title=title, size=size, **kwargs)
         self.setting_font = wx.Font(wx.FontInfo().FaceName('Microsoft YaHei UI').Bold(False))
         
         # 初始化主界面
@@ -143,5 +143,115 @@ class SelectUI(wx.Dialog):
         # 调整布局
         self.content_sizer.Layout()
         
-class PageUI(wx.Dialog):
-    raise NotImplementedError('PageUI未完成')
+class PagesUI(wx.Frame):
+    '''页面UI样式'''
+    def __init__(self, title, size, parent=None, **kwargs):
+        super().__init__(parent, title=title, size=size, **kwargs)
+        # 初始化
+        self.pages = []
+        self.current_page = 0
+        self.next_page = 0
+        self.total_pages = 0
+        
+        # 主面板
+        main_panel = wx.Panel(self)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        # 创建内容面板容器
+        self.content_panel = wx.Panel(main_panel)
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.content_panel.SetSizer(self.content_sizer)
+        
+        # 创建按钮面板
+        btn_panel = wx.Panel(main_panel)
+        
+        # 创建按钮
+        self.btn_prev = wx.Button(btn_panel, label='上一步', pos = (0,5))
+        self.btn_next = wx.Button(btn_panel, label='下一步', pos = (100, 5))
+        self.btn_cancel = wx.Button(btn_panel, label='取消', pos = (200, 5))
+        self.btn_exit = wx.Button(btn_panel, label='退出', pos = (200, 5))
+        self.btn_exit.Hide()
+        
+        # 定义页面id
+        self.init_pages(['a', 'b', 'c'])
+
+        # 创建页面内容
+        self.create_pages()
+        
+        # 主布局调整
+        main_sizer.Add(self.content_panel, 5, wx.EXPAND)
+        main_sizer.Add(btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
+        main_panel.SetSizer(main_sizer)
+        
+        # 绑定事件
+        self.btn_prev.Bind(wx.EVT_BUTTON, self.on_prev)
+        self.btn_next.Bind(wx.EVT_BUTTON, self.on_next)
+        self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_close)
+        self.btn_exit.Bind(wx.EVT_BUTTON, self.on_close)
+        
+        self.update_buttons()
+        self.update_page(0)
+            
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+        
+    def init_pages(self, varible_name: list):
+        '''初始化值'''
+        for i in varible_name:
+            self.__dict__[i] = self.new_page()
+    
+    def create_pages(self):    
+        for i in range(self.total_pages):
+            panel = wx.Panel(self.content_panel)
+            panel.Hide()
+            self.content_sizer.Add(panel, 1, wx.EXPAND)  # 将页面加入Sizer
+            self.pages.append(panel)
+    
+    def new_page(self):
+        '''创建新页面'''
+        self.total_pages += 1
+        self.next_page += 1
+        return self.total_pages - 1
+
+    def update_buttons(self):
+        '''更新按钮状态'''
+        if self.current_page >= self.total_pages - 1:
+            self.btn_prev.Hide()
+            self.btn_next.Hide()
+            self.btn_cancel.Hide()
+            self.btn_exit.Show()
+        else:
+            self.btn_next.Show()
+            self.btn_cancel.Show()
+            self.btn_exit.Hide()
+            if self.current_page > 0:
+                self.btn_prev.Show()
+            else:
+                self.btn_prev.Hide()
+
+    def on_prev(self, event):
+        '''上一步按钮'''
+        if self.current_page > 0:
+            self.update_page(self.current_page - 1)
+
+    def on_next(self, event):
+        '''下一步按钮'''
+        if self.current_page < self.total_pages - 1:
+            self.update_page(self.current_page + 1)
+    
+    def update_page(self, page_index):
+        '''更新页面'''
+        self.pages[self.current_page].Hide()
+        self.current_page = page_index
+        self.pages[self.current_page].Show()
+        self.update_buttons()
+        
+    def on_close(self, event):
+        '''关闭窗口'''
+        self.Destroy()
+
+if __name__ == '__main__':
+    app = wx.App()
+    frame = PagesUI('test', (300, 200))
+    
+    frame.Show()
+    app.MainLoop()

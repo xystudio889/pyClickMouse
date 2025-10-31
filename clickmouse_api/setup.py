@@ -10,11 +10,11 @@ import setuptools
 # 定义setup函数
 setuptools.setup(
     name="ClickMouse_api", # 包名
-    version="1.0.0", # 版本号
+    version="1.0.1", # 版本号
     author="xystudio", # 作者
     author_email="173288240@qq.com", # 作者邮箱 
     description="基于Python的鼠标连点工具扩展api", # 包描述
-    url="https://github.com/xystudio/pyClickMouse", # 包的github地址
+    url="https://github.com/xystudio889/pyClickMouse", # 包的github地址
     long_description=open("README.md", "r", encoding="utf-8").read(), # 包的readme文件
     long_description_content_type="text/markdown", # 指定readme文件格式为markdown
     packages=setuptools.find_packages(), # 包的目录结构

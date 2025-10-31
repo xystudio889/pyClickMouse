@@ -1,80 +1,20 @@
-import wx
+import json
 import os
 from pathlib import Path
-import winreg # 注册表编辑
-import ctypes # 管理员运行
-import pyperclip # 复制错误信息
-import win32com.client # 创建快捷方式
-import zipfile # 解压文件
-import json # 读写json文件
-import sys # 运行权限
-from sharelibs import (get_resource_path, settings, run_software) # 共享库
-from uiStyles import PagesUI # 界面样式
-from datetime import datetime # 时间
+import pyperclip
+from sharelibs import (get_resource_path, run_software)
+import win32com.client
+import winreg
+import wx
+import zipfile
 
-with open('res/init_langs.json', 'r', encoding='utf-8') as f:
-    langs = json.load(f)
-    
-software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
-
-def get_lang(lang_package_id, lang_id = None):
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
-    for i in langs:
-        if i['lang_id'] == 0: # 设置默认语言包
-            lang_text = i['lang_package']
-        if i['lang_id'] == lang_id: # 设置目前语言包
-            lang_text = i['lang_package']
-    try:
-        return lang_text[lang_package_id]
-    except KeyError:
-        return 'Language not found'
-
-def save_settings(settings):
-    '''
-    保存设置
-    '''
-    with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
-        json.dump(settings, f)
-
-data_path = Path('data')
-
-def create_shortcut(path, target, description, work_dir = None, icon_path = None):
-    # 创建快捷方式
-    icon_path = target if icon_path is None else icon_path
-    work_dir = os.path.dirname(target) if work_dir is None else work_dir
-    
-    shell = win32com.client.Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortCut(path)
-    shortcut.TargetPath = target # 目标程序
-    shortcut.WorkingDirectory = work_dir # 工作目录
-    shortcut.IconLocation = icon_path # 图标（路径,图标索引）
-    shortcut.Description = description # 备注描述
-    shortcut.Save()
-
-def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
-        return False
-
-def run_as_admin():
-    ctypes.windll.shell32.ShellExecuteW(
-        None, 'runas', sys.executable, ' '.join(sys.argv), None, 1
-    )
-    with open('run_as_admin.json', 'w') as f:
-        json.dump({'is_not_admin': 0}, f)
-    sys.exit(0)
-    
-def get_install_size():
-    pass
-        
 def extract_zip(file_path, extract_path):
     '''
     解压zip文件
     '''
     with zipfile.ZipFile(file_path, 'r') as f:
         f.extractall(extract_path)
-    
+        
 def check_reg_key(subkey):
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, subkey, 0, winreg.KEY_READ):
@@ -89,35 +29,38 @@ def read_reg_key(key, value):
     except:
         return None
 
-def get_system_language():
-    '''通过Windows注册表获取系统语言'''
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International")
-        lang, _ = winreg.QueryValueEx(key, "LocaleName")
-        return lang
-    except Exception:
-        return 'en-US'
+def create_shortcut(path, target, description, work_dir = None, icon_path = None):
+    # 创建快捷方式
+    icon_path = target if icon_path is None else icon_path
+    work_dir = os.path.dirname(target) if work_dir is None else work_dir
     
-def parse_system_language_to_lang_id():
-    '''将系统语言转换为语言ID'''
-    system_lang = get_system_language()
-    for i in langs:
-        if i['is_official']:
-            if i['lang_info'].get('lang_system_name', 'en-US') == system_lang:
-                return i['lang_id']
-    return 0
+    shell = win32com.client.Dispatch('WScript.Shell')
+    shortcut = shell.CreateShortCut(path)
+    shortcut.TargetPath = target # 目标程序
+    shortcut.WorkingDirectory = work_dir # 工作目录
+    shortcut.IconLocation = icon_path # 图标（路径,图标索引）
+    shortcut.Description = description # 备注描述
+    shortcut.Save()
     
-def get_dir_size_for_reg(dir):
-    size = 0
+data_path = Path('data')
+software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
+
+class InstallFrame(wx.Frame):
+    # 常量定义
+    PAGE_START = 0
+    PAGE_READ_LICENSE = 1
+    PAGE_SET_INSTALL_PATH = 2
+    PAGE_SELECT_LINK = 3
+    PAGE_SET_COMPONENT = 4
+    PAGE_CHECK_COMPONENT = 5
+    PAGE_INSTALL = 6
+    PAGE_FINISH = 7
+    PAGE_CANCEL = 8
+    PAGE_ERROR = 9
+    PAGE_IS_INSTALLED = 10
     
-    for root, dirs, files in os.walk(dir):
-        for file in files:
-            size += os.path.getsize(file)
-    return size // 1024
-    
-class InstallFrame(PagesUI):
     def __init__(self):
-        super().__init__(parent=None, title='clickMouse 安装向导', size=(400, 300), style = wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
+        super().__init__(None, title='clickMouse 安装向导', size=(400, 300), style = wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
         # 初始化
         self.pages = []
         self.current_page = 0
@@ -126,162 +69,185 @@ class InstallFrame(PagesUI):
         self.error = ''
         self.not_create_in_start_menu = False
         self.create_desktop_shortcut = False
-
-        # 创建按钮
-        self.btn_copy_err = wx.Button(self.btn_panel, label='复制错误信息', pos = (100, 5))
-        self.btn_show_sol = wx.Button(self.btn_panel, label='显示解决方案', pos = (0, 5))
         
-        # 定义页面id
-        self.init_pages(['PAGE_START', 'PAGE_READ_LICENSE', 'PAGE_SET_INSTALL_PATH', 'PAGE_SELECT_LINK', 'PAGE_SET_COMPONENT', 'PAGE_CHECK_COMPONENT', 'PAGE_INSTALL', 'PAGE_FINISH', 'PAGE_CANCEL', 'PAGE_ERROR', 'PAGE_IS_INSTALLED'])
+        # 主面板
+        main_panel = wx.Panel(self)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        # 创建内容面板容器
+        self.content_panel = wx.Panel(main_panel)
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.content_panel.SetSizer(self.content_sizer)
+        
+        # 创建按钮面板
+        btn_panel = wx.Panel(main_panel)
+        
+        # 创建按钮
+        self.btn_prev = wx.Button(btn_panel, label='上一步', pos = (0,5))
+        self.btn_next = wx.Button(btn_panel, label='下一步', pos = (100, 5))
+        self.btn_cancel = wx.Button(btn_panel, label='取消', pos = (200, 5))
+        self.btn_exit = wx.Button(btn_panel, label='退出', pos = (200, 5))
+        self.btn_copy_err = wx.Button(btn_panel, label='复制错误信息', pos = (100, 5))
+        self.btn_show_sol = wx.Button(btn_panel, label='显示解决方案', pos = (0, 5))
+        self.btn_exit.Hide()
         
         # 创建页面内容
         self.create_pages()
         
         # 创建标题面板
-        self.title_panel = wx.Panel(self.main_panel)
-        self.title_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
-        self.title_panel.SetWindowStyle(wx.BORDER_SIMPLE)
+        title_panel = wx.Panel(main_panel)
+        title_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
+        title_panel.SetWindowStyle(wx.BORDER_SIMPLE)
         title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.title_panel.SetSizer(title_sizer)
+        title_panel.SetSizer(title_sizer)
         
         # 创建标题
-        wx.StaticText(self.title_panel, label='clickMouse 安装向导', pos=(0, 0)).SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        wx.StaticText(title_panel, label='clickMouse 安装向导', pos=(0, 0)).SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.SetIcon(wx.Icon(get_resource_path('icons', 'clickmouse', 'init.ico')))
         # 绘制icon在标题栏
         title_icon = wx.Bitmap(get_resource_path('icons', 'clickmouse', 'icon.png'), wx.BITMAP_TYPE_PNG).ConvertToImage().Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
-        wx.StaticBitmap(self.title_panel, -1, wx.Bitmap(title_icon), pos=(340, 0))
+        wx.StaticBitmap(title_panel, -1, wx.Bitmap(title_icon), pos=(340, 0))
         
-        self.init_show()
-
+        # 主布局调整
+        main_sizer.Add(title_panel, 1, wx.EXPAND | wx.TOP | wx.Center, 5)
+        main_sizer.Add(self.content_panel, 5, wx.EXPAND)
+        main_sizer.Add(btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
+        main_panel.SetSizer(main_sizer)
+        
+        # 绑定事件
+        self.btn_prev.Bind(wx.EVT_BUTTON, self.on_prev)
+        self.btn_next.Bind(wx.EVT_BUTTON, self.on_next)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_cancel)
+        self.btn_exit.Bind(wx.EVT_BUTTON, self.on_close)
         self.btn_copy_err.Bind(wx.EVT_BUTTON, self.on_copy_err)
         self.btn_show_sol.Bind(wx.EVT_BUTTON, lambda e: os.startfile(get_resource_path('errnote.txt')))
         
         self.update_buttons()
-        self.update_page(self.PAGE_START)
-        
         if check_reg_key(software_reg_key):
             self.update_page(self.PAGE_IS_INSTALLED)
-
-        
-    def init_show(self):
-        self.main_sizer.Add(self.title_panel, 1, wx.EXPAND | wx.TOP | wx.Center, 5)
-        self.content = self.main_sizer.Add(self.content_panel, 5, wx.EXPAND)
-        self.btn = self.main_sizer.Add(self.btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
+            
+        self.Bind(wx.EVT_CLOSE, self.on_close)
     
-    def draw_page(self, index):
-        match index:
-            case self.PAGE_START:
-                wx.StaticText(self.panel, label='欢迎使用 clickMouse 安装向导!\n\n这个程序将简单的使用几分钟时间，帮助你完成安装。\n点击下一步开启安装助手。', pos=(5, 0))
-            case self.PAGE_READ_LICENSE:
-                wx.StaticText(self.panel, label='请先阅读下方的说明，确认无误后，点击下一步。', pos=(5, 0))
-                # 滚动的文本框
-                with open(get_resource_path('license.txt'), 'r', encoding='utf-8') as f:
-                    wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2, size = (350, 125), pos=(5, 30)).SetValue(f.read()) # 显示协议内容
-                
-                self.allow_checkbox = wx.CheckBox(self.panel, label='我已阅读并同意上述说明', pos=(5, 160))
-                # 绑定事件
-                self.allow_checkbox.Bind(wx.EVT_CHECKBOX, self.on_checkbox_toggle) 
-            case self.PAGE_SET_INSTALL_PATH:
-                wx.StaticText(self.panel, label='这是本软件的安装路径', pos=(5, 0))
-                wx.StaticText(self.panel, label='当前无法选择路径，若要移动安装位置，请将clickmouse文件夹移动\n到新的位置', pos=(5, 60))
-                # 选择路径
-                self.path_picker = wx.DirPickerCtrl(self.panel, message='请选择安装路径', pos=(5, 30), size=(350, -1))
-                self.path_picker.SetPath(str(Path.cwd()))
-                self.path_picker.Enable(False)
-                
-                # 绑定事件
-                self.path_picker.Bind(wx.EVT_DIRPICKER_CHANGED, self.on_update_button) # 路径选择器改变
-            case self.PAGE_SELECT_LINK:
-                wx.StaticText(self.panel, label='请选择你的文件快捷方式设置，然后点击下一步：', pos=(5, 0))
-                wx.StaticText(self.panel, label='开始菜单的快捷方式名称：', pos=(5, 30))
-                self.set_start_menu_textctrl = wx.TextCtrl(self.panel, pos=(5, 50), size=(350, -1))
-                self.set_start_menu_checkbox = wx.CheckBox(self.panel, label='不要在开始菜单中显示', pos=(5, 80))
-                self.desktop_shortcut = wx.CheckBox(self.panel, label='创建桌面快捷方式', pos=(5, 110))
-                
-                # 绑定事件
-                self.set_start_menu_checkbox.Bind(wx.EVT_CHECKBOX, self.on_update_button) # 选择不在开始菜单中显示
-                self.set_start_menu_textctrl.Bind(wx.EVT_TEXT, self.on_update_button) # 快捷方式名称改变
-            case self.PAGE_SET_COMPONENT:
-                self.selected_components = ['clickmouse 主程序']
-                self.protected_item = None
-                self.current_mode = '完整'
-                
-                sizer = wx.BoxSizer(wx.VERTICAL)
-                select_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                
-                # 左侧未选择树形控件
-                self.unselected_tree = self.create_tree(self.panel, '未安装组件')
-                select_sizer.Add(self.unselected_tree, 3, wx.EXPAND | wx.ALL, 5)
-                
-                # 中间按钮区域
-                btn_panel = wx.Panel(self.panel)
-                btn_sizer = wx.BoxSizer(wx.VERTICAL)
-                
-                # 添加模板选择器
-                choises = ['完整', '默认', '精简', '自定义']
-                self.template_choice = wx.Choice(btn_panel, choices=choises)
-                self.template_choice.SetSelection(choises.index(self.current_mode))  # 默认选中'默认'模板
-                self.template_choice.Bind(wx.EVT_CHOICE, self.on_template_change)
-                btn_sizer.Add(self.template_choice, 0, wx.ALL | wx.EXPAND, 5)
-                
-                btn_sizer.AddStretchSpacer()
-                self.add_btn = wx.Button(btn_panel, label='添加 >>', size=(120, -1))
-                self.remove_btn = wx.Button(btn_panel, label='<< 移除', size=(120, -1))
-                btn_sizer.Add(self.add_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
-                btn_sizer.Add(self.remove_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
-                btn_sizer.AddStretchSpacer()
-                btn_panel.SetSizer(btn_sizer)
-                select_sizer.Add(btn_panel, 1, wx.EXPAND)
-                
-                # 右侧已选择树形控件
-                self.selected_tree = self.create_tree(self.panel, '已安装组件')
-                select_sizer.Add(self.selected_tree, 3, wx.EXPAND | wx.ALL, 5)
-                
-                sizer.Add(wx.StaticText(self.panel, label='请选择你要安装的组件，然后点击确认选择。', pos=(5, 0)), 1, wx.EXPAND | wx.ALL, 1)
-                sizer.Add(select_sizer, 15, wx.EXPAND | wx.ALL, 1)
-                self.panel.SetSizer(sizer)
-                
-                # 绑定事件
-                self.add_btn.Bind(wx.EVT_BUTTON, self.on_add)
-                self.remove_btn.Bind(wx.EVT_BUTTON, self.on_remove)
-                
-                # 初始化树数据
-                self.init_tree_data()
-                self.apply_template('完整')
-            case self.PAGE_CHECK_COMPONENT:
-                sizer = wx.BoxSizer(wx.VERTICAL)
-                
-                title = wx.StaticText(self.panel, label='您已选择的组件：')
-                sizer.Add(title, 1, wx.ALL | wx.EXPAND, 10)
-                
-                self.text = wx.StaticText(self.panel, label='正在加载组件列表...', pos=(5, 30))
-                sizer.Add(self.text, 15, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
-                
-                self.panel.SetSizer(sizer)
-            case self.PAGE_INSTALL:
-                wx.StaticText(self.panel, label='正在安装clickmouse, 请稍候...', pos=(5, 0))
-                self.status_text = wx.StaticText(self.panel, label='安装进度', pos=(5, 30))
-            case self.PAGE_FINISH:
-                wx.StaticText(self.panel, label='安装完成！点击确定退出安装向导。', pos=(5, 0))
-                self.launch_checkbox = wx.CheckBox(self.panel, label='启动clickmouse', pos=(5, 30))
-                self.launch_checkbox.SetValue(True)
-            case self.PAGE_CANCEL:
-                wx.StaticText(self.panel, label='安装已取消！点击确定退出安装向导。', pos=(5, 0))
-            case self.PAGE_ERROR:
-                wx.StaticText(self.panel, label='安装失败！点击确定退出安装向导。', pos=(5, 0))
-                self.error_text = wx.StaticText(self.panel, label=f'错误信息：\n在{self.status}时候错误\n错误信息：{self.error}', pos=(5, 30))
-            case self.PAGE_IS_INSTALLED:
-                location = read_reg_key(software_reg_key, 'InstallLocation')
-                wx.StaticText(self.panel, label=f'clickMouse 已经安装，位于{location if location else '未知路径'}', pos=(5, 0))
-                self.launch_installed_checkbox = wx.CheckBox(self.panel, label='启动clickmouse', pos=(5, 30))
-                self.launch_installed_checkbox.SetValue(True)
-                cannot_select_note = wx.StaticText(self.panel, label='无法确认clickmouse的位置，请手动启动。', pos=(120, 30))
-                cannot_select_note.Hide()
-                if not location:
-                    cannot_select_note.Show()
-                    self.launch_installed_checkbox.Enable(False) # 未知路径无法选择
-                    self.launch_installed_checkbox.SetValue(False) # 未知路径无法启动
+    def create_pages(self):    
+        for i in range(self.total_pages):
+            panel = wx.Panel(self.content_panel)
+            match i:
+                case self.PAGE_START:
+                    wx.StaticText(panel, label='欢迎使用 clickMouse 安装向导!\n\n这个程序将简单的使用几分钟时间，帮助你完成安装。\n点击下一步开启安装助手。', pos=(5, 0))
+                case self.PAGE_READ_LICENSE:
+                    wx.StaticText(panel, label='请先阅读下方的说明，确认无误后，点击下一步。', pos=(5, 0))
+                    # 滚动的文本框
+                    with open(get_resource_path('license.txt'), 'r', encoding='utf-8') as f:
+                        wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2, size = (350, 125), pos=(5, 30)).SetValue(f.read()) # 显示协议内容
+                    
+                    self.allow_checkbox = wx.CheckBox(panel, label='我已阅读并同意上述说明', pos=(5, 160))
+                    # 绑定事件
+                    self.allow_checkbox.Bind(wx.EVT_CHECKBOX, self.on_checkbox_toggle) 
+                case self.PAGE_SET_INSTALL_PATH:
+                    wx.StaticText(panel, label='这是本软件的安装路径', pos=(5, 0))
+                    wx.StaticText(panel, label='当前无法选择路径，若要移动安装位置，请将clickmouse文件夹移动\n到新的位置', pos=(5, 60))
+                    # 选择路径
+                    self.path_picker = wx.DirPickerCtrl(panel, message='请选择安装路径', pos=(5, 30), size=(350, -1))
+                    self.path_picker.SetPath(str(Path.cwd()))
+                    self.path_picker.Enable(False)
+                    
+                    # 绑定事件
+                    self.path_picker.Bind(wx.EVT_DIRPICKER_CHANGED, self.on_update_button) # 路径选择器改变
+                case self.PAGE_SELECT_LINK:
+                    wx.StaticText(panel, label='请选择你的文件快捷方式设置，然后点击下一步：', pos=(5, 0))
+                    wx.StaticText(panel, label='开始菜单的快捷方式名称：', pos=(5, 30))
+                    self.set_start_menu_textctrl = wx.TextCtrl(panel, pos=(5, 50), size=(350, -1))
+                    self.set_start_menu_checkbox = wx.CheckBox(panel, label='不要在开始菜单中显示', pos=(5, 80))
+                    self.desktop_shortcut = wx.CheckBox(panel, label='创建桌面快捷方式', pos=(5, 110))
+                    
+                    # 绑定事件
+                    self.set_start_menu_checkbox.Bind(wx.EVT_CHECKBOX, self.on_update_button) # 选择不在开始菜单中显示
+                    self.set_start_menu_textctrl.Bind(wx.EVT_TEXT, self.on_update_button) # 快捷方式名称改变
+                case self.PAGE_SET_COMPONENT:
+                    self.selected_components = ['clickmouse 主程序']
+                    self.protected_item = None
+                    self.current_mode = '完整'
+                    
+                    sizer = wx.BoxSizer(wx.VERTICAL)
+                    select_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                    
+                    # 左侧未选择树形控件
+                    self.unselected_tree = self.create_tree(panel, '未安装组件')
+                    select_sizer.Add(self.unselected_tree, 3, wx.EXPAND | wx.ALL, 5)
+                    
+                    # 中间按钮区域
+                    btn_panel = wx.Panel(panel)
+                    btn_sizer = wx.BoxSizer(wx.VERTICAL)
+                    
+                    # 添加模板选择器
+                    choises = ['完整', '默认', '精简', '自定义']
+                    self.template_choice = wx.Choice(btn_panel, choices=choises)
+                    self.template_choice.SetSelection(choises.index(self.current_mode))  # 默认选中'默认'模板
+                    self.template_choice.Bind(wx.EVT_CHOICE, self.on_template_change)
+                    btn_sizer.Add(self.template_choice, 0, wx.ALL | wx.EXPAND, 5)
+                    
+                    btn_sizer.AddStretchSpacer()
+                    self.add_btn = wx.Button(btn_panel, label='添加 >>', size=(120, -1))
+                    self.remove_btn = wx.Button(btn_panel, label='<< 移除', size=(120, -1))
+                    btn_sizer.Add(self.add_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
+                    btn_sizer.Add(self.remove_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
+                    btn_sizer.AddStretchSpacer()
+                    btn_panel.SetSizer(btn_sizer)
+                    select_sizer.Add(btn_panel, 1, wx.EXPAND)
+                    
+                    # 右侧已选择树形控件
+                    self.selected_tree = self.create_tree(panel, '已安装组件')
+                    select_sizer.Add(self.selected_tree, 3, wx.EXPAND | wx.ALL, 5)
+                    
+                    sizer.Add(wx.StaticText(panel, label='请选择你要安装的组件，然后点击确认选择。', pos=(5, 0)), 1, wx.EXPAND | wx.ALL, 1)
+                    sizer.Add(select_sizer, 15, wx.EXPAND | wx.ALL, 1)
+                    panel.SetSizer(sizer)
+                    
+                    # 绑定事件
+                    self.add_btn.Bind(wx.EVT_BUTTON, self.on_add)
+                    self.remove_btn.Bind(wx.EVT_BUTTON, self.on_remove)
+                    
+                    # 初始化树数据
+                    self.init_tree_data()
+                    self.apply_template('完整')
+                case self.PAGE_CHECK_COMPONENT:
+                    sizer = wx.BoxSizer(wx.VERTICAL)
+                    
+                    title = wx.StaticText(panel, label='您已选择的组件：')
+                    sizer.Add(title, 1, wx.ALL | wx.EXPAND, 10)
+                    
+                    self.text = wx.StaticText(panel, label='正在加载组件列表...', pos=(5, 30))
+                    sizer.Add(self.text, 15, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
+                    
+                    panel.SetSizer(sizer)
+                case self.PAGE_INSTALL:
+                    wx.StaticText(panel, label='正在安装clickmouse, 请稍候...', pos=(5, 0))
+                    self.status_text = wx.StaticText(panel, label='安装进度', pos=(5, 30))
+                case self.PAGE_FINISH:
+                    wx.StaticText(panel, label='安装完成！点击确定退出安装向导。', pos=(5, 0))
+                    self.launch_checkbox = wx.CheckBox(panel, label='启动clickmouse', pos=(5, 30))
+                    self.launch_checkbox.SetValue(True)
+                case self.PAGE_CANCEL:
+                    wx.StaticText(panel, label='安装已取消！点击确定退出安装向导。', pos=(5, 0))
+                case self.PAGE_ERROR:
+                    wx.StaticText(panel, label='安装失败！点击确定退出安装向导。', pos=(5, 0))
+                    self.error_text = wx.StaticText(panel, label=f'错误信息：\n在{self.status}时候错误\n错误信息：{self.error}', pos=(5, 30))
+                case self.PAGE_IS_INSTALLED:
+                    location = read_reg_key(software_reg_key, 'InstallLocation')
+                    wx.StaticText(panel, label=f'clickMouse 已经安装，位于{location if location else '未知路径'}', pos=(5, 0))
+                    self.launch_installed_checkbox = wx.CheckBox(panel, label='启动clickmouse', pos=(5, 30))
+                    self.launch_installed_checkbox.SetValue(True)
+                    cannot_select_note = wx.StaticText(panel, label='无法确认clickmouse的位置，请手动启动。', pos=(120, 30))
+                    cannot_select_note.Hide()
+                    if not location:
+                        cannot_select_note.Show()
+                        self.launch_installed_checkbox.Enable(False) # 未知路径无法选择
+                        self.launch_installed_checkbox.SetValue(False) # 未知路径无法启动
+            panel.Hide()
+            self.content_sizer.Add(panel, 1, wx.EXPAND)  # 将页面加入Sizer
+            self.pages.append(panel)
+    
+        self.pages[0].Show()
         
     def create_tree(self, parent, root_label):
         tree = wx.TreeCtrl(parent, style=wx.TR_DEFAULT_STYLE)
@@ -558,6 +524,11 @@ class InstallFrame(PagesUI):
             self.selected_components.append(self.selected_tree.GetItemText(item)) # 添加组件名称到列表
             item, cookie = self.selected_tree.GetNextChild(root, cookie) # 遍历已选组件
 
+    def on_prev(self, event):
+        '''上一步按钮'''
+        if self.current_page > 0:
+            self.update_page(self.current_page - 1)
+
     def on_next(self, event):
         '''下一步按钮'''
         if self.current_page == self.PAGE_SET_COMPONENT:
@@ -569,66 +540,13 @@ class InstallFrame(PagesUI):
         '''取消按钮'''
         self.update_page(self.PAGE_CANCEL)
     
-class SelectLanguage(wx.Frame):
-    def __init__(self, parent=None):
-        # 初始化
-        super().__init__(parent, title='Please select language.', size=(300, 150),style=wx.DEFAULT_FRAME_STYLE & ~(wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.CLOSE_BOX))
-        system_lang = parse_system_language_to_lang_id()
-        settings['select_lang'] = system_lang
-        save_settings(settings)
-        self.SetTitle(get_lang('01', system_lang))
-
-        # 窗口初始化
-        self.Icon = wx.Icon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')), wx.BITMAP_TYPE_ICO)
-
-        # 创建面板
-        panel = wx.Panel(self)
-
-        # 面板控件
-        wx.StaticText(panel, -1, get_lang('01', system_lang), pos=(60, 0))
-        choices = [i['lang_name'] for i in langs]
-
-        nxt_btn = wx.Button(panel, -1, get_lang('02', system_lang), (200, 80))
+    def update_page(self, page_index):
+        '''更新页面'''
+        self.pages[self.current_page].Hide()
+        self.current_page = page_index
+        self.pages[self.current_page].Show()
+        self.update_buttons()
         
-        self.lang_choice = wx.Choice(panel, -1, (75, 30), choices=choices)
-        self.lang_choice.SetSelection(system_lang)
-        
-        self.lang_choice.Bind(wx.EVT_CHOICE, self.on_choice_change)
-        nxt_btn.Bind(wx.EVT_BUTTON, self.on_nxt_btn)
-        
-    def on_choice_change(self, event):
-        settings['select_lang'] = self.lang_choice.GetSelection()
-        save_settings(settings)
-        
-    def on_nxt_btn(self, event):
-        self.Close()
-        
-# 显示窗口
-def main(app_name):
-    frame = app_name()
-    frame.Show()
-    app.MainLoop()        
-
 if __name__ == '__main__':
-    app = wx.App()
-    # 调用GUI工具
-    if not get_resource_path('packages'):
-        wx.MessageBox('由于每个版本都会更新安装包，未防止git文件夹过大，安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。', '错误', wx.OK | wx.ICON_ERROR)
-    if is_admin():  # 管理员权限
-        if os.path.exists('run_as_admin.json'):
-            os.remove('run_as_admin.json')
-        if not(check_reg_key(software_reg_key)):
-            main(SelectLanguage)
-        main(InstallFrame)
-    else:
-        try:
-            with open('run_as_admin.json', 'r') as f:
-                data = json.load(f).get('is_not_admin', 0)
-        except:
-            data = 0
-        if data == 0:
-            run_as_admin() # 请求管理员权限
-        elif data == 1:
-            wx.MessageBox('错误', '程序已请求提升权限，但是仍然以非管理员权限运行，请联系系统管理员', wx.OK | wx.ICON_ERROR)
-            os.remove('run_as_admin.json')
-    app.MainLoop()
+    print('敬请期待！')
+    input()

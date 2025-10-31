@@ -192,21 +192,16 @@ class ResultThread(threading.Thread):
 
 # 变量
 # 自定义的事件
-logger.debug('定义资源')
-logger.debug('定义广播')
+logger.debug('定义事件')
 
 ID_UPDATE = wx.NewIdRef()
 ID_UPDATE_LOG = wx.NewIdRef()
-ID_SUPPORT_AUTHOR = wx.NewIdRef()
-ID_MORE_UPDATE_LOG = wx.NewIdRef()
-ID_MOUSE_LEFT = wx.NewIdRef()
-ID_MOUSE_RIGHT = wx.NewIdRef()
 ID_CLEAN_CACHE = wx.NewIdRef()
-ID_OPEN_UPDATE_LOG = wx.NewIdRef()
 ID_SETTING = wx.NewIdRef()
-ID_SCAN_CACHE = wx.NewIdRef()
-ID_OFFICAL_ENTENSIONS = wx.NewIdRef()
 ID_DOC = wx.NewIdRef()
+ID_MANAGE = wx.NewIdRef()
+
+logger.debug('定义资源')
 
 logger.debug('定义广播完成')
 logger.debug('定义数据路径和创建文件夹')
@@ -355,9 +350,9 @@ class MainWindow(wx.Frame):
         # 帮助菜单
         help_menu = wx.Menu()
         help_menu.Append(wx.ID_ABOUT, get_lang('0a'))
-        doc = help_menu.Append(ID_DOC, '文档(&D)')
-        if not(is_installed_doc):
-            doc.Enable(False)
+        # doc = help_menu.Append(ID_DOC, '文档(&D)')
+        # if not(is_installed_doc):
+        #     doc.Enable(False)
         
         # 更新菜单
         update_menu = wx.Menu()
@@ -379,6 +374,7 @@ class MainWindow(wx.Frame):
             # 加载官方扩展菜单
             for index, id_data in zip(indexes, package_id):
                 offical_extension_menu.Append(id_data, get_lang(index)) # 给菜单项添加ID，方便绑定事件
+        offical_extension_menu.Append(ID_MANAGE, '管理扩展(&M)')
         
         # 添加菜单到菜单栏
         logger.debug('添加菜单到菜单栏')
@@ -388,6 +384,7 @@ class MainWindow(wx.Frame):
         menubar.Append(help_menu, get_lang('09'))
         menubar.Append(extension_menu, '扩展(&X)')
         
+        # 绑定事件
         extension_menu.Bind(wx.EVT_MENU, self.on_parse_offical_extension)
         self.Bind(wx.EVT_MENU, self.on_exit, id=wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.on_about, id=wx.ID_ABOUT)
@@ -395,8 +392,8 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_update_log, id=ID_UPDATE_LOG)
         self.Bind(wx.EVT_MENU, self.on_clean_cache, id=ID_CLEAN_CACHE)
         self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
-        self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
         self.Bind(wx.EVT_MENU, self.on_doc, id=ID_DOC)
+        self.Bind(wx.EVT_MENU, self.on_manage_extension, id=ID_MANAGE)
         
         # 设置菜单栏
         self.SetMenuBar(menubar)
@@ -408,6 +405,11 @@ class MainWindow(wx.Frame):
             os.startfile(str(get_resource_path('docs', f'{get_lang_system_name()}.chm')))
         else:
             os.startfile(str(get_resource_path('docs', 'en.chm')))
+        
+    def on_manage_extension(self, event):
+        '''管理扩展'''
+        logger.info('打开扩展管理窗口')
+        run_software('install_pack.py' ,'inst_pks.exe')
         
     def on_check_update_result(self, event):
         '''检查更新结果'''
@@ -617,16 +619,18 @@ class AboutWindow(wx.Dialog):
         version_status_text = '预览版' if ('alpha' in __version__) or ('beta' in __version__) else ''
         wx.StaticBitmap(panel, -1, image, wx.Point(0, 0))
         wx.StaticText(panel, -1, get_lang('1c').format(__version__, version_status_text), wx.Point(64, 15))
+        if not os.path.exists('dev_list/is_author'):
+            wx.StaticText(panel, -1, '此clickmouse不是官方版本', wx.Point(64, 30))
         wx.StaticText(panel, -1, get_lang('1d'), wx.Point(5, 100), wx.Size(270, 50))
         
         # 按钮
         logger.debug('创建按钮')
         wx.Button(panel, wx.ID_OK, get_lang('1e'), wx.Point(200, 150))
-        wx.Button(panel, ID_SUPPORT_AUTHOR, get_lang('20'), wx.Point(0, 150))
+        support_author = wx.Button(panel, wx.ID_ANY, get_lang('20'), wx.Point(0, 150))
 
         # 绑定事件
         logger.debug('绑定事件')
-        self.Bind(wx.EVT_BUTTON, self.on_support_author, id=ID_SUPPORT_AUTHOR)
+        support_author.Bind(wx.EVT_BUTTON, self.on_support_author)
         logger.info('初始化关于窗口完成')
 
     def on_support_author(self, event):
@@ -677,10 +681,10 @@ class UpdateLogWindow(wx.Dialog):
         # 按钮
         logger.debug('创建按钮')
         wx.Button(panel, wx.ID_OK, get_lang('1e'), wx.Point(200, point_y + 50))
-        wx.Button(panel, ID_MORE_UPDATE_LOG, get_lang('23'), wx.Point(0, point_y + 50))
+        more_update_log = wx.Button(panel, wx.ID_ANY, get_lang('23'), wx.Point(0, point_y + 50))
         # 绑定事件
         logger.debug('绑定事件')
-        self.Bind(wx.EVT_BUTTON, self.on_more_update_log, id=ID_MORE_UPDATE_LOG)
+        more_update_log.Bind(wx.EVT_BUTTON, self.on_more_update_log)
         logger.info('初始化更新日志窗口完成')
 
     def on_more_update_log(self, event):
@@ -699,12 +703,12 @@ class UpdateWindow(wx.Dialog):
         wx.StaticText(panel, -1, get_lang('24'), wx.Point(5, 5)).SetFont(wx.Font(16, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         wx.StaticText(panel, -1, get_lang('25').format(__version__, result[1]), wx.Point(5, 30), wx.Size(180, 40))
         # 按钮
-        wx.Button(panel, ID_UPDATE, get_lang('26'), wx.Point(5, 70))
-        wx.Button(panel, ID_OPEN_UPDATE_LOG, get_lang('27'), wx.Point(80, 70))
+        update = wx.Button(panel, wx.ID_ANY, get_lang('26'), wx.Point(5, 70))
+        update_log = wx.Button(panel, wx.ID_ANY, get_lang('27'), wx.Point(80, 70))
         wx.Button(panel, wx.ID_CANCEL, get_lang('1f'), wx.Point(200, 70))
         # 绑定事件
-        self.Bind(wx.EVT_BUTTON, self.on_update, id=ID_UPDATE)
-        self.Bind(wx.EVT_BUTTON, self.on_open_update_log, id=ID_OPEN_UPDATE_LOG)
+        update.Bind(wx.EVT_BUTTON, self.on_update)
+        update_log.Bind(wx.EVT_BUTTON, self.on_open_update_log)
 
     def on_update(self, event):
         '''更新'''
@@ -776,13 +780,14 @@ class CleanCacheWindow(wx.Dialog):
         
         # 按钮
         logger.debug('创建按钮')
-        wx.Button(panel, ID_SCAN_CACHE, get_lang('38'), wx.Point(5, self.point_y + 20))
-        wx.Button(panel, wx.ID_CANCEL, get_lang('1f'), wx.Point(100, self.point_y + 20))
-        wx.Button(panel, ID_CLEAN_CACHE, get_lang('39'), wx.Point(200, self.point_y + 20))
+        scan_cache = wx.Button(panel, wx.ID_ANY, get_lang('38'), wx.Point(5, self.point_y + 20))
+        wx.Button(panel, wx.ID_CANCEL, get_lang('1f'), wx.Point(200, self.point_y + 20))
+        clean_cache = wx.Button(panel, wx.ID_ANY, get_lang('39'), wx.Point(100, self.point_y + 20))
 
+        # 绑定事件
         self.btn_all.Bind(wx.EVT_BUTTON, self.on_all_check)
-        self.Bind(wx.EVT_BUTTON, self.on_scan_cache, id=ID_SCAN_CACHE)
-        self.Bind(wx.EVT_BUTTON, self.on_clean_cache, id=ID_CLEAN_CACHE)
+        scan_cache.Bind(wx.EVT_BUTTON, self.on_scan_cache)
+        clean_cache.Bind(wx.EVT_BUTTON, self.on_clean_cache)
         
         for checkbox in self.cache_size_checkbox_list:
             checkbox.Bind(wx.EVT_CHECKBOX, self.update_all_check_status)
@@ -1129,7 +1134,7 @@ class SettingWindow(uiStyles.SelectUI):
         try:
             if self.cache_setting.get('click_delay', '') != '':
                 self.cache_setting['click_delay'] = int(self.cache_setting['click_delay'])
-        except ValueError as e:
+        except ValueError:
             wx.MessageBox(get_lang('51'), get_lang('14'), wx.ICON_ERROR)
             logger.error(f'用户输入错误：请输入有效的正整数延迟')
             return -1

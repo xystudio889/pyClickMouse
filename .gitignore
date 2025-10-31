@@ -407,6 +407,7 @@ FodyWeavers.xsd
 mkpyd.bat
 cache/
 Gui/data/*
+data/
 xQklN2n.py
 logs/
 tests/
