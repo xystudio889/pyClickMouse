@@ -219,17 +219,6 @@ cache_path.mkdir(parents=True, exist_ok=True)
 should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
-with open('packages.json', 'r', encoding='utf-8') as f:
-    packages = json.load(f)
-
-package_list, old_indexes, install_location, old_package_id = get_packages()
-indexes = []
-package_id = []
-package_list = package_list[1:]
-install_location = install_location[1:]
-indexes = list(filter(lambda x: x is not None, old_indexes)) # 过滤掉没有语言包的包
-package_id = list(filter(lambda x: x is not None, old_package_id)) # 过滤掉没有安装的包
-del old_package_id, old_indexes
 
 logger.debug('定义语言包')
 with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
@@ -393,7 +382,6 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_clean_cache, id=ID_CLEAN_CACHE)
         self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
         self.Bind(wx.EVT_MENU, self.on_doc, id=ID_DOC)
-        self.Bind(wx.EVT_MENU, self.on_manage_extension, id=ID_MANAGE)
         
         # 设置菜单栏
         self.SetMenuBar(menubar)
@@ -598,8 +586,11 @@ class MainWindow(wx.Frame):
         '''解析官方扩展'''
         logger.info('打开官方扩展')
         id_num = event.GetId()
-        if id_num == 0: # 测试扩展
-            run_software(f'{install_location[0]}/hello.py', f'{install_location[0]}/entension_test.exe')
+        match id_num:
+            case 0: # 测试扩展
+                run_software(f'{install_location[0]}/hello.py', f'{install_location[0]}/entension_test.exe')
+            case ID_MANAGE: # 管理扩展
+                self.on_manage_extension(event)
 
 class AboutWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
@@ -619,7 +610,7 @@ class AboutWindow(wx.Dialog):
         version_status_text = '预览版' if ('alpha' in __version__) or ('beta' in __version__) else ''
         wx.StaticBitmap(panel, -1, image, wx.Point(0, 0))
         wx.StaticText(panel, -1, get_lang('1c').format(__version__, version_status_text), wx.Point(64, 15))
-        if not os.path.exists('dev_list/is_author'):
+        if not os.path.exists(get_resource_path('is_author')):
             wx.StaticText(panel, -1, '此clickmouse不是官方版本', wx.Point(64, 30))
         wx.StaticText(panel, -1, get_lang('1d'), wx.Point(5, 100), wx.Size(270, 50))
         
@@ -1192,6 +1183,18 @@ if __name__ == '__main__':
         else:
             app = wx.App()
             is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
+            with open('packages.json', 'r', encoding='utf-8') as f:
+                packages = json.load(f)
+
+            package_list, old_indexes, install_location, old_package_id = get_packages()
+            indexes = []
+            package_id = []
+            package_list = package_list[1:]
+            install_location = install_location[1:]
+            indexes = list(filter(lambda x: x is not None, old_indexes)) # 过滤掉没有语言包的包
+            package_id = list(filter(lambda x: x is not None, old_package_id)) # 过滤掉没有安装的包
+            del old_package_id, old_indexes
+
             main()
             app.MainLoop()
             logger.info('程序退出')

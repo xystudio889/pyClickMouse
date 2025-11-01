@@ -13,6 +13,11 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 keywords = ["mouse", "click", "automation", "clickmouse", "api"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "wxpython"
 ]
@@ -25,8 +30,3 @@ clickmouse = "clickmouse.__main__:main"
 
 [project.optional-dependencies]
 clickmouse_control = ["clickmouse"]
-
-[project.classifiers]
-Programming-Language = ["Python :: 3"]
-License = ["OSI Approved :: MIT License"]
-Operating-System = ["OS Independent"]

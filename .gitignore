@@ -420,6 +420,7 @@ packages.json
 extensions/
 Gui/res/docs/*
 Gui/docs/*/*.chm
+is_author
 
 # nuitka build file
 *.build/
