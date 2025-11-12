@@ -16,13 +16,15 @@ import shutil # 用于删除文件夹
 import sys # 系统库
 import uiStyles # 软件界面样式
 from sharelibs import (run_software, in_dev)
-import pyperclip # 剪切板操作库
 import zipfile # 压缩库
+import parse_dev # 解析开发固件配置
 
 logger = Logger('主程序日志')
 logger.info('日志系统启动')
 
 logger.debug('定义函数')
+
+dev_config = parse_dev.parse()
 
 def get_resource_path(*paths):
     '''
@@ -610,7 +612,7 @@ class AboutWindow(wx.Dialog):
         version_status_text = '预览版' if ('alpha' in __version__) or ('beta' in __version__) else ''
         wx.StaticBitmap(panel, -1, image, wx.Point(0, 0))
         wx.StaticText(panel, -1, get_lang('1c').format(__version__, version_status_text), wx.Point(64, 15))
-        if not os.path.exists(get_resource_path('is_author')):
+        if dev_config['verify_clickmouse']:
             wx.StaticText(panel, -1, '此clickmouse不是官方版本', wx.Point(64, 30))
         wx.StaticText(panel, -1, get_lang('1d'), wx.Point(5, 100), wx.Size(270, 50))
         
@@ -644,8 +646,8 @@ class UpdateLogWindow(wx.Dialog):
         
         for k, v in load_log.items():
             update_logs[k] = v # 动态加载日志信息
-            if len(v) > 1:
-                update_logs[k][1] = wx.Size(270, v[1] * 17) # 动态计算日志内容的高度
+            if len(v) > 2:
+                update_logs[k][2] = wx.Size(270, v[2] * 17) # 动态计算日志内容的高度
 
         # 创建面板
         panel = wx.Panel(self)
@@ -653,13 +655,13 @@ class UpdateLogWindow(wx.Dialog):
         # 动态加载ui
         logger.debug('加载ui')
         point_y = 5 # 初始y坐标
-        size_index = 1 # 自定义字符大小的索引
+        size_index = 2 # 自定义字符大小的索引
         # 通过字典存储的日志信息来绘制日志内容，并动态计算日志的高度，减少代码量且更加方便管理
         for k, v in update_logs.items():
             len_v = len(v)
-            wx.StaticText(panel, -1, k, wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
+            wx.StaticText(panel, -1, f'{k}    {v[0]}', wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
             point_y += 17 # 动态计算下一个日志内容的y坐标
-            wx.StaticText(panel, -1, v[0], wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
+            wx.StaticText(panel, -1, v[1], wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
             point_y += (v[size_index].height if len_v > size_index else 17) + 5 # 动态计算下一个日志日期信息的y坐标
 
         # 调整页面高度，适配现在的更新日志界面大小
@@ -741,7 +743,21 @@ class CleanCacheWindow(wx.Dialog):
         wx.StaticText(panel, -1, get_lang('35'), self.point(200))
         wx.StaticText(panel, -1, get_lang('36'), self.point(400))
         
-        cache_list = {get_lang('2d') : ['logs/', get_lang('2e')],get_lang('2f') : ['update.json', get_lang('30'), 4, False], get_lang('31') : ['', get_lang('32')]} # 缓存列表
+        # 从json读取缓存列表
+        cache_list = {}
+        
+        with open(get_resource_path('vars', 'cleancache.json'), 'r', encoding='utf-8') as f:
+            load_cache = json.load(f)
+        
+        # 解析缓存源文件
+        for k, v in load_cache.items():
+            if k.startswith(' '):
+                cache_list[get_lang(k[1:])] = [] # 初始化空项
+            for value in v:
+                if type(value) is str and value.startswith(' '):
+                    cache_list[get_lang(k[1:])].append(get_lang(value[1:]))
+                else:
+                    cache_list[get_lang(k[1:])].append(value)
 
         self.cache_dir_list = {'logs'} # 缓存文件路径的列表
         self.cache_file_list = {'update.json'} # 缓存文件列表

@@ -1,0 +1,9 @@
+[
+    {
+        "config_in_data": "verify_clickmouse",
+        "cases": {
+            "0": false,
+            "1": true
+        }
+    }
+]

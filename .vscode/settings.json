@@ -1,0 +1,12 @@
+{
+    "json.schemas": [
+        {
+            "fileMatch": ["dev_data.json"],
+            "url": "./gui/res/rules/dev_data.json"
+        },
+        {
+            "fileMatch": ["vars/*"],
+            "url": "./gui/res/rules/vars.json"
+        }
+    ]
+}

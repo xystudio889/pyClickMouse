@@ -618,7 +618,7 @@ class SelectLanguage(wx.Frame):
 def main(app_name):
     frame = app_name()
     frame.Show()
-    app.MainLoop()        
+    app.MainLoop() 
 
 if __name__ == '__main__':
     app = wx.App()

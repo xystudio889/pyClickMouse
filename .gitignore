@@ -421,14 +421,13 @@ extensions/
 Gui/res/docs/*
 Gui/docs/*/*.chm
 is_author
+dev.dat
 
 # nuitka build file
 *.build/
 *.dist/
 *.exe
 *.onefile-build/
-
-.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
