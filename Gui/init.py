@@ -506,7 +506,6 @@ class InstallFrame(PagesUI):
             self.setStatus('正在创建包管理器文件...')
             package = []
             package.append(import_package(0, install_location=install_path, create_in_start_menu=not self.set_start_menu_checkbox.GetValue(), create_desktop_shortcut=self.desktop_shortcut.GetValue(), start_menu_name=self.set_start_menu_textctrl.GetValue() if not self.set_start_menu_checkbox.GetValue() else None))
-            print(package)
             
             self.setStatus('解压安装包...')
             if 'clickmouse 扩展测试' in self.selected_components:

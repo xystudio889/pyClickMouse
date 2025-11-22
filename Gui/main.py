@@ -6,6 +6,9 @@ import threading # 用于鼠标点击
 from time import sleep, time # 延迟
 from webbrowser import open as open_url # 关于作者
 import wx # GUI库
+from PySide6.QtWidgets import QApplication # 用于启用使用pyside6的文件缺失错误通知
+QApplication()# 启用pyside6 app
+
 from version import __version__, __author__ # 版本信息
 from log import Logger # 日志库
 from check_update import check_update # 更新检查
@@ -147,6 +150,7 @@ def get_packages():
     lang_index = [] # 语言包索引
     package_path = [] # 包路径列表
     package_index = [] # 包索引
+    show = []
     
     # 加载包信息
     for package in packages:
@@ -154,7 +158,8 @@ def get_packages():
         lang_index.append(package.get('package_name_lang_index', None))
         package_path.append(package.get('install_location', None))
         package_index.append(package.get('package_id', None))
-    return (list_packages, lang_index, package_path, package_index)
+        show.append(package.get('show_in_extension_list', True))
+    return (list_packages, lang_index, package_path, package_index, show)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -202,6 +207,10 @@ ID_CLEAN_CACHE = wx.NewIdRef()
 ID_SETTING = wx.NewIdRef()
 ID_DOC = wx.NewIdRef()
 ID_MANAGE = wx.NewIdRef()
+
+class SpecialExtensionID:
+    '''特殊扩展ID'''
+    ID_MANAGE = ID_MANAGE
 
 logger.debug('定义资源')
 
@@ -336,7 +345,6 @@ class MainWindow(wx.Frame):
         # 文件菜单
         file_menu = wx.Menu()
         file_menu.Append(ID_CLEAN_CACHE, get_lang('02'))
-        file_menu.Append(wx.ID_EXIT, get_lang('03'))
         
         # 帮助菜单
         help_menu = wx.Menu()
@@ -352,19 +360,20 @@ class MainWindow(wx.Frame):
 
         # 设置菜单
         view_menu = wx.Menu()
-        view_menu.Append(ID_SETTING, get_lang('05'))
+        view_menu.Append(ID_SETTING, get_lang('05')) 
         
         # 扩展菜单
         extension_menu = wx.Menu()
         offical_extension_menu = wx.Menu()
         extension_menu.AppendSubMenu(offical_extension_menu, '官方扩展(&O)')
-        if not(package_list):
+        if not any(show_list):
             # 无官方扩展提示
             offical_extension_menu.Append(wx.ID_ANY, '暂无官方扩展').Enable(False)
         else:
             # 加载官方扩展菜单
-            for index, id_data in zip(indexes, package_id):
-                offical_extension_menu.Append(id_data, get_lang(index)) # 给菜单项添加ID，方便绑定事件
+            for index, id_data, show in zip(indexes, package_id, show_list):
+                if show:
+                    offical_extension_menu.Append(id_data, get_lang(index)) # 给菜单项添加ID，方便绑定事件
         offical_extension_menu.Append(ID_MANAGE, '管理扩展(&M)')
         
         # 添加菜单到菜单栏
@@ -589,9 +598,9 @@ class MainWindow(wx.Frame):
         logger.info('打开官方扩展')
         id_num = event.GetId()
         match id_num:
-            case 0: # 测试扩展
-                run_software(f'{install_location[0]}/hello.py', f'{install_location[0]}/entension_test.exe')
-            case ID_MANAGE: # 管理扩展
+            case 1: # 测试扩展
+                run_software(os.path.join(install_location[1], 'hello.py'), None)
+            case SpecialExtensionID.ID_MANAGE: # 管理扩展
                 self.on_manage_extension(event)
 
 class AboutWindow(wx.Dialog):
@@ -1202,14 +1211,7 @@ if __name__ == '__main__':
             with open('packages.json', 'r', encoding='utf-8') as f:
                 packages = json.load(f)
 
-            package_list, old_indexes, install_location, old_package_id = get_packages()
-            indexes = []
-            package_id = []
-            package_list = package_list[1:]
-            install_location = install_location[1:]
-            indexes = list(filter(lambda x: x is not None, old_indexes)) # 过滤掉没有语言包的包
-            package_id = list(filter(lambda x: x is not None, old_package_id)) # 过滤掉没有安装的包
-            del old_package_id, old_indexes
+            package_list, indexes, install_location, package_id, show_list = get_packages()
 
             main()
             app.MainLoop()

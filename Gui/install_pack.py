@@ -180,7 +180,7 @@ class InstallFrame(PagesUI):
                 btn_sizer = wx.BoxSizer(wx.VERTICAL)
                 
                 # 添加模板选择器
-                choises = ['完整', '默认', '精简','当前', '自定义']
+                choises = ['完整', '默认', '精简', '当前', '自定义']
                 self.template_choice = wx.Choice(btn_panel, choices=choises)
                 self.template_choice.SetSelection(choises.index(self.current_mode))  # 默认选中'默认'模板
                 self.template_choice.Bind(wx.EVT_CHOICE, self.on_template_change)
@@ -312,7 +312,7 @@ class InstallFrame(PagesUI):
     
     def on_add(self, event):
         if self.current_mode != '自定义':
-            self.template_choice.SetSelection(3)  # 切换到自定义模式
+            self.template_choice.SetSelection(4)  # 切换到自定义模式
             self.current_mode = '自定义'
         
         item = self.unselected_tree.GetSelection()
@@ -327,7 +327,7 @@ class InstallFrame(PagesUI):
     
     def on_remove(self, event):
         if self.current_mode != '自定义':
-            self.template_choice.SetSelection(3)  # 切换到自定义模式
+            self.template_choice.SetSelection(4)  # 切换到自定义模式
             self.current_mode = '自定义'
         
         item = self.selected_tree.GetSelection()
@@ -410,11 +410,11 @@ class InstallFrame(PagesUI):
         '''安装程序'''
         # 创建文件夹
         try:
-            wx.MessageBox('提示：此版本不会进行任何的包更改，将在后续测试版支持。')
             self.setStatus('初始化...')
             if not self.selected_change:
                 self.update_page(self.PAGE_FINISH)
                 return
+            wx.MessageBox('提示：此版本不会进行任何的包更改，将在后续测试版支持。')
             remove = []
             add = []
             self.setStatus('检查需要更新的文件...')
@@ -423,8 +423,10 @@ class InstallFrame(PagesUI):
                     remove.append(comp[1:])
                 elif comp.startswith('+'):
                     add.append(comp[1:])
+                    
+            print(remove, add)
 
-            self.update_page(self.PAGE_FINISH)
+            # self.update_page(self.PAGE_FINISH)
         except Exception as e:
             self.error = e
             wx.MessageBox(f'安装失败: {e}', '错误', wx.OK | wx.ICON_ERROR)

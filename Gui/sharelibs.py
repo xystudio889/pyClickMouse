@@ -2,27 +2,30 @@
 
 import json
 from pathlib import Path
-import wx
+from PySide6.QtWidgets import QMessageBox
 import os
 import subprocess
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
 
-def _show_message(message, title, style):
-    temp_app = wx.App()
-    wx.MessageBox(message, title, style)
-    temp_app.Destroy()
+def _show_message(message, title, status):
+    if status == 0:
+        QMessageBox.information(None, title, message)
+    elif status == 1:
+        QMessageBox.warning(None, title, message)
+    elif status == 2:
+        QMessageBox.critical(None, title, message)
 
 try:
     lang_path = Path('res', 'langs.json')
     with open(lang_path, 'r', encoding='utf-8') as f:
         langs = json.load(f)
 except FileNotFoundError:
-    _show_message('资源损坏: 语言文件丢失', '错误', wx.OK | wx.ICON_ERROR)
+    _show_message('资源损坏: 语言文件丢失', '错误', 2)
     exit(1)
 except json.JSONDecodeError:
-    _show_message('资源损坏: 语言文件格式错误', '错误', wx.OK | wx.ICON_ERROR)
+    _show_message('资源损坏: 语言文件格式错误', '错误', 2)
     exit(1)
     
 def load_settings():
@@ -62,7 +65,7 @@ def get_resource_path(*paths):
             raise FileNotFoundError('资源文件出现损坏')
         return str(resource.joinpath(*paths))
     except Exception as e:
-        _show_message(f'资源文件损坏: {e}', '错误', wx.OK | wx.ICON_ERROR)
+        _show_message(f'资源文件损坏: {e}', '错误', 2)
         exit(1)
 
 in_dev = os.path.exists('dev_list/in_dev') # 是否处于开发模式

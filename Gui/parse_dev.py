@@ -23,7 +23,6 @@ def parse():
     # 解析数据
     for index, i in enumerate(dev_data):
         value = data[index]
-        print(value)
         for k, v in i['cases'].items():
             k = int(k)
             if value == k:

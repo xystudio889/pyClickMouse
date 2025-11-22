@@ -63,14 +63,8 @@ def remove_reg_key(sub_key):
         # 关闭父键后删除空项
         winreg.CloseKey(parent_key)
         winreg.DeleteKey(root_key, sub_key)
-        print(f"成功删除: {root_key}\\{sub_key}")
-
-    except PermissionError:
-        print(f"权限不足，请以管理员身份运行")
-    except FileNotFoundError:
-        print(f"注册表项不存在: {root_key}\\{sub_key}")
-    except Exception as e:
-        print(f"操作失败: {e}")
+    except:
+        pass
 
 def read_reg_key(key, value):
     try:
