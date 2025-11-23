@@ -173,11 +173,11 @@ def check_doc_exists():
     is_installed_this_lang_docs = True
 
     if not(os.path.exists(get_resource_path('docs', 'en.chm'))):
-        wx.MessageBox('软件目录下缺少默认文档文件，所以"文档"功能将被禁用\n修复方法：这可能是再编译版本，请找到源程序的docs目录，使用HTML Help Workshop等工具制作chm文档，并将其放入res\\docs目录下后再编译', '提示', wx.OK | wx.ICON_WARNING)
+        wx.MessageBox('软件目录下缺少默认文档文件，所以"文档"功能将被禁用\n修复方法：这可能是再编译版本，请找到源程序的docs目录，使用HTML Help Workshop等工具制作chm文档，并将其放入res\\docs目录下后再编译', get_lang('16'), wx.OK | wx.ICON_WARNING)
         is_installed_docs = False
         is_installed_this_lang_docs = False
     elif not(os.path.exists(get_resource_path('docs', f'{get_lang_system_name()}.chm'))):
-        wx.MessageBox(f'软件目录下缺少{get_lang_system_name()}语言的文档文件，所以"文档"功能将会显示英文文档\n修复方法：这可能是第三方语言包，需要重新对这个语言包制作html版本文档', '提示', wx.OK | wx.ICON_WARNING)
+        wx.MessageBox(f'软件目录下缺少{get_lang_system_name()}语言的文档文件，所以"文档"功能将会显示英文文档\n修复方法：这可能是第三方语言包，需要重新对这个语言包制作html版本文档', get_lang('16'), wx.OK | wx.ICON_WARNING)
         is_installed_this_lang_docs = False
 
     return (is_installed_docs, is_installed_this_lang_docs)

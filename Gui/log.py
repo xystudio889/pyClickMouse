@@ -10,10 +10,10 @@ id = uuid.uuid4()
 folder_path.mkdir(parents=True, exist_ok=True)
 
 class Logger:
-    def __init__(self, name):
+    def __init__(self, name, level=logging.DEBUG):
         # 创建self.logger对象
         self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.DEBUG)  # 设置最低日志级别
+        self.logger.setLevel(level)  # 设置最低日志级别
 
         # 控制台处理器 - 仅WARNING及以上级别
         console_handler = logging.StreamHandler()
