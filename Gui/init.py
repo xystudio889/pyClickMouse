@@ -627,8 +627,6 @@ if __name__ == '__main__':
     if is_admin():  # 管理员权限
         if os.path.exists('run_as_admin.json'):
             os.remove('run_as_admin.json')
-        if not(check_reg_key(software_reg_key)):
-            main(SelectLanguage)
         main(InstallFrame)
     else:
         try:

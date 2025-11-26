@@ -6,8 +6,6 @@ import threading # 用于鼠标点击
 from time import sleep, time # 延迟
 from webbrowser import open as open_url # 关于作者
 import wx # GUI库
-from PySide6.QtWidgets import QApplication # 用于启用使用pyside6的文件缺失错误通知
-QApplication()# 启用pyside6 app
 
 from version import __version__, __author__ # 版本信息
 from log import Logger # 日志库
@@ -18,9 +16,10 @@ import os # 系统库
 import shutil # 用于删除文件夹
 import sys # 系统库
 import uiStyles # 软件界面样式
-from sharelibs import (run_software, in_dev)
+from sharelibs import run_software
 import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
+import winreg # 注册表库
 
 logger = Logger('主程序日志')
 logger.info('日志系统启动')
@@ -144,22 +143,6 @@ def save_settings(settings):
     logger.info('保存设置')
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
-        
-def get_packages():
-    list_packages = [] # 包名列表
-    lang_index = [] # 语言包索引
-    package_path = [] # 包路径列表
-    package_index = [] # 包索引
-    show = []
-    
-    # 加载包信息
-    for package in packages:
-        list_packages.append(package.get('package_name', None))
-        lang_index.append(package.get('package_name_lang_index', None))
-        package_path.append(package.get('install_location', None))
-        package_index.append(package.get('package_id', None))
-        show.append(package.get('show_in_extension_list', True))
-    return (list_packages, lang_index, package_path, package_index, show)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -167,6 +150,24 @@ def extract_zip(file_path, extract_path):
     '''
     with zipfile.ZipFile(file_path, 'r') as f:
         f.extractall(extract_path)
+        
+def get_system_language():
+    '''通过Windows注册表获取系统语言'''
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International")
+        lang, _ = winreg.QueryValueEx(key, "LocaleName")
+        return lang
+    except Exception:
+        return 'en-US'
+    
+def parse_system_language_to_lang_id():
+    '''将系统语言转换为语言ID'''
+    system_lang = get_system_language()
+    for i in langs:
+        if i['is_official']:
+            if i.get('lang_system_name', 'en-US') == system_lang:
+                return i['lang_id']
+    return 0
         
 def check_doc_exists():
     is_installed_docs = True
@@ -245,6 +246,41 @@ if should_check_update_res:
 logger.debug('检查更新完成')
 
 logger.debug('加载ui')
+
+class SelectLanguage(wx.Frame):
+    def __init__(self, parent=None):
+        # 初始化
+        super().__init__(parent, title='Please select language.', size=(300, 150),style=wx.DEFAULT_FRAME_STYLE & ~(wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.CLOSE_BOX))
+        system_lang = parse_system_language_to_lang_id()
+        settings['select_lang'] = system_lang
+        save_settings(settings)
+        self.SetTitle(get_lang('54', system_lang))
+
+        # 窗口初始化
+        self.Icon = wx.Icon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')), wx.BITMAP_TYPE_ICO)
+
+        # 创建面板
+        panel = wx.Panel(self)
+
+        # 面板控件
+        wx.StaticText(panel, -1, get_lang('54', system_lang), pos=(60, 0))
+        choices = [i['lang_name'] for i in langs]
+
+        nxt_btn = wx.Button(panel, -1, get_lang('55', system_lang), (200, 80))
+        
+        self.lang_choice = wx.Choice(panel, -1, (75, 30), choices=choices)
+        self.lang_choice.SetSelection(system_lang)
+        
+        self.lang_choice.Bind(wx.EVT_CHOICE, self.on_choice_change)
+        nxt_btn.Bind(wx.EVT_BUTTON, self.on_nxt_btn)
+        
+    def on_choice_change(self, event):
+        settings['select_lang'] = self.lang_choice.GetSelection()
+        save_settings(settings)
+        
+    def on_nxt_btn(self, event):
+        self.Close()
+
 # 主窗口绘制和事件监听
 class MainWindow(wx.Frame):
     def __init__(self, parent=None):
@@ -349,9 +385,6 @@ class MainWindow(wx.Frame):
         # 帮助菜单
         help_menu = wx.Menu()
         help_menu.Append(wx.ID_ABOUT, get_lang('0a'))
-        # doc = help_menu.Append(ID_DOC, '文档(&D)')
-        # if not(is_installed_doc):
-        #     doc.Enable(False)
         
         # 更新菜单
         update_menu = wx.Menu()
@@ -361,54 +394,24 @@ class MainWindow(wx.Frame):
         # 设置菜单
         view_menu = wx.Menu()
         view_menu.Append(ID_SETTING, get_lang('05')) 
-        
-        # 扩展菜单
-        extension_menu = wx.Menu()
-        offical_extension_menu = wx.Menu()
-        extension_menu.AppendSubMenu(offical_extension_menu, '官方扩展(&O)')
-        if not any(show_list):
-            # 无官方扩展提示
-            offical_extension_menu.Append(wx.ID_ANY, '暂无官方扩展').Enable(False)
-        else:
-            # 加载官方扩展菜单
-            for index, id_data, show in zip(indexes, package_id, show_list):
-                if show:
-                    offical_extension_menu.Append(id_data, get_lang(index)) # 给菜单项添加ID，方便绑定事件
-        offical_extension_menu.Append(ID_MANAGE, '管理扩展(&M)')
-        
+ 
         # 添加菜单到菜单栏
         logger.debug('添加菜单到菜单栏')
         menubar.Append(file_menu, get_lang('01'))
         menubar.Append(view_menu, get_lang('04'))
         menubar.Append(update_menu, get_lang('06'))
         menubar.Append(help_menu, get_lang('09'))
-        menubar.Append(extension_menu, '扩展(&X)')
         
         # 绑定事件
-        extension_menu.Bind(wx.EVT_MENU, self.on_parse_offical_extension)
         self.Bind(wx.EVT_MENU, self.on_exit, id=wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.on_about, id=wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self.on_update, id=ID_UPDATE)
         self.Bind(wx.EVT_MENU, self.on_update_log, id=ID_UPDATE_LOG)
         self.Bind(wx.EVT_MENU, self.on_clean_cache, id=ID_CLEAN_CACHE)
         self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
-        self.Bind(wx.EVT_MENU, self.on_doc, id=ID_DOC)
         
         # 设置菜单栏
         self.SetMenuBar(menubar)
-        
-    def on_doc(self, event):
-        '''打开文档'''
-        logger.info('打开文档')
-        if is_installed_lang_doc:
-            os.startfile(str(get_resource_path('docs', f'{get_lang_system_name()}.chm')))
-        else:
-            os.startfile(str(get_resource_path('docs', 'en.chm')))
-        
-    def on_manage_extension(self, event):
-        '''管理扩展'''
-        logger.info('打开扩展管理窗口')
-        run_software('install_pack.py' ,'inst_pks.exe')
         
     def on_check_update_result(self, event):
         '''检查更新结果'''
@@ -593,16 +596,6 @@ class MainWindow(wx.Frame):
         setting_window.ShowModal()
         setting_window.Destroy()
 
-    def on_parse_offical_extension(self, event: wx.CommandEvent):
-        '''解析官方扩展'''
-        logger.info('打开官方扩展')
-        id_num = event.GetId()
-        match id_num:
-            case 1: # 测试扩展
-                run_software(os.path.join(install_location[1], 'hello.py'), None)
-            case SpecialExtensionID.ID_MANAGE: # 管理扩展
-                self.on_manage_extension(event)
-
 class AboutWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
         logger.info('初始化关于窗口')
@@ -621,7 +614,7 @@ class AboutWindow(wx.Dialog):
         version_status_text = '预览版' if ('alpha' in __version__) or ('beta' in __version__) else ''
         wx.StaticBitmap(panel, -1, image, wx.Point(0, 0))
         wx.StaticText(panel, -1, get_lang('1c').format(__version__, version_status_text), wx.Point(64, 15))
-        if dev_config['verify_clickmouse']:
+        if not dev_config['verify_clickmouse']:
             wx.StaticText(panel, -1, '此clickmouse不是官方版本', wx.Point(64, 30))
         wx.StaticText(panel, -1, get_lang('1d'), wx.Point(5, 100), wx.Size(270, 50))
         
@@ -1207,12 +1200,8 @@ if __name__ == '__main__':
             run_software('init.py', 'cminit.exe')
         else:
             app = wx.App()
-            is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
-            with open('packages.json', 'r', encoding='utf-8') as f:
-                packages = json.load(f)
-
-            package_list, indexes, install_location, package_id, show_list = get_packages()
-
+            if os.path.exists(str(data_path / 'first_run')):
+                main(SelectLanguage)
             main()
             app.MainLoop()
             logger.info('程序退出')

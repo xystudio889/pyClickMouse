@@ -422,6 +422,7 @@ Gui/res/docs/*
 Gui/docs/*/*.chm
 is_author
 dev.dat
+*.zip
 
 # nuitka build file
 *.build/
