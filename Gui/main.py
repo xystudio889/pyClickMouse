@@ -279,6 +279,8 @@ class SelectLanguage(wx.Frame):
         save_settings(settings)
         
     def on_nxt_btn(self, event):
+        with open(data_path / 'first_run', 'w'):
+            pass
         self.Close()
 
 # 主窗口绘制和事件监听
@@ -1196,12 +1198,9 @@ if __name__ == '__main__':
         command()
     else:
         # 调用GUI工具
-        if not(data_path / 'first_run').exists():
-            run_software('init.py', 'cminit.exe')
-        else:
-            app = wx.App()
-            if os.path.exists(str(data_path / 'first_run')):
-                main(SelectLanguage)
-            main()
-            app.MainLoop()
-            logger.info('程序退出')
+        app = wx.App()
+        if not os.path.exists(str(data_path / 'first_run')):
+            main(SelectLanguage)
+        main()
+        app.MainLoop()
+        logger.info('程序退出')
