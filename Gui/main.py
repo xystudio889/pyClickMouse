@@ -17,8 +17,8 @@ from datetime import datetime # 用于检查缓存的时间和现在相差的时
 import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
-import uiStyles # 软件界面样式
-from sharelibs import (run_software, in_dev)
+# import uiStyles # 软件界面样式
+# from sharelibs import (run_software, in_dev)
 import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
@@ -244,6 +244,7 @@ should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+
 # 字体：大字
 big_font = QFont()
 big_font.setFamily('宋体')
@@ -483,7 +484,7 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         update_log.triggered.connect(self.show_update_log)
         clean_cache_action.triggered.connect(self.clean_cache)
-        update_check.triggered.connect(self.on_update)
+        update_check.triggered.connect(lambda: self.on_update(True))
         settings_action.triggered.connect(self.show_settings)
             
     def show_about(self):
@@ -505,10 +506,17 @@ class MainWindow(QMainWindow):
         '''显示设置窗口'''
         pass
     
-    def on_update(self):
+    def on_update(self, judge = False):
         '''显示更新提示'''
-        update_window = UpdateWindow()
-        update_window.exec()
+        if judge:
+            if result[0]: # 检查到需要更新
+                update_window = UpdateWindow()
+                update_window.exec()
+            else:
+                QMessageBox.information(self, get_lang('16'), get_lang('19'))
+        else:
+            update_window = UpdateWindow()
+            update_window.exec()
         
     def on_mouse_left(self):
         logger.info('左键连点')
