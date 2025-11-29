@@ -10,17 +10,18 @@ import pyautogui # 鼠标操作库
 import threading # 用于鼠标点击
 from time import sleep, time # 延迟
 from webbrowser import open as open_url # 关于作者
-from version import __version__, __author__ # 版本信息
+from version import __version__ # 版本信息
 from log import Logger # 日志库
 from check_update import check_update # 更新检查
 from datetime import datetime # 用于检查缓存的时间和现在相差的时间
 import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
-# import uiStyles # 软件界面样式
+import uiStyles # 软件界面样式
 from sharelibs import (run_software, in_dev)
 import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
+import winreg # 注册表库
 
 logger = Logger('主程序日志')
 logger.info('日志系统启动')
@@ -54,7 +55,7 @@ def get_lang(lang_package_id, lang_id = None):
     try:
         return lang_text.get(lang_package_id, default_lang_text[lang_package_id])
     except KeyError:
-        logger.critical(f'错误：出现一个不存在的语言包id:{lang_package_id}')
+        logger.error(f'错误：出现一个不存在的语言包id:{lang_package_id}')
         return 'Language not found'
     except UnboundLocalError:
         lang_text = {}
@@ -100,13 +101,23 @@ def load_update_cache():
 def save_update_cache(**kwargs):
     '''写入更新缓存文件'''
     logger.info('写入缓存文件')
+    
+    update_info = kwargs.get('update_info', None)
+    update_log = cache_path / 'update_log.md'
+    
     cache_data = {
         'last_check_time': time(),
         **kwargs
     }
     with open(update_cache_path, 'w', encoding='utf-8') as f:
         json.dump(cache_data, f)
-        
+    
+    with open(update_log, 'w', encoding='utf-8') as f:
+        if update_info:
+            f.write(update_info)
+        else:
+            f.write('更新内容获取失败')
+
 def should_check_update():
     '''
     检查是否应该检查更新
@@ -151,7 +162,7 @@ def get_packages():
     package_index = [] # 包索引
     show = []
     
-    # # 加载包信息
+    # 加载包信息
     # for package in packages:
     #     list_packages.append(package.get('package_name', None))
     #     lang_index.append(package.get('package_name_lang_index', None))
@@ -180,6 +191,24 @@ def check_doc_exists():
         is_installed_this_lang_docs = False
 
     return (is_installed_docs, is_installed_this_lang_docs)
+
+def get_system_language():
+    '''通过Windows注册表获取系统语言'''
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International")
+        lang, _ = winreg.QueryValueEx(key, "LocaleName")
+        return lang
+    except Exception:
+        return 'en-US'
+    
+def parse_system_language_to_lang_id():
+    '''将系统语言转换为语言ID'''
+    system_lang = get_system_language()
+    for i in langs:
+        if i['is_official']:
+            if i.get('lang_system_name', 'en-US') == system_lang:
+                return i['lang_id']
+    return 0
 
 class QtThread(QThread):
     """检查更新工作线程"""
@@ -215,16 +244,75 @@ should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+# 字体：大字
+big_font = QFont()
+big_font.setFamily('宋体')
+big_font.setPointSize(16)
+big_font.setBold(True)
 
 logger.debug('定义语言包')
 with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
     langs = json.load(f)
 logger.debug('定义资源完成')
 
-with open(get_resource_path('versions.json'), 'r') as f:
-    __version__ = json.load(f)['clickmouse_in_qt']
-
 logger.debug('加载ui')
+
+class SelectLanguage(QMainWindow):
+    def __init__(self, parent=None):
+        # 初始化
+        logger.info('初始化')
+        super().__init__()
+        
+        self.system_lang = parse_system_language_to_lang_id()
+
+        self.setWindowIcon(icon)
+        self.setGeometry(100, 100, 200, 100)
+        self.setWindowTitle(get_lang('54', self.system_lang))
+        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
+        
+        self.init_ui()
+    
+    def init_ui(self):
+        settings['select_lang'] = self.system_lang
+        save_settings(settings)
+
+        # 创建面板
+        logger.debug('创建面板')
+        widget = QWidget()
+        self.setCentralWidget(widget)
+        layout = QVBoxLayout(widget)
+
+        # 面板控件
+        logger.debug('创建面板控件')
+        text = QLabel(get_lang('54', self.system_lang))
+        choices = [i['lang_name'] for i in langs]
+
+        nxt_btn = QPushButton(get_lang('55', self.system_lang))
+        
+        self.lang_choice = QComboBox()
+        self.lang_choice.addItems(choices) # 语言选择下拉框
+        
+        self.lang_choice.setCurrentIndex(self.system_lang)
+        
+        self.lang_choice.currentIndexChanged.connect(self.on_choice_change)
+        nxt_btn.clicked.connect(self.on_nxt_btn)
+        
+        # 布局
+        logger.debug('布局')
+        layout.addWidget(text)
+        layout.addWidget(self.lang_choice)
+        layout.addWidget(nxt_btn)
+        
+        self.setLayout(layout)
+
+    def on_choice_change(self, event):
+        settings['select_lang'] = self.lang_choice.currentIndex()
+        save_settings(settings)
+        
+    def on_nxt_btn(self, event):
+        with open(data_path / 'first_run', 'w'):
+            pass
+        self.close()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -244,14 +332,15 @@ class MainWindow(QMainWindow):
         self.running = False
         self.paused = False
         self.click_thread = None
+        self.show_update_in_start = False # 是否在启动时显示更新提示
         
         logger.debug('初始化ui')
-        
-        self.on_check_update()
         self.init_ui()
         
-    def on_check_update(self):
         logger.debug('检查更新')
+        self.on_check_update()
+        
+    def on_check_update(self):
         # 检查更新
         if should_check_update_res:
             shutil.rmtree(str(cache_path / 'logs'), ignore_errors=True) # 删除旧缓存
@@ -260,7 +349,7 @@ class MainWindow(QMainWindow):
             self.check_update_thread.start()
         else:
             logger.info('距离上次更新检查不到1天，使用缓存')
-            self.on_check_update_result(update_cache) # 使用缓存
+            self.on_check_update_result(update_cache)
             
     def on_check_update_result(self, check_data):
         '''检查更新结果'''
@@ -277,12 +366,14 @@ class MainWindow(QMainWindow):
             if result[1] != -1:  # -1表示函数出错
                 if should_check_update_res:
                     save_update_cache(should_update=result[0], latest_version=result[1], update_info=result[2]) # 缓存最新版本
+                    pass
                 if result[0]:  # 检查到需要更新
                     logger.info('检查到更新')
                     # 弹出更新窗口
-                    # window = UpdateWindow(self)
-                    # window.ShowModal()
-                    # window.Destroy()
+                    self.show_update_in_start = True
+                    if should_check_update_res:
+                        # 弹出更新提示
+                        self.on_update()
             else:
                 if self.check_update_thread.isFinished():
                     logger.error(f'检查更新错误: {result[0]}')
@@ -392,6 +483,8 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         update_log.triggered.connect(self.show_update_log)
         clean_cache_action.triggered.connect(self.clean_cache)
+        update_check.triggered.connect(self.on_update)
+        settings_action.triggered.connect(self.show_settings)
             
     def show_about(self):
         '''显示关于窗口'''
@@ -407,6 +500,15 @@ class MainWindow(QMainWindow):
         '''清理缓存'''
         clean_cache_window = CleanCacheWindow()
         clean_cache_window.exec()
+    
+    def show_settings(self):
+        '''显示设置窗口'''
+        pass
+    
+    def on_update(self):
+        '''显示更新提示'''
+        update_window = UpdateWindow()
+        update_window.exec()
         
     def on_mouse_left(self):
         logger.info('左键连点')
@@ -500,7 +602,12 @@ class MainWindow(QMainWindow):
         setattr(self, 'running', False),
         self.pause_button.setText(get_lang('0f'))
     ))
-        
+    
+    def show(self):
+        super().show()
+        if self.show_update_in_start:
+            self.on_update()
+
 class AboutWindow(QDialog):
     def __init__(self):
         super().__init__()
@@ -661,12 +768,7 @@ class CleanCacheWindow(QDialog):
         
         title = QLabel(get_lang('3d'))
         
-        font = QFont()
-        font.setFamily('宋体')
-        font.setPointSize(16)
-        font.setBold(True)
-        
-        title.setFont(font)
+        title.setFont(big_font)
 
         dest = QLabel(get_lang('3e'))
         
@@ -945,17 +1047,94 @@ class CleanCacheWindow(QDialog):
                 for checkbox in self.checkbox_list:
                     checkbox.setChecked(True)
 
+class UpdateWindow(QDialog):
+    def __init__(self):
+        # 初始化
+        logger.info('初始化更新窗口')
+        super().__init__()
+        self.setWindowTitle(get_lang('29'))
+        self.setGeometry(100, 100, 300, 140)
+        self.setFixedSize(300, 140)
+        self.setWindowIcon(icon)
+        
+        self.init_ui()
+
+    def init_ui(self):
+        # 创建面板
+        logger.debug('创建面板')
+        layout = QVBoxLayout()
+        
+        # 面板控件
+        logger.debug('创建面板控件')
+        title = QLabel(get_lang('24'))
+        version = QLabel(get_lang('25').format(__version__, result[1]))
+        
+        title.setFont(big_font)
+
+        # 按钮
+        update = QPushButton(get_lang('26')) # 更新按钮
+        update_log = QPushButton(get_lang('27')) # 查看更新日志按钮
+        cancel = QPushButton(get_lang('1f')) # 取消按钮
+        
+        bottom_layout = QHBoxLayout()
+        # 绑定事件
+        logger.debug('绑定事件')
+        update.clicked.connect(self.on_update)
+        update_log.clicked.connect(self.on_open_update_log)
+        cancel.clicked.connect(self.close)
+        
+        # 布局
+        logger.debug('布局')
+        layout.addWidget(title)
+        layout.addWidget(version)
+
+        bottom_layout.addStretch(1)
+        bottom_layout.addWidget(update)
+        bottom_layout.addWidget(update_log)
+        bottom_layout.addWidget(cancel)
+
+        layout.addLayout(bottom_layout)
+        
+        self.setLayout(layout)
+
+    def on_update(self, event):
+        '''更新'''
+        open_url('https://github.com/xystudio889/pyClickMouse/releases')
+
+    def on_open_update_log(self, event):
+        # 打开更新日志
+        logger.debug('打开更新日志')
+
+        update_log = cache_path / 'update_log.md' # 更新日志路径
+        
+        if not update_log.exists(): # 重建更新日志
+            update_info = result[2]
+            
+            with open(update_log, 'w', encoding='utf-8') as f:
+                if update_info:
+                    f.write(update_info)
+                else:
+                    f.write('更新内容获取失败')
+        
+        os.startfile(update_log) # 打开更新日志
+        # 弹出提示窗口
+        QMessageBox.information(self, get_lang('16'), get_lang('28'))
+
 if __name__ == '__main__':
     # if not(data_path / 'first_run').exists():
     #     run_software('init.py', 'cminit.exe')
     # else:
+
     is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
     # with open('packages.json', 'r', encoding='utf-8') as f:
     #     packages = json.load(f)
 
     # package_list, indexes, install_location, package_id, show_list = get_packages()
 
-    window = MainWindow()
-    window.show()
+    if not(data_path / 'first_run').exists():
+        SelectLanguage_window = SelectLanguage()
+        SelectLanguage_window.show()
+    else:
+        window = MainWindow()
+        window.show()
     sys.exit(app.exec())
-
