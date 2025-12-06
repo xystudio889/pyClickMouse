@@ -184,13 +184,13 @@ def get_packages():
     package_index = [] # 包索引
     show = []
     
-    # 加载包信息
-    for package in packages:
-        list_packages.append(package.get('package_name', None))
-        lang_index.append(package.get('package_name_lang_index', None))
-        package_path.append(package.get('install_location', None))
-        package_index.append(package.get('package_id', None))
-        show.append(package.get('show_in_extension_list', True))
+    # # 加载包信息
+    # for package in packages:
+    #     list_packages.append(package.get('package_name', None))
+    #     lang_index.append(package.get('package_name_lang_index', None))
+    #     package_path.append(package.get('install_location', None))
+    #     package_index.append(package.get('package_id', None))
+    #     show.append(package.get('show_in_extension_list', True))
     return (list_packages, lang_index, package_path, package_index, show)
 
 def extract_zip(file_path, extract_path):
@@ -467,6 +467,7 @@ cache_path.mkdir(parents=True, exist_ok=True)
 should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
+icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
