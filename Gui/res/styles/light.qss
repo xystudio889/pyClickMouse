@@ -1,0 +1,89 @@
+QLabel {
+    color: black;
+}
+
+QPushButton {
+    background-color: white;
+    color: black;
+}
+
+QPushButton:hover {
+    background-color: lightskyblue;
+}
+
+QPushButton:pressed {
+    background-color: dodgerblue;
+    color: white;
+}
+
+QPushButton:disabled {
+    background-color:#f0f0f0;
+    color: #d0d0d0;
+}
+
+/* 滚动区域容器样式：白底黑边 */
+QScrollArea {
+    background-color: white;
+    border: 1px solid black;  /* 黑色边框 */
+    border-radius: 3px /* 圆角 */
+}
+
+/* 滚动条样式：白底灰边 */
+QScrollBar:vertical {
+    background-color: white;
+    width: 12px;
+    border: 1px solid gray;  /* 灰色边框 */
+    margin: 0px;  /* 确保滚动条与容器间无缝隙 */
+}
+
+/* 滚动条滑块样式 */
+QScrollBar::handle:vertical {
+    background-color: lightgray;  /* 浅灰色滑块 */
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+/* 滚动条滑块悬停样式 */
+QScrollBar::handle:vertical:hover {
+    background-color: darkgray;  /* 深灰色滑块 */
+}
+
+/* 滚动条上下箭头样式 */
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    background-color: white;
+    border: 1px solid gray;
+    height: 10px;
+}
+
+/* 滚动条角部样式（确保无缝隙） */
+QScrollArea > QWidget > QWidget {
+    background-color: white;
+}
+
+/* 横向滚动条样式 */
+/* 滚动条样式：白底灰边 */
+QScrollBar:horizontal {
+    background-color: white;
+    width: 12px;
+    border: 1px solid gray;  /* 灰色边框 */
+    margin: 0px;  /* 确保滚动条与容器间无缝隙 */
+}
+
+/* 滚动条滑块样式 */
+QScrollBar::handle:horizontal {
+    background-color: lightgray;  /* 浅灰色滑块 */
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+/* 滚动条滑块悬停样式 */
+QScrollBar::handle:horizontal:hover {
+    background-color: darkgray;  /* 深灰色滑块 */
+}
+
+/* 滚动条上下箭头样式 */
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    background-color: white;
+    border: 1px solid gray;
+    height: 10px;
+}

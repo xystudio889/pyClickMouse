@@ -1,14 +1,14 @@
-product_version = "2.3.0
+product_version = "3.0.0"
 command = python -m nuitka --remove-output --msvc=latest --company-name="xystudio" --copyright="Copyright ? 2025 xystudio" --trademarks="?xystudio?" --product-version=$(product_version) --standalone
 
 clickmouse: gui/main.py
-	$(command) --file-description="Êó±êÁ¬µãÆ÷" --product-name="ClickMouse" --windows-icon-from-ico=gui/res/icons/clickmouse/icon.ico --include-data-dir=gui/res/=res/ --include-data-file=gui/key=key --include-data-file=gui/dev.dat=dev.dat gui/main.py --file-version="2.3.0.10" --windows-console-mode="disable" --enable-plugin=pyside6
-	$(command) --file-description="Êó±êÁ¬µãÆ÷°²×°³ÌĞò" --product-name="CmInit" --windows-icon-from-ico=gui/inst_res/icons/install.ico --file-version="1.0.0.0" gui/init.py --windows-console-mode="disable"
-	$(command) --file-description="À©Õ¹²âÊÔ" --product-name="ExtensionTest" --file-version="1.0.0.0" tests/hello.py 
+	$(command) --file-description="é¼ æ ‡è¿ç‚¹å™¨" --product-name="ClickMouse" --windows-icon-from-ico=gui/res/icons/clickmouse/icon.ico --include-data-dir=gui/res/=res/ --include-data-file=gui/key=key --include-data-file=gui/dev.dat=dev.dat gui/main.py --file-version="3.0.0.12" --windows-console-mode="disable" --enable-plugin=pyside6
+# 	$(command) --file-description="é¼ æ ‡è¿ç‚¹å™¨å®‰è£…ç¨‹åº" --product-name="CmInit" --windows-icon-from-ico=gui/inst_res/icons/install.ico --file-version="1.0.0.0" gui/init.py --windows-console-mode="disable"
+# 	$(command) --file-description="æ‰©å±•æµ‹è¯•" --product-name="ExtensionTest" --file-version="1.0.0.0" tests/hello.py 
 
-clickmouse_lib: setup.py
-	python setup.py bdist_wheel
-	python setup.py sdist
+# clickmouse_lib: setup.py
+# 	python setup.py bdist_wheel
+# 	python setup.py sdist
 
-clean:
-	del -s -q -f build\ clickmouse.egg-info cython\*.c
+# clean:
+# 	del -s -q -f build\ clickmouse.egg-info cython\*.c
