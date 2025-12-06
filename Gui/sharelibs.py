@@ -5,6 +5,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 import os
 import subprocess
+import winreg
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -27,6 +28,24 @@ except FileNotFoundError:
 except json.JSONDecodeError:
     _show_message('资源损坏: 语言文件格式错误', '错误', 2)
     exit(1)
+    
+def get_style_sheet(style_name: str) -> str:
+    '''
+    获取样式表
+    '''
+    try:
+        with open(get_resource_path('styles', f'{style_name}.qss'), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f'样式表{style_name}.qss不存在')
+    
+def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
+    '''
+    替换样式表
+    '''
+    old_style_tag = f'{style_tag}: {old_style}'
+    new_style_tag = f'{style_tag}: {new_style}'
+    return style_sheet.replace(old_style_tag, new_style_tag)
     
 def load_settings():
     '''
@@ -75,3 +94,19 @@ def run_software(code_path, exe_path):
     运行软件
     '''
     subprocess.Popen(f'python {code_path}' if in_dev else f'start {exe_path}')
+    
+def is_dark_mode():
+    '''是否是深色模式'''
+    try:
+        # 打开注册表项
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", 
+                            0, winreg.KEY_READ)
+        
+        # 读取AppsUseLightTheme值（0表示深色模式，1表示浅色模式）
+        value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        winreg.CloseKey(key)
+        
+        return value == 0
+    except FileNotFoundError:
+        return False  # 注册表项不存在时默认浅色模式

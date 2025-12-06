@@ -18,8 +18,8 @@ from datetime import datetime # 用于检查缓存的时间和现在相差的时
 import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
-# import uiStyles # 软件界面样式
-# from sharelibs import (run_software, in_dev)
+from uiStyles import SelectUI # 软件界面样式
+from uiStyles.WidgetStyles import * # 界面组件样式
 import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
@@ -46,6 +46,26 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         QMessageBox.critical(None, f'{get_lang('12')}{e}', get_lang('14'))
         exit(1)
+        
+def get_style_sheet(style_name: str) -> str:
+    '''
+    获取样式表
+    '''
+    try:
+        logger.info(f'获取样式表: {style_name}')
+        with open(get_resource_path('styles', f'{style_name}.qss'), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        logger.error(f'样式表{style_name}.qss不存在')
+        raise FileNotFoundError(f'样式表{style_name}.qss不存在')
+    
+def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
+    '''
+    替换样式表
+    '''
+    old_style_tag = f'{style_tag}: {old_style}'
+    new_style_tag = f'{style_tag}: {new_style}'
+    return style_sheet.replace(old_style_tag, new_style_tag)
 
 def get_lang(lang_package_id, lang_id = None):
     lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
@@ -219,6 +239,11 @@ def get_application_instance():
         app = QApplication(sys.argv)
     return app
 
+def all_in_list(list1, list2):
+    if len(list1)!= len(list2):
+        return False
+    return all(item in list2 for item in list1)
+
 class QtThread(QThread):
     '''检查更新工作线程'''
     finished = Signal(object) # 爬取完成信号
@@ -237,11 +262,13 @@ class QtThread(QThread):
 class HotkeyListener(QObject):
     '''热键监听器类，用于在后台线程中监听全局热键'''
     pressed_key = Signal(keyboard.Key)
+    combination_pressed = Signal(list)  # 新增信号，用于发送组合键信息
     
     def __init__(self):
         super().__init__()
         self.listener = None
         self.is_listening = False
+        self.pressed_keys = set()  # 用于跟踪当前按下的键
     
     def start_listening(self):
         '''开始监听热键''' 
@@ -249,8 +276,11 @@ class HotkeyListener(QObject):
             return
             
         self.is_listening = True
-        # 创建键盘监听器
-        self.listener = keyboard.Listener(on_press=self.on_key_press)
+        # 创建键盘监听器，同时监听按下和释放事件
+        self.listener = keyboard.Listener(
+            on_press=self.on_key_press,
+            on_release=self.on_key_release
+        )
         self.listener.daemon = True  # 设置为守护线程
         self.listener.start()
     
@@ -261,23 +291,36 @@ class HotkeyListener(QObject):
             self.listener.stop()
     
     def on_key_press(self, key):
-        '''处理按键事件'''
-        # 检查是否按下了F5键
-        if hasattr(key, 'char') and key.char is not None:
-            # 普通字符键
-            pass
-        else:
-            # 特殊功能键
-            self.pressed_key.emit(key)
+        '''处理按键按下事件'''
+        # 将按下的键添加到集合中
+        self.pressed_keys.add(key)
+        self.pressed_key.emit(key)
+        
+        # 检查是否为Ctrl+Alt+A组合键
+        self.check_combination()
+    
+    def on_key_release(self, key):
+        '''处理按键释放事件'''
+        # 从集合中移除释放的键
+        if key in self.pressed_keys:
+            self.pressed_keys.remove(key)
+    
+    def check_combination(self):
+        '''检查特定的组合键'''
+        # 检查是否同时按下了Ctrl、Alt和A
+        self.combination_pressed.emit(list(map(str, self.pressed_keys)))  # 发送组合键信息
                 
 class Click(QObject):
     pause = Signal(bool)
+    click_changed = Signal(bool, bool)
     
     def __init__(self):
         super().__init__()
         self.running = False
         self.paused = False
         self.click_thread = None
+        self.right_clicked = False
+        self.left_clicked = False
         
     def mouse_left(self, delay):
         logger.info('左键连点')
@@ -287,6 +330,11 @@ class Click(QObject):
         # 停止当前运行的点击线程
         logger.info('右键连点')
         self.mouse_click(button='right', input_delay=delay)
+        
+    def set_default_clicked(self):
+        self.left_clicked = False
+        self.right_clicked = False
+        self.click_changed.emit(self.left_clicked, self.right_clicked)
     
     def mouse_click(self, button: str, input_delay: str):
         '''鼠标连点'''
@@ -297,6 +345,15 @@ class Click(QObject):
             self.paused = False
             self.pause.emit(False)
             self.click_thread.join()
+        
+        if button == 'left':
+            self.left_clicked = True
+            self.right_clicked = False
+        elif button == 'right':
+            self.right_clicked = True
+            self.left_clicked = False
+        
+        self.click_changed.emit(self.left_clicked, self.right_clicked)
 
         # 运行状态控制
         self.running = True
@@ -311,6 +368,8 @@ class Click(QObject):
             if settings.get('click_delay', '') == '':
                 QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
                 logger.error('用户输入错误：请输入有效的正整数延迟')
+
+                self.set_default_clicked()
                 return
             else:
                 if input_delay == '':
@@ -320,6 +379,8 @@ class Click(QObject):
                 else:
                     QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
                     logger.error('用户输入错误：请输入有效的正整数延迟')
+
+                    self.set_default_clicked()
                     return
 
         # 创建独立线程避免阻塞GUI
@@ -333,6 +394,8 @@ class Click(QObject):
                     except Exception as e:
                         QMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
                         logger.critical(f'发生错误:{e}')
+    
+                        self.set_default_clicked()
                         break
                 else:
                     sleep(0.1)  # 暂停时降低CPU占用
@@ -348,7 +411,43 @@ class Click(QObject):
         self.paused = not self.paused
         self.pause.emit(self.paused)
 
+class ColorGetter(QObject):
+    def __init__(self):
+        super().__init__()
+        
+        # 记录当前主题，避免不必要的重绘
+        self.current_theme = QApplication.styleHints().colorScheme()
+
+        # 初始化时应用一次主题
+        self.apply_global_theme()
+
+        # 使用定时器定期检测主题变化（例如每秒一次）
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.check_and_apply_theme)
+        self.timer.start(1000)
+
+    def check_and_apply_theme(self):
+        """检查主题是否变化，变化则重新应用"""
+        new_theme = QApplication.styleHints().colorScheme()
+        if new_theme != self.current_theme:
+            self.current_theme = new_theme
+            self.apply_global_theme()
+
+    def apply_global_theme(self):
+        """根据当前主题，为整个应用设置全局样式表"""
+        global default_style
+        theme = self.current_theme
+        app =  get_application_instance()
+
+        if theme == Qt.ColorScheme.Dark:
+            default_style = dark_mode
+            app.setStyleSheet(dark_mode)  # 全局应用
+        else:
+            default_style = light_mode
+            app.setStyleSheet(light_mode)  # 全局应用
+
 clicker = Click()
+color_getter = ColorGetter()
 
 # 变量
 logger.debug('定义资源')
@@ -368,14 +467,8 @@ cache_path.mkdir(parents=True, exist_ok=True)
 should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
-icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
-big_style_sheet = '''
-    QLabel {
-        font-size: 16px;
-        font-weight: bold;
-    }
-'''
+icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
 logger.debug('定义语言包')
 with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
@@ -383,7 +476,6 @@ with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
 logger.debug('定义资源完成')
 
 logger.debug('加载ui')
-
 class SelectLanguage(QMainWindow):
     def __init__(self):
         # 初始化
@@ -452,6 +544,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
+        app.styleHints().setColorScheme(Qt.ColorScheme.Unknown)
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
@@ -474,12 +567,7 @@ class MainWindow(QMainWindow):
         title = QLabel(get_lang('0b'))
         
         # 创建标题风格
-        title.setStyleSheet(
-            '''QLabel {
-                font-size: 20px;
-                font-weight: bold;
-            }'''
-        )
+        title.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '20px'))
         title.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         
         # 按钮
@@ -547,6 +635,9 @@ class MainWindow(QMainWindow):
         # 清理缓存动作
         clean_cache_action = file_menu.addAction(get_lang('02'))
         
+        # 退出动作
+        exit_action = file_menu.addAction(get_lang('03'))
+        
         # 设置菜单
         settings_menu = menu_bar.addMenu(get_lang('04'))
         settings_action = settings_menu.addAction(get_lang('05'))
@@ -574,8 +665,9 @@ class MainWindow(QMainWindow):
         update_log.triggered.connect(self.show_update_log)
         clean_cache_action.triggered.connect(self.show_clean_cache)
         update_check.triggered.connect(lambda: self.on_update(True))
-        settings_action.triggered.connect(self.show_settings)
+        settings_action.triggered.connect(self.show_setting)
         hotkey_help.triggered.connect(self.show_hotkey_help)
+        exit_action.triggered.connect(app.quit)
             
     def show_about(self):
         '''显示关于窗口'''
@@ -597,9 +689,10 @@ class MainWindow(QMainWindow):
         hotkey_help_window = HotkeyHelpWindow()
         hotkey_help_window.exec()
     
-    def show_settings(self):
+    def show_setting(self):
         '''显示设置窗口'''
-        pass
+        setting_window = SettingWindow(self)
+        setting_window.show()
 
     def on_check_update(self):
         # 检查更新
@@ -675,10 +768,37 @@ class MainWindow(QMainWindow):
             self.pause_button.setText(get_lang('0f'))
     
     def on_stop(self):
+        '''停止连点'''
+        logger.info('停止连点')
+
+        # 禁用按钮
         self.pause_button.setEnabled(False)
         self.stop_button.setEnabled(False)
+        
+        # 重置变量
         clicker.running = False
-        self.pause_button.setText(get_lang('0f'))
+        clicker.left_clicked = False
+        clicker.right_clicked = False
+        clicker.paused = False
+        
+        # 重置按钮样式
+        self.left_click_button.setStyleSheet(default_style)
+        self.right_click_button.setStyleSheet(default_style)
+
+    def on_click_changed(self, left, right):
+        '''click按钮状态改变'''
+        if left:
+            # 左键点击
+            self.left_click_button.setStyleSheet(selected_style)
+            self.right_click_button.setStyleSheet(default_style)
+        elif right:
+            # 右键点击
+            self.right_click_button.setStyleSheet(selected_style)
+            self.left_click_button.setStyleSheet(default_style)
+        else:
+            # 未点击
+            self.left_click_button.setStyleSheet(default_style)
+            self.right_click_button.setStyleSheet(default_style)
 
 class AboutWindow(QDialog):
     def __init__(self):
@@ -705,8 +825,9 @@ class AboutWindow(QDialog):
         self.image_label = QLabel()
         # 加载图片
         self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'))
-
-        version = QLabel(f'Qclickmouse,版本号{__version__}\n\n一款快捷，使用python制作的鼠标连点器')
+        
+        version_status_text = '预览版' if ('alpha' in __version__) or ('beta' in __version__) or ('.dev' in __version__) else ''
+        version = QLabel(get_lang('1c').format(__version__, version_status_text))
         # version = QLabel(get_lang('1c').format(__version__, version_status_text))
         if not dev_config['verify_clickmouse']:
             not_official_version = QLabel('此clickmouse不是官方版本')
@@ -840,7 +961,7 @@ class CleanCacheWindow(QDialog):
         
         title = QLabel(get_lang('3d'))
         
-        title.setStyleSheet(big_style_sheet)
+        title.setStyleSheet(big_title)
 
         dest = QLabel(get_lang('3e'))
         
@@ -1141,7 +1262,7 @@ class UpdateWindow(QDialog):
         title = QLabel(get_lang('24'))
         version = QLabel(get_lang('25').format(__version__, result[1]))
         
-        title.setStyleSheet(big_style_sheet)
+        title.setStyleSheet(big_title)
 
         # 按钮
         update = QPushButton(get_lang('26')) # 更新按钮
@@ -1201,11 +1322,12 @@ class TrayApp:
         main_window.show()
         
         # 创建设置延迟窗口
-        self.set_dalay_window = FastSetDelayWindow()
+        self.set_dalay_window = FastSetClickWindow()
         
         # 创建热键监听器
         self.hotkey_listener = HotkeyListener()
         self.hotkey_listener.pressed_key.connect(self.on_key_pressed)
+        self.hotkey_listener.combination_pressed.connect(self.on_combination_pressed)
         
         # 创建系统托盘图标
         self.setup_tray_icon()
@@ -1214,6 +1336,7 @@ class TrayApp:
         self.start_hotkey_listener()
         
         clicker.pause.connect(main_window.on_pause)
+        clicker.click_changed.connect(main_window.on_click_changed)
         
     def setup_tray_icon(self):
         '''设置系统托盘图标'''
@@ -1359,6 +1482,21 @@ class TrayApp:
     def run(self):
         '''运行应用程序'''
         sys.exit(self.app.exec())
+        
+    def on_combination_pressed(self, combination):
+        '''处理组合键事件'''
+        temp_combination = combination.copy()
+        
+        for index, i in enumerate(temp_combination):
+            temp_combination[index] = i.replace('Key.', '').replace('_l', '').replace('_r', '').replace('_gr', '')
+        combination = temp_combination.copy()
+
+        if all_in_list(combination, ['<68>', 'ctrl', 'alt']):
+            # 处理Ctrl+Alt+D组合键
+            if main_window.isVisible():
+                main_window.hide()
+            else:
+                main_window.show()
 
 class HotkeyHelpWindow(QDialog):
     def __init__(self):
@@ -1377,7 +1515,7 @@ class HotkeyHelpWindow(QDialog):
         # 面板控件
         logger.debug('创建面板控件')
         title = QLabel('热键帮助')
-        title.setStyleSheet(big_style_sheet)
+        title.setStyleSheet(big_title)
 
         layout.addWidget(title)
         
@@ -1403,7 +1541,7 @@ class HotkeyHelpWindow(QDialog):
         
         self.setLayout(layout)
 
-class FastSetDelayWindow(QDialog):
+class FastSetClickWindow(QDialog):
     def __init__(self):
         logger.info('初始化快速设置延迟窗口')
         super().__init__()
@@ -1432,10 +1570,83 @@ class FastSetDelayWindow(QDialog):
         
         # 布局
         self.setLayout(layout)
+        
+    def exec(self):
+        '''显示窗口'''
+        super().exec()
+        self.input_delay.setText(main_window.input_delay.text())
     
     def on_input_delay_changed(self, text):
         '''输入框内容变化事件'''
         main_window.input_delay.setText(text)
+        
+class SettingWindow(SelectUI):
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self.setGeometry(300, 300, 600, 400)  # 增加窗口大小以容纳更多内容
+        self.setWindowTitle('设置')
+        self.setParent(parent)
+        self.setWindowIcon(icon)
+        self.setWindowFlags(
+            Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
+        ) # 设置窗口属性
+        # self.setFixedSize(self.width(), self.height()) # 固定窗口大小
+        
+        self.page_choice_buttons = ['测试A', '测试B', '测试C', '测试D', '测试E', 
+                                   '测试F', '测试G', '测试H', '测试I', '测试J']
+        self.init_ui()
+
+    def create_setting_page(self, title):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        
+        # 标题标签
+        title_label = QLabel(title)
+        title_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '24px'))
+        layout.addWidget(title_label)
+        
+        # 内容标签
+        content_label = QLabel('该设置暂无描述')
+        content_label.setStyleSheet('color: gray;font-size: 16px;')
+        layout.addWidget(content_label)
+        
+        def set_content_label(text):
+            content_label.setText(text)
+        
+        # 添加一些示例设置控件
+        match title:
+            case '测试A':
+                # 测试A的特定设置
+                set_content_label('测试A的描述')
+                checkbox = QCheckBox('启用测试A功能')
+                layout.addWidget(checkbox)
+            case '测试B':
+                # 测试B的特定设置
+                combo_layout = QHBoxLayout()
+                combo_label = QLabel('选择模式:')   
+                combo = QComboBox()
+                combo.addItems(['模式1', '模式2', '模式3'])
+                combo_layout.addWidget(combo_label)
+                combo_layout.addWidget(combo)
+                layout.addLayout(combo_layout)
+
+        # 添加弹簧，让内容靠上显示
+        layout.addStretch()
+        
+        return page
+    
+    def on_page_button_clicked(self, index):
+        '''处理页面按钮点击事件'''
+        # 切换到对应的页面
+        self.stacked_widget.setCurrentIndex(index)
+        
+        # 更新按钮样式
+        for i, button in enumerate(self.buttons):
+            if i == index:
+                button.setStyleSheet(selected_style)
+            else:
+                button.setStyleSheet(default_style)  # 恢复默认样式
 
 def main():
     app = TrayApp()
@@ -1453,7 +1664,6 @@ if __name__ == '__main__':
 
     # package_list, indexes, install_location, package_id, show_list = get_packages()
 
-    
     if not (data_path / 'first_run').exists():
         SelectLanguage_window = SelectLanguage()
         SelectLanguage_window.show()
