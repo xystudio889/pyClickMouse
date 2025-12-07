@@ -17,7 +17,6 @@ import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
 import sys # 系统库
-import uiStyles.old # 软件界面样式
 from sharelibs import (run_software, in_dev)
 import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
@@ -387,11 +386,6 @@ class MainWindow(wx.Frame):
         # 绑定事件
         extension_menu.Bind(wx.EVT_MENU, self.on_parse_offical_extension)
         self.Bind(wx.EVT_MENU, self.on_exit, id=wx.ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.on_about, id=wx.ID_ABOUT)
-        self.Bind(wx.EVT_MENU, self.on_update, id=ID_UPDATE)
-        self.Bind(wx.EVT_MENU, self.on_update_log, id=ID_UPDATE_LOG)
-        self.Bind(wx.EVT_MENU, self.on_clean_cache, id=ID_CLEAN_CACHE)
-        self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
         self.Bind(wx.EVT_MENU, self.on_doc, id=ID_DOC)
         
         # 设置菜单栏
@@ -438,9 +432,6 @@ class MainWindow(wx.Frame):
                 if result[0]:  # 检查到需要更新
                     logger.info('检查到更新')
                     # 弹出更新窗口
-                    window = UpdateWindow(self)
-                    window.ShowModal()
-                    window.Destroy()
             else:
                 logger.error(f'检查更新错误: {result[0]}')
                 wx.MessageBox(f'{get_lang('18')}{result[0]}', get_lang('14'), wx.ICON_ERROR)
@@ -454,30 +445,6 @@ class MainWindow(wx.Frame):
         logger.info('退出程序')
         self.Close()
 
-    def on_about(self, event):
-        '''显示关于窗口'''
-        logger.info('显示关于窗口')
-        about_dialog = AboutWindow(self)
-        about_dialog.ShowModal()
-        about_dialog.Destroy()
-
-    def on_update(self, event):
-        '''检查更新'''
-        logger.info('检查更新')
-        if update_cache.get('should_update'):
-            window = UpdateWindow(self)
-            window.ShowModal()
-            window.Destroy()
-        else:
-            wx.MessageBox(get_lang('19'), get_lang('16'), wx.ICON_INFORMATION)
-    
-    def on_update_log(self, event):
-        '''显示更新日志'''
-        logger.info('显示更新日志')
-        update_window = UpdateLogWindow(self)
-        update_window.ShowModal()
-        update_window.Destroy()
-    
     def on_mouse_left(self, event):
         logger.info('左键连点')
         # 停止当前运行的点击线程
@@ -579,19 +546,6 @@ class MainWindow(wx.Frame):
         setattr(self, 'running', False),
         self.pause_button.SetLabel(get_lang('0f'))
     ))
-        
-    def on_clean_cache(self, event):
-        '''清理日志'''
-        window = CleanCacheWindow(self)
-        window.ShowModal()
-        window.Destroy()
-
-    def on_setting(self, event):
-        '''设置'''
-        logger.info('打开设置窗口')
-        setting_window = SettingWindow(self)
-        setting_window.ShowModal()
-        setting_window.Destroy()
 
     def on_parse_offical_extension(self, event: wx.CommandEvent):
         '''解析官方扩展'''
@@ -602,211 +556,6 @@ class MainWindow(wx.Frame):
                 run_software(os.path.join(install_location[1], 'hello.py'), None)
             case SpecialExtensionID.ID_MANAGE: # 管理扩展
                 self.on_manage_extension(event)
-
-class SettingWindow(uiStyles.old.SelectUI):
-    def __init__(self, parent=MainWindow):
-        # 初始化
-        logger.info('初始化设置窗口')
-        self.cache_setting = settings.copy()
-        super().__init__(title=filter_hotkey(get_lang('05')), size=(400, 300))
-        self.page_titles = [get_lang('42'), get_lang('43'), get_lang('44')]
-        self.create_pages()
-        self.switch_page(0)
-        
-        # 创建保存，应用和取消按钮
-        # 创建sizer
-        save_panel = wx.Panel(self.main_panel)
-        save_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        # 创建三个功能按钮
-        self.save_btn = wx.Button(save_panel, label=get_lang('3f'))
-        self.apply_btn = wx.Button(save_panel, label=get_lang('40'))
-        self.cancel_btn = wx.Button(save_panel, label=get_lang('41'))
-        
-        self.save_btn.Enable(False)  # 初始状态禁用保存按钮
-        self.apply_btn.Enable(False)  # 初始状态禁用应用按钮
-        
-        # 添加按钮到sizer
-        save_button_sizer.AddSpacer(50)
-        save_button_sizer.Add(self.save_btn, 0, wx.ALL, 0)
-        save_button_sizer.AddSpacer(50)
-        save_button_sizer.Add(self.apply_btn, 0, wx.ALL, 0)
-        save_button_sizer.AddSpacer(50)
-        save_button_sizer.Add(self.cancel_btn, 0, wx.ALL, 0)
-        
-        save_panel.SetSizer(save_button_sizer)
-        self.main_sizer.Add(save_panel, 1, wx.ALL | wx.EXPAND, 0)
-
-        # 绑定事件
-        self.save_btn.Bind(wx.EVT_BUTTON, self.on_save)
-        self.apply_btn.Bind(wx.EVT_BUTTON, self.on_apply)
-        self.cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-        self.Bind(wx.EVT_CLOSE, self.on_cancel)
-        logger.info('初始化设置窗口完成')
-            
-    def draw_page(self, index):
-        '''根据索引绘制页面内容'''
-        match index:
-            case 0:
-                main_sizer = wx.BoxSizer(wx.VERTICAL)
-                self.pages[index].SetSizer(main_sizer)  # 设置内容面板的布局管理器
-
-                # 更新设置内容
-                logger.info('加载更新设置页面')
-                # 更新设置ui
-                lang_list = [i['lang_name'] for i in langs]
-                update_setting_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                update_setting_sizer.Add(wx.StaticText(self.pages[index], label=get_lang('45'), pos=(0, 10)).SetFont(self.setting_font), 0, wx.ALL, 5)
-                self.lang_choice = wx.Choice(self.pages[index], pos=(55, 5), choices=lang_list)
-                update_setting_sizer.AddSpacer(50)
-                update_setting_sizer.Add(self.lang_choice, 0, wx.ALL, 5)
-                self.lang_choice.SetSelection(self.cache_setting.get('select_lang', 0))
-                main_sizer.Add(update_setting_sizer, 0, wx.ALL, 5)
-                
-                # 绑定事件
-                self.lang_choice.Bind(wx.EVT_CHOICE, self.on_lang_select_change)  # 绑定选择改变事件
-            case 1:
-                main_sizer = wx.BoxSizer(wx.VERTICAL)
-                self.pages[index].SetSizer(main_sizer)  # 设置内容面板的布局管理器
-
-                # 连点器设置内容
-                logger.info('加载连点器设置页面')
-                # 连点器设置ui
-                default_setting_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                default_setting_sizer.Add(wx.StaticText(self.pages[index], label=get_lang('46'), pos=(0, 10)).SetFont(self.setting_font), 1, wx.ALL, 5)
-                self.delay_input = wx.TextCtrl(self.pages[index], value=str(self.cache_setting.get('click_delay', '')), pos=(300, 90))
-                
-                default_setting_sizer.AddSpacer(150)
-                default_setting_sizer.Add(self.delay_input, 0, wx.ALL)
-                main_sizer.Add(default_setting_sizer, 0, wx.ALL, 5)
-                
-                self.failed_use_default_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                self.failed_use_default = wx.CheckBox(self.pages[index], label=get_lang('47'), pos=(0, 70))
-                self.failed_use_default_sizer.Add(self.failed_use_default, 0, wx.ALL | wx.EXPAND, 5)
-                self.failed_use_default.SetValue(self.cache_setting.get('failed_use_default', False))
-                main_sizer.Add(self.failed_use_default_sizer, 0, wx.ALL | wx.EXPAND, -5)
-                
-                if self.cache_setting.get('click_delay', '') == '':
-                    self.failed_use_default.Enable(False) # 禁用失败默认值选择框
-                else:
-                    self.failed_use_default.Enable(True) # 启用失败默认值选择框
-
-                # 绑定事件
-                self.delay_input.Bind(wx.EVT_TEXT, self.on_input_change)  # 绑定输入改变事件
-                self.failed_use_default.Bind(wx.EVT_CHECKBOX, self.on_failed_use_default_change)  # 绑定选择改变事件
-            case 2:
-                main_sizer = wx.BoxSizer(wx.VERTICAL)
-                self.pages[index].SetSizer(main_sizer)  # 设置内容面板的布局管理器
-
-                # 更新设置内容
-                logger.info('加载更新设置页面')
-                # 更新设置ui
-                update_setting_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                update_setting_sizer.Add(wx.StaticText(self.pages[index], label=get_lang('48'), pos=(0, 10)).SetFont(self.setting_font), 0, wx.ALL, 5)
-                choice = wx.Choice(self.pages[index], pos=(55, 5), choices=[get_lang('49'), get_lang('4a')])
-                update_setting_sizer.AddSpacer(50)
-                update_setting_sizer.Add(choice, 0, wx.ALL, 5)
-                choice.SetSelection(self.cache_setting.get('update_notify', 0))
-                main_sizer.Add(update_setting_sizer, 0, wx.ALL, 5)
-                
-                # 绑定事件
-                choice.Bind(wx.EVT_CHOICE, self.on_choice_change)  # 绑定选择改变事件
-
-    def get_lang_after_setting(self, lang_package_id):
-        return get_lang(lang_package_id, self.cache_setting.get('select_lang', 0))
-
-    def on_choice_change(self, event):
-        self.on_change(event, 'update_notify', 0, event.GetSelection)
-        
-    def on_lang_select_change(self, event):
-        global settings
-        
-        self.on_change(event, 'select_lang', 0, event.GetSelection)
-        
-        if event.GetSelection() == settings.get('select_lang', 0):
-            return  # 选择相同的语言，不作处理
-
-        lang_restart = uiStyles.MoreButtonDialog(self, self.get_lang_after_setting('16'), self.get_lang_after_setting('4f'), [self.get_lang_after_setting('1e'), self.get_lang_after_setting('4b')], uiStyles.Style.WARNING, wx.DEFAULT_DIALOG_STYLE & ~(wx.CLOSE_BOX))
-        result = lang_restart.ShowModal()
-        if result == 1:
-            self.on_change(event, 'select_lang', 0, settings.get, ('select_lang', 0)) # 恢复选择框
-            self.lang_choice.SetSelection(settings.get('select_lang', 0)) # 恢复选择框
-            return  # 取消关闭操作
-        
-    def on_input_change(self, event):
-        new_value = event.GetString # 获取输入值 
-        if new_value() == '': # 输入为空
-            self.failed_use_default.Enable(False) # 禁用失败默认值选择框
-        else:
-            self.failed_use_default.Enable(True) # 启用失败默认值选择框
-        self.on_change(event, 'click_delay', '', new_value)
-            
-    def on_failed_use_default_change(self, event):
-        self.on_change(event, 'failed_use_default', False, event.IsChecked)
-    
-    def on_change(self, event, key, default_value, event_handler, args=()):
-        new_value = event_handler(*args) # 获取输入值 
-        self.cache_setting[key] = new_value # 更新缓存设置
-        
-        temp_cache_setting = self.cache_setting.copy() # 临时缓存设置
-        try:
-            temp_cache_setting['click_delay'] = int(temp_cache_setting['click_delay']) # 尝试转换为整数
-        except:
-            pass
-
-        if temp_cache_setting == settings:
-            self.save_btn.Enable(False)
-            self.apply_btn.Enable(False)
-        else:
-            self.save_btn.Enable(True)
-            self.apply_btn.Enable(True)
-        event.Skip()
-        
-    def on_save(self, event):
-        global settings
-        if self.on_apply(event) != -1:
-            self.Destroy()
-        else:
-            return -1
-
-    def on_apply(self, event):
-        '''应用按钮事件'''
-        global settings
-        try:
-            if self.cache_setting.get('click_delay', '') != '':
-                self.cache_setting['click_delay'] = int(self.cache_setting['click_delay'])
-        except ValueError:
-            wx.MessageBox(get_lang('51'), get_lang('14'), wx.ICON_ERROR)
-            logger.error(f'用户输入错误：请输入有效的正整数延迟')
-            return -1
-        settings.update(self.cache_setting)
-        save_settings(settings)
-        self.save_btn.Enable(False)
-        self.apply_btn.Enable(False)
-
-    def on_cancel(self, event):
-        '''取消按钮事件'''
-        global settings
-        try:
-            if self.cache_setting.get('click_delay', '') != '':
-                self.cache_setting['click_delay'] = int(self.cache_setting['click_delay'])
-        except ValueError as e:
-            wx.MessageBox(get_lang('51'), get_lang('14'), wx.ICON_ERROR)
-            logger.error(f'用户输入错误：请输入有效的正整数延迟')
-            return # 取消关闭操作
-
-        if self.cache_setting != settings:
-            dlg = wx.MessageDialog(self, 
-                get_lang('52'),
-                get_lang('53'),
-                wx.YES_NO | wx.CANCEL | wx.ICON_WARNING)
-            result = dlg.ShowModal()
-            if result == wx.ID_YES:
-                if self.on_save(event) == -1:
-                    return  # 保存失败，取消关闭操作
-            elif result == wx.ID_CANCEL:
-                return  # 取消关闭操作
-        self.Destroy()
 
 logger.debug('加载ui完成')
 # 显示窗口
@@ -828,16 +577,17 @@ if __name__ == '__main__':
         command()
     else:
         # 调用GUI工具
-        if not(data_path / 'first_run').exists():
-            run_software('init.py', 'cminit.exe')
-        else:
+        # if not(data_path / 'first_run').exists():
+        #     run_software('init.py', 'cminit.exe')
+        # else:
             app = wx.App()
             is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
             # with open('packages.json', 'r', encoding='utf-8') as f:
             #     packages = json.load(f)
 
             package_list, indexes, install_location, package_id, show_list = get_packages()
+            
+            main()
 
-            main(SettingWindow)
             app.MainLoop()
             logger.info('程序退出')

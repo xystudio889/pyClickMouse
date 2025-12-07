@@ -1,10 +1,18 @@
 QLabel {
-    color: white;
+    color: black;
+}
+
+QMainWindow {
+    background-color: #f3f3f3;
+}
+
+QDialog {
+    background-color: #f3f3f3;
 }
 
 QPushButton {
-    background-color: #202020;
-    color: white;
+    background-color: white;
+    color: black;
 }
 
 QPushButton:hover {
@@ -13,23 +21,57 @@ QPushButton:hover {
 
 QPushButton:pressed {
     background-color: dodgerblue;
+    color: white;
 }
 
 QPushButton:disabled {
-    background-color:#202020;
-    color: #505050;
+    background-color:#f0f0f0;
+    color: #d0d0d0;
+}
+
+QComboBox {
+    background-color: white;
+    color: black;
+}
+
+QComboBox QAbstractItemView {
+    background-color: white;
+    color: black;
+}
+
+QLineEdit {
+    background-color: white;
+    color: black;
+}
+
+QMenu {
+    background-color: white;
+    color: black;
+}
+
+QMenu:selected {
+    background-color: #e0e0e0;
+}
+
+QMenuBar::item:selected {
+    background-color: #e0e0e0;
+}
+
+/* 选中且悬停 */
+QCheckBox {
+    color: black;
 }
 
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
-    background-color: #303030;
-    border: 1px solid white;  /* 白色边框 */
+    background-color: white;
+    border: 1px solid black;  /* 黑色边框 */
     border-radius: 3px /* 圆角 */
 }
 
 /* 滚动条样式：白底灰边 */
 QScrollBar:vertical {
-    background-color: #202020;
+    background-color: white;
     width: 12px;
     border: 1px solid gray;  /* 灰色边框 */
     margin: 0px;  /* 确保滚动条与容器间无缝隙 */
@@ -38,32 +80,31 @@ QScrollBar:vertical {
 /* 滚动条滑块样式 */
 QScrollBar::handle:vertical {
     background-color: lightgray;  /* 浅灰色滑块 */
-    border-radius: 3px;
+    border-radius: 4px;
     min-height: 30px;
 }
 
 /* 滚动条滑块悬停样式 */
 QScrollBar::handle:vertical:hover {
-    background-color: gray;  /* 灰色滑块 */
+    background-color: darkgray;  /* 深灰色滑块 */
 }
 
 /* 滚动条上下箭头样式 */
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    background-color: #202020;
+    background-color: white;
     border: 1px solid gray;
     height: 10px;
 }
 
 /* 滚动条角部样式（确保无缝隙） */
 QScrollArea > QWidget > QWidget {
-    background-color: #303030;
+    background-color: white;
 }
 
 /* 横向滚动条样式 */
-
 /* 滚动条样式：白底灰边 */
 QScrollBar:horizontal {
-    background-color: #202020;
+    background-color: white;
     width: 12px;
     border: 1px solid gray;  /* 灰色边框 */
     margin: 0px;  /* 确保滚动条与容器间无缝隙 */
@@ -72,18 +113,18 @@ QScrollBar:horizontal {
 /* 滚动条滑块样式 */
 QScrollBar::handle:horizontal {
     background-color: lightgray;  /* 浅灰色滑块 */
-    border-radius: 3px;
+    border-radius: 4px;
     min-height: 30px;
 }
 
 /* 滚动条滑块悬停样式 */
 QScrollBar::handle:horizontal:hover {
-    background-color: gray;  /* 灰色滑块 */
+    background-color: darkgray;  /* 深灰色滑块 */
 }
 
 /* 滚动条上下箭头样式 */
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    background-color: #202020;
+    background-color: white;
     border: 1px solid gray;
     height: 10px;
 }

@@ -24,6 +24,7 @@ import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
+from typing import Callable # 类型提示库
 
 logger = Logger('主程序日志')
 logger.info('日志系统启动')
@@ -244,6 +245,19 @@ def all_in_list(list1, list2):
         return False
     return all(item in list2 for item in list1)
 
+def check_default_delay():
+    '''检查默认延迟是否有效'''
+    try:
+        delay = int(settings.get('click_delay', ''))
+        if not delay:
+            raise ValueError
+        if delay < 1:
+            raise ValueError
+        return True
+    except ValueError:
+        QMessageBox.critical(None, get_lang('14'), '请输入有效的正整数默认延迟')
+        return False
+
 class QtThread(QThread):
     '''检查更新工作线程'''
     finished = Signal(object) # 爬取完成信号
@@ -373,9 +387,17 @@ class Click(QObject):
                 return
             else:
                 if input_delay == '':
-                    delay = int(settings.get('click_delay', ''))
+                    if check_default_delay():
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        self.set_default_clicked()
+                        return
                 elif settings.get('failed_use_default', False):
-                    delay = int(settings.get('click_delay', ''))
+                    if check_default_delay():
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        self.set_default_clicked()
+                        return
                 else:
                     QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
                     logger.error('用户输入错误：请输入有效的正整数延迟')
@@ -416,7 +438,15 @@ class ColorGetter(QObject):
         super().__init__()
         
         # 记录当前主题，避免不必要的重绘
-        self.current_theme = QApplication.styleHints().colorScheme()
+        self.style = settings.get('select_style', 0)
+        if self.style == 0:
+            self.current_theme = QApplication.styleHints().colorScheme()
+        elif self.style == 1:
+            self.current_theme = Qt.ColorScheme.Light
+        elif self.style == 2:
+            self.current_theme = Qt.ColorScheme.Dark
+        elif self.style == 3:
+            self.current_theme = None
 
         # 初始化时应用一次主题
         self.apply_global_theme()
@@ -427,14 +457,22 @@ class ColorGetter(QObject):
         self.timer.start(1000)
 
     def check_and_apply_theme(self):
-        """检查主题是否变化，变化则重新应用"""
-        new_theme = QApplication.styleHints().colorScheme()
+        '''检查主题是否变化，变化则重新应用'''
+        self.style = settings.get('select_style', 0)
+        if self.style == 0:
+            new_theme = QApplication.styleHints().colorScheme()
+        elif self.style == 1:
+            new_theme = Qt.ColorScheme.Light
+        elif self.style == 2:
+            new_theme = Qt.ColorScheme.Dark
+        elif self.style == 3:
+            new_theme = None
         if new_theme != self.current_theme:
             self.current_theme = new_theme
             self.apply_global_theme()
 
     def apply_global_theme(self):
-        """根据当前主题，为整个应用设置全局样式表"""
+        '''根据当前主题，为整个应用设置全局样式表'''
         global default_style
         theme = self.current_theme
         app =  get_application_instance()
@@ -442,9 +480,15 @@ class ColorGetter(QObject):
         if theme == Qt.ColorScheme.Dark:
             default_style = dark_mode
             app.setStyleSheet(dark_mode)  # 全局应用
-        else:
+        elif theme == Qt.ColorScheme.Light:
             default_style = light_mode
             app.setStyleSheet(light_mode)  # 全局应用
+        else:
+            default_style = ''
+            app.setStyleSheet('')  # 全局应用
+
+data_path = Path('data')
+settings = load_settings()
 
 clicker = Click()
 color_getter = ColorGetter()
@@ -455,7 +499,6 @@ logger.debug('定义资源')
 logger.debug('定义数据路径和创建文件夹')
 
 # 定义数据路径
-data_path = Path('data')
 cache_path = Path('cache')
 update_cache_path = cache_path / 'update.json'
 
@@ -466,7 +509,6 @@ cache_path.mkdir(parents=True, exist_ok=True)
 # 创建资源
 should_check_update_res = should_check_update()
 update_cache = load_update_cache()
-settings = load_settings()
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
@@ -474,6 +516,8 @@ icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 logger.debug('定义语言包')
 with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
     langs = json.load(f)
+    
+need_restart_list = [False, False, False]
 logger.debug('定义资源完成')
 
 logger.debug('加载ui')
@@ -1317,7 +1361,10 @@ class UpdateWindow(QDialog):
 class TrayApp:
     def __init__(self):
         self.app = get_application_instance()
-        self.app.setQuitOnLastWindowClosed(False)  # 关闭窗口时不退出应用
+
+        show_tray_icon = settings.get('show_tray_icon', True)
+        if show_tray_icon:
+            self.app.setQuitOnLastWindowClosed(False)  # 关闭窗口时不退出应用
         
         # 激活主窗口
         main_window.show()
@@ -1338,7 +1385,7 @@ class TrayApp:
         
         clicker.pause.connect(main_window.on_pause)
         clicker.click_changed.connect(main_window.on_click_changed)
-        
+
     def setup_tray_icon(self):
         '''设置系统托盘图标'''
         self.tray_icon = QSystemTrayIcon()
@@ -1594,8 +1641,7 @@ class SettingWindow(SelectUI):
         ) # 设置窗口属性
         # self.setFixedSize(self.width(), self.height()) # 固定窗口大小
         
-        self.page_choice_buttons = ['测试A', '测试B', '测试C', '测试D', '测试E', 
-                                   '测试F', '测试G', '测试H', '测试I', '测试J']
+        self.page_choice_buttons = [get_lang('42'), get_lang('43'), get_lang('44')]
         self.init_ui()
 
     def create_setting_page(self, title):
@@ -1608,34 +1654,163 @@ class SettingWindow(SelectUI):
         layout.addWidget(title_label)
         
         # 内容标签
+        dest = get_style_sheet('dest')
         content_label = QLabel('该设置暂无描述')
-        content_label.setStyleSheet('color: gray;font-size: 16px;')
+        content_label.setStyleSheet(dest)
         layout.addWidget(content_label)
         
         def set_content_label(text):
             content_label.setText(text)
+            
+        need_restart_style = replace_style_sheet(dest, 'font-size', '16px', '12px')
+        
+        self.page_general = self.page_choice_buttons[0] # 默认设置
+        self.page_click = self.page_choice_buttons[1] # 连点器设置
+        self.page_update = self.page_choice_buttons[2] # 更新设置
         
         # 添加一些示例设置控件
         match title:
-            case '测试A':
-                # 测试A的特定设置
-                set_content_label('测试A的描述')
-                checkbox = QCheckBox('启用测试A功能')
-                layout.addWidget(checkbox)
-            case '测试B':
-                # 测试B的特定设置
-                combo_layout = QHBoxLayout()
-                combo_label = QLabel('选择模式:')   
-                combo = QComboBox()
-                combo.addItems(['模式1', '模式2', '模式3'])
-                combo_layout.addWidget(combo_label)
-                combo_layout.addWidget(combo)
-                layout.addLayout(combo_layout)
+            case self.page_general:
+                set_content_label('用于应用一些常规功能，可能需要重启软件。')
+                # 选择语言
+                choice_text = QLabel(get_lang('45')) # 选择语言提示
+                
+                lang_choice_layout = QHBoxLayout() # 语言选择布局
+                self.lang_choice = QComboBox()
+                self.lang_choice.addItems([i['lang_name'] for i in langs])
+                self.lang_choice.setCurrentIndex(settings.get('select_lang', 0))
+                self.lang_choice_need_restart = QLabel(get_lang('56'))
+                self.lang_choice_need_restart.setStyleSheet(need_restart_style)
+                if need_restart_list[0]:
+                    self.lang_choice_need_restart.show()
+                else:
+                    self.lang_choice_need_restart.hide()
+                
+                # 布局
+                lang_choice_layout.addWidget(choice_text)
+                lang_choice_layout.addWidget(self.lang_choice)
+                lang_choice_layout.addWidget(self.lang_choice_need_restart)
+                lang_choice_layout.addStretch(1)
+                
+                # 选择窗口风格
+                style_text = QLabel('窗口主题:') # 选择窗口风格提示
+                
+                style_layout = QHBoxLayout() # 窗口风格布局
+                style_choice = QComboBox()
+                style_choice.addItems(['跟随Windows系统', '浅色', '深色', '禁用'])
+                style_choice.setCurrentIndex(settings.get('select_style', 0))
+                self.style_choice_need_restart = QLabel(get_lang('56'))
+                self.style_choice_need_restart.setStyleSheet(need_restart_style)
+                if need_restart_list[1]:
+                    self.style_choice_need_restart.show()
+                else:
+                    self.style_choice_need_restart.hide()
+                
+                style_layout.addWidget(style_text)
+                style_layout.addWidget(style_choice)
+                style_layout.addWidget(self.style_choice_need_restart)
+                style_layout.addStretch(1)
+                
+                # 显示托盘图标
+                # 选择窗口风格  
+                tray_layout = QHBoxLayout() # 窗口风格布局
+                tray = QCheckBox('保留托盘图标')
+                tray.setChecked(settings.get('show_tray_icon', True))
+                self.tray_need_restart = QLabel('需要重启软件才能生效。')
+                self.tray_need_restart.setStyleSheet(need_restart_style)
+                if need_restart_list[2]:
+                    self.tray_need_restart.show()
+                else:
+                    self.tray_need_restart.hide()
+    
+                tray_layout.addWidget(tray)
+                tray_layout.addWidget(self.tray_need_restart)
+                tray_layout.addStretch(1)
 
+                # 布局
+                layout.addLayout(lang_choice_layout)
+                layout.addLayout(style_layout)
+                layout.addLayout(tray_layout)
+                
+                # 绑定事件
+                self.lang_choice.currentIndexChanged.connect(self.on_lang_changed)
+                style_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(style_choice.currentIndex, 'select_style', self.style_choice_need_restart, 1))
+                tray.stateChanged.connect(lambda: self.on_need_restart_setting_changed(tray.isChecked,'show_tray_icon', self.tray_need_restart, 2))
+            case self.page_click:
+                set_content_label('用于设置连点器的一些参数。')
+                # 选择默认连点器延迟
+                default_delay_layout = QFormLayout() # 窗口风格布局
+                self.default_delay = QLineEdit()
+                self.default_delay.setText(str(settings.get('click_delay', '')))
+                default_delay_layout.addRow(get_lang('46'), self.default_delay)
+                
+                # 连点出错时使用默认值
+                use_default_delay = QCheckBox(get_lang('47'))
+                use_default_delay.setChecked(settings.get('failed_use_default', False))
+                if not self.default_delay.text():
+                    use_default_delay.setEnabled(False)
+                    
+                # 布局
+                layout.addLayout(default_delay_layout)
+                layout.addWidget(use_default_delay)
+                
+                # 连接信号
+                self.default_delay.textChanged.connect(lambda: self.on_default_delay_changed(use_default_delay))
+                use_default_delay.stateChanged.connect(lambda: self.on_setting_changed('failed_use_default', use_default_delay.isChecked()))
+            case self.page_update:
+                set_content_label('用于设置软件更新相关设置。')
+                # 选择更新检查提示
+                check_update_layout = QHBoxLayout() # 窗口风格布局
+                
+                check_update_notify_text = QLabel(get_lang('48')) # 选择更新检查提示
+                check_update_notify = QComboBox()
+                check_update_notify.addItems([get_lang('49'), get_lang('4a')])
+                check_update_notify.setCurrentIndex(settings.get('check_update_notify', 0))
+                
+                # 布局
+                check_update_layout.addWidget(check_update_notify_text)
+                check_update_layout.addWidget(check_update_notify)
+                check_update_layout.addStretch(1)
+                
+                # 布局
+                layout.addLayout(check_update_layout)
+                
+                # 连接信号
+                check_update_notify.currentIndexChanged.connect(lambda: self.on_setting_changed('update_notify', check_update_notify.currentIndex))
+                
         # 添加弹簧，让内容靠上显示
         layout.addStretch()
         
         return page
+    
+    def on_lang_changed(self):
+        '''选项变化事件'''
+        self.lang_choice_need_restart.show()
+        self.lang_choice_need_restart.setText(get_lang('56', self.lang_choice.currentIndex()))
+        need_restart_list[0] = True
+        settings['select_lang'] = self.lang_choice.currentIndex()
+        save_settings(settings)
+        
+    def on_need_restart_setting_changed(self, handle: Callable, setting_key: str, need_restart_label: QLabel, index: int, *args):
+        '''托盘图标选择事件'''
+        need_restart_label.show()
+        need_restart_list[index] = True
+        settings[setting_key] = handle(*args)
+        save_settings(settings)
+        
+    def on_default_delay_changed(self, use_default_delay):
+        '''默认延迟输入框内容变化事件'''
+        if not self.default_delay.text():
+            use_default_delay.setEnabled(False)
+        else:
+            use_default_delay.setEnabled(True)
+        settings['click_delay'] = self.default_delay.text()
+        save_settings(settings)
+
+    def on_setting_changed(self, key, handle):
+        '''更新检查提示选择事件'''
+        settings[key] = handle()
+        save_settings(settings)
     
     def on_page_button_clicked(self, index):
         '''处理页面按钮点击事件'''
