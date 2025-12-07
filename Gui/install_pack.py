@@ -7,7 +7,7 @@ import win32com.client
 import winreg
 import wx
 import zipfile
-from uiStyles import PagesUI
+from uiStyles.old import PagesUI
 
 def extract_zip(file_path, extract_path):
     '''

@@ -8,3 +8,4 @@ pyperclip >= 1.5.2
 pynput>=1
 clickmouse
 ClickMouse_api
+qtmodernredux6>=0.6
