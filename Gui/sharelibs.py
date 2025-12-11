@@ -29,12 +29,14 @@ except json.JSONDecodeError:
     _show_message('资源损坏: 语言文件格式错误', '错误', 2)
     exit(1)
     
-def get_style_sheet(style_name: str) -> str:
+def get_style_sheet(style_name: str, mode: str = None) -> str:
     '''
     获取样式表
     '''
+    if mode is None:
+        mode = 'light' if is_dark_mode() else 'dark'
     try:
-        with open(get_resource_path('styles', f'{style_name}.qss'), 'r', encoding='utf-8') as f:
+        with open(get_resource_path('styles', mode, f'{style_name}.qss'), 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
         raise FileNotFoundError(f'样式表{style_name}.qss不存在')

@@ -1,6 +1,5 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QObject, QTimer
 from PySide6.QtWidgets import *
-from uiStyles.WidgetStyles import *
 
 class SelectUI(QMainWindow):
     def __init__(self, parent=None):
@@ -67,9 +66,6 @@ class SelectUI(QMainWindow):
         
         # 将堆叠窗口部件设置为右侧滚动区域的内容
         self.right_scroll.setWidget(self.stacked_widget)
-        
-        # 默认显示第一个页面
-        self.buttons[0].setStyleSheet(selected_style)
     
     def create_setting_page(self, title):
         '''创建设置页面'''
