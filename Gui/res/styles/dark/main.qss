@@ -48,6 +48,8 @@ QPushButton:disabled {
 QMenu {
     background-color: #202020;
     color: white;
+    border-radius: 10px;
+    border: 1px solid #303030;
 }
 
 QMenu:selected {

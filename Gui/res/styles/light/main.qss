@@ -1,4 +1,4 @@
-QLabel {
+* {
     color: black;
 }
 
@@ -30,7 +30,7 @@ QPushButton:disabled {
 }
 
 QComboBox {
-    background-color: white;
+    background-color: #fafafa;
     color: black;
 }
 
@@ -47,6 +47,8 @@ QLineEdit {
 QMenu {
     background-color: white;
     color: black;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
 }
 
 QMenu:selected {
