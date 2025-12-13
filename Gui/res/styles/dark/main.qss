@@ -32,6 +32,11 @@ QPushButton {
     background-color: #353535;
 }
 
+QPushButton:disabled {
+    background-color:#252525;
+    color: #505050;
+}
+
 QPushButton:hover {
     background-color: lightskyblue;
 }
@@ -62,6 +67,11 @@ QMenuBar::item:selected {
 
 QLineEdit {
     background-color: #353535;
+}
+
+QLineEdit:disabled {
+    background-color: #252525;
+    color: #505050;
 }
 
 /* 滚动区域容器样式：白底黑边 */
@@ -125,4 +135,8 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     background-color: #202020;
     border: 1px solid gray;
     height: 10px;
+}
+
+QStatusBar {
+    background-color: #404040;
 }

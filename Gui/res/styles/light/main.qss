@@ -44,6 +44,11 @@ QLineEdit {
     color: black;
 }
 
+QLineEdit:disabled {
+    background-color: #f0f0f0;
+    color: #d0d0d0;
+}
+
 QMenu {
     background-color: white;
     color: black;
@@ -129,4 +134,8 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     background-color: white;
     border: 1px solid gray;
     height: 10px;
+}
+
+QStatusBar {
+    background-color: lightgray;
 }

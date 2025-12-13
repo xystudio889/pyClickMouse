@@ -1,0 +1,24 @@
+[
+    {
+        "lang_name": "English",
+        "lang_id": 0,
+        "lang_package": {
+            "ms": "ms",
+            "s": "s",
+            "min": "min",
+            "h": "h",
+            "d": "d"
+        }
+    },
+    {
+        "lang_name": "简体中文",
+        "lang_id": 1,
+        "lang_package": {
+            "ms": "毫秒",
+            "s": "秒",
+            "min": "分钟",
+            "h": "小时",
+            "d": "天"
+        }
+    }
+]

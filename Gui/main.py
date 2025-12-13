@@ -18,7 +18,7 @@ from datetime import datetime # 用于检查缓存的时间和现在相差的时
 import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
-from uiStyles import SelectUI # 软件界面样式
+from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
 from uiStyles.WidgetStyles import (styles, maps) # 界面组件样式
 from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
 from sharelibs import (get_style_sheet, replace_style_sheet, is_dark_mode, run_software) # 共享库
@@ -27,6 +27,7 @@ import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
 from typing import Callable # 类型提示库
+import math # 数学库
 
 logger = Logger('主程序日志')
 logger.info('日志系统启动')
@@ -48,7 +49,7 @@ def get_resource_path(*paths):
     except Exception as e:
         logger.error(f'获取资源文件路径失败: {e}')
         QMessageBox.critical(None, f'{get_lang('12')}{e}', get_lang('14'))
-        exit(1)
+        sys.exit(1)
         
 def get_style_sheet(style_name: str, mode) -> str:
     '''
@@ -255,13 +256,38 @@ def check_default_delay():
     try:
         delay = int(settings.get('click_delay', ''))
         if not delay:
-            raise ValueError
+            return True
         if delay < 1:
             raise ValueError
         return True
     except ValueError:
         QMessageBox.critical(None, get_lang('14'), '请输入有效的正整数默认延迟')
         return False
+
+def init_need_restart_list(i):
+    global need_restart_list
+    
+    need_restart_list = []
+    for i in range(i):
+        need_restart_list.append(False)
+        
+def init_units():
+    units = {'ms': 1}
+    units['s'] = units['ms'] * 1000
+    units['min'] = units['s'] * 60
+    units['h'] = units['min'] * 60
+    units['d'] = units['h'] * 24
+
+    return units
+
+def get_unit_value(value):
+    unit = 1
+    unit_text = get_lang('ms', source=unit_lang)
+    for k, v in units.items():
+        if value >= v:
+            unit_text = get_lang(k, source=unit_lang)
+            unit = v
+    return (value / unit, unit_text)
 
 class QtThread(QThread):
     '''检查更新工作线程'''
@@ -332,6 +358,8 @@ class HotkeyListener(QObject):
 class Click(QObject):
     pause = Signal(bool)
     click_changed = Signal(bool, bool)
+    stopped = Signal()
+    click_conuter = Signal(int, int, int)
     
     def __init__(self):
         super().__init__()
@@ -340,24 +368,34 @@ class Click(QObject):
         self.click_thread = None
         self.right_clicked = False
         self.left_clicked = False
+        self.stop_count = 0  # 连点停止计数器，连续两次停止则恢复默认状态
+        self.default_stop_1 = False  # 以1作为停止计数器的默认值
         
-    def mouse_left(self, delay):
+    def mouse_left(self, delay, times):
         logger.info('左键连点')
-        self.mouse_click(button='left', input_delay=delay)
+        self.mouse_click(button='left', input_delay=delay, times=times, default_stop_1=self.default_stop_1)
+        self.default_stop_1 = False
 
-    def mouse_right(self, delay):
+    def mouse_right(self, delay, times):
         # 停止当前运行的点击线程
         logger.info('右键连点')
-        self.mouse_click(button='right', input_delay=delay)
+        self.mouse_click(button='right', input_delay=delay, times=times, default_stop_1=self.default_stop_1)
+        self.default_stop_1 = False
         
     def set_default_clicked(self):
         self.left_clicked = False
         self.right_clicked = False
         self.click_changed.emit(self.left_clicked, self.right_clicked)
     
-    def mouse_click(self, button: str, input_delay: str):
+    def mouse_click(self, button: str, input_delay, times, default_stop_1=False):
         '''鼠标连点'''
         logger.info('开始连点')
+        self.stop_count = 0
+        if button == 'right':
+            default_stop_1 = True
+        
+        if default_stop_1:
+            self.stop_count = 1 # 右键停止计数器重置
         # 重置状态
         if self.click_thread and self.click_thread.is_alive():
             self.running = False
@@ -371,6 +409,9 @@ class Click(QObject):
         elif button == 'right':
             self.right_clicked = True
             self.left_clicked = False
+            
+        if is_inf:
+            times = float('inf')
         
         self.click_changed.emit(self.left_clicked, self.right_clicked)
 
@@ -380,53 +421,36 @@ class Click(QObject):
         
         # 判断参数有效性
         try:
-            delay = int(input_delay)
-            if delay < 1:
-                raise ValueError
-        except ValueError:
-            if settings.get('click_delay', '') == '':
-                QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
-                logger.error('用户输入错误：请输入有效的正整数延迟')
-
-                self.set_default_clicked()
-                return
-            else:
-                if input_delay == '':
-                    if check_default_delay():
-                        delay = int(settings.get('click_delay', ''))
-                    else:
-                        self.set_default_clicked()
-                        return
-                elif settings.get('failed_use_default', False):
-                    if check_default_delay():
-                        delay = int(settings.get('click_delay', ''))
-                    else:
-                        self.set_default_clicked()
-                        return
-                else:
-                    QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
-                    logger.error('用户输入错误：请输入有效的正整数延迟')
-
-                    self.set_default_clicked()
-                    return
+            delay = math.ceil(float(input_delay))
+        except Exception as e:
+            QMessageBox.critical(None, get_lang('14'), f'{get_lang("1b")} {str(e)}')
+            logger.critical(f'发生错误:{e}')
+            return
 
         # 创建独立线程避免阻塞GUI
         def click_loop():
             self.pause.emit(False)
-            while self.running:
+            i = 0
+            while i < times and self.running:
                 if not self.paused:
                     try:
                         pyautogui.click(button=button)
-                        sleep(delay/1000)
+                        sleep(delay / 1000)
+                        i += 1
+                        self.click_conuter.emit(times, i, delay)
                     except Exception as e:
                         QMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
                         logger.critical(f'发生错误:{e}')
-    
-                        self.set_default_clicked()
+
+                        self.stopped.emit()
                         break
                 else:
-                    sleep(0.1)  # 暂停时降低CPU占用
-        
+                    sleep(delay / 1000)  # 暂停
+            else:
+                self.stop_count += 1
+                if self.stop_count >= 2:
+                    self.stopped.emit()
+    
         # 启动线程
         logger.info(f'启动连点线程')
         self.click_thread = threading.Thread(target=click_loop)
@@ -533,10 +557,16 @@ icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
 logger.debug('定义语言包')
-with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
+with open(get_resource_path('langs', 'langs.json'), 'r', encoding='utf-8') as f:
     langs = json.load(f)
     
-need_restart_list = [False, False, False]
+with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
+    unit_lang = json.load(f)
+    
+init_need_restart_list(7)
+units = init_units()
+latest_index = 2
+
 logger.debug('定义资源完成')
 
 logger.debug('加载ui')
@@ -604,7 +634,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle('ClickMouse')
         self.setWindowIcon(icon)
-        self.setGeometry(100, 100, 400, 275)
+        self.setGeometry(100, 100, 500, 375)
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
@@ -614,6 +644,7 @@ class MainWindow(QMainWindow):
 
         logger.debug('初始化状态控制变量')
         self.show_update_in_start = False # 是否在启动时显示更新提示
+        self.total_run_time = 0  # 总运行时间
         
         logger.debug('初始化ui')
         self.init_ui()
@@ -640,9 +671,11 @@ class MainWindow(QMainWindow):
 
         self.left_click_button = QPushButton(get_lang('0c'))
         self.left_click_button.setFixedSize(100, 60)
+        self.left_click_button.setEnabled(False)
         
         self.right_click_button = QPushButton(get_lang('0d'))
         self.right_click_button.setFixedSize(100, 60)
+        self.right_click_button.setEnabled(False)
         
         self.pause_button = QPushButton(get_lang('0f'))
         self.pause_button.setFixedSize(100, 40)
@@ -654,15 +687,40 @@ class MainWindow(QMainWindow):
         
         logger.debug('初始化布局')
         
-        # 输入框
-        form_layout = QFormLayout()
+        # 单位输入框
+        unit_layout = UnitInputLayout()
         
         self.input_delay = QLineEdit()
         self.input_delay.setFixedWidth(300)
         self.input_delay.setFixedHeight(30)
         
+        self.delay_combo = QComboBox()
+        self.delay_combo.addItems(['毫秒', '秒'])
+        self.delay_combo.setFixedWidth(60)
+        self.delay_combo.setFixedHeight(30)
         
-        form_layout.addRow(get_lang('11'), self.input_delay)
+        unit_layout.addUnitRow(get_lang('11'), self.input_delay, self.delay_combo)
+        
+        self.input_times = QLineEdit()
+        self.input_times.setFixedWidth(300)
+        self.input_times.setFixedHeight(30)
+        
+        self.times_combo = QComboBox()
+        self.times_combo.addItems(['次', '万次', '无限'])
+        
+        unit_layout.addUnitRow('连点次数', self.input_times, self.times_combo)
+        
+        # 总连点时长提示
+        self.total_time_label = QLabel('连点总耗时: ')
+        self.total_time_label.setAlignment(Qt.AlignHCenter)
+        self.total_time_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+        
+        # 创建状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        
+        # 设置默认状态
+        self.status_bar.showMessage("就绪")
         
         # 创建布局
         logger.debug('创建按钮布局')
@@ -673,20 +731,30 @@ class MainWindow(QMainWindow):
         
         central_layout.addWidget(title)
         central_layout.addLayout(grid_layout)
-        central_layout.addLayout(form_layout)
+        central_layout.addLayout(unit_layout)
+        central_layout.addWidget(self.total_time_label)
         self.setLayout(central_layout)
         
         # 按钮信号连接
         logger.debug('信号连接')
-        self.left_click_button.clicked.connect(lambda:clicker.mouse_left(self.input_delay.text()))
-        self.right_click_button.clicked.connect(lambda:clicker.mouse_right(self.input_delay.text()))
+        self.left_click_button.clicked.connect(lambda:clicker.mouse_left(delay_num, time_num))
+        self.right_click_button.clicked.connect(lambda:clicker.mouse_right(delay_num, time_num))
         
         self.pause_button.clicked.connect(clicker.pause_click)
         self.stop_button.clicked.connect(self.on_stop)
+        
+        self.input_delay.textChanged.connect(self.on_input_change)
+        self.input_times.textChanged.connect(self.on_input_change)
+        self.delay_combo.currentIndexChanged.connect(self.on_input_change)
+        self.times_combo.currentIndexChanged.connect(self.on_input_change)
 
         # 创建菜单栏
         logger.debug('创建菜单栏')
         self.create_menu_bar()
+        
+        # 刷新按钮状态
+        logger.debug('刷新按钮状态')
+        self.on_input_change()
         
         logger.info('初始化完成')
     
@@ -757,6 +825,8 @@ class MainWindow(QMainWindow):
         '''显示设置窗口'''
         setting_window = SettingWindow(self)
         setting_window.closed_use_reload.connect(self.show_setting)
+        setting_window.click_setting_changed.connect(self.on_input_change)
+        # print(self.geometry())
         setting_window.show()
 
     def on_check_update(self):
@@ -851,6 +921,7 @@ class MainWindow(QMainWindow):
         
         # 重置文本
         self.pause_button.setText(get_lang('0f'))
+        self.status_bar.showMessage("就绪")
 
     def on_click_changed(self, left, right):
         '''click按钮状态改变'''
@@ -866,6 +937,170 @@ class MainWindow(QMainWindow):
             # 未点击
             self.left_click_button.setStyleSheet(default_style)
             self.right_click_button.setStyleSheet(default_style)
+
+    def check_default_var(self, value):
+        '''检查默认延迟是否有效'''
+        try:
+            var = int(settings.get(f'click_{value}', ''))
+            if not var:
+                return True
+            if var < 1:
+                raise ValueError
+            return True
+        except ValueError:
+            self.on_delay_error('默认值错误')
+            return False
+        
+    def on_delay_error(self, error_text='错误'):
+        '''输入延迟错误'''
+        global is_error
+        
+        is_error = True
+        self.total_time_label.setText(f'连点总耗时: {error_text}')
+        self.right_click_button.setEnabled(False)
+        self.left_click_button.setEnabled(False)
+    
+    def on_input_change(self, var=None):
+        '''输入延迟改变'''
+        global is_inf, is_error, delay_num, time_num
+
+        # 判断参数有效性
+        input_delay = self.input_delay.text().strip()
+        input_times = self.input_times.text().strip()
+        is_inf = False
+        is_error = False
+        delay_num = settings.get('click_delay', '')
+        time_num = settings.get('click_times', '')
+        delay = 0
+
+        self.input_times.setEnabled(not self.times_combo.currentIndex() == latest_index)
+
+        if self.times_combo.currentIndex() == latest_index or input_times == '0':
+            is_inf = True
+        
+        try:
+            delay = math.ceil(float(input_delay))
+            if delay < 1:
+                raise ValueError
+        except ValueError:
+            if not settings.get('click_delay', '') == '':
+                if input_delay == '':
+                    if self.check_default_var('delay'):
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        return
+                elif settings.get('failed_use_default', False):
+                    if self.check_default_var('delay'):
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        return
+                else:
+                    self.on_delay_error()
+                    return
+        except Exception:
+            self.on_delay_error()
+            return
+
+        if not is_inf:
+            try:
+                times = math.ceil(float(input_times))
+                if times < 1:
+                    raise ValueError
+            except ValueError:
+                if settings.get('click_times', '') == '' and settings.get('click_delay', '') == '':
+                    self.on_delay_error('无')
+                    return
+                else:
+                    if input_times == '':
+                        if self.check_default_var('times'):
+                            times = int(settings.get('click_times', ''))
+                        else:
+                            return
+                    elif settings.get('times_failed_use_default', False):
+                        if self.check_default_var('times'):
+                            times = int(settings.get('click_times', ''))
+                        else:
+                            return
+                    else:
+                        self.on_delay_error()
+                        return
+            except Exception:
+                self.on_delay_error()
+                return
+        
+        self.right_click_button.setEnabled(True)
+        self.left_click_button.setEnabled(True)
+        is_error = False
+        
+        if settings.get('click_delay', '') != '' and input_delay == '':
+            match settings.get('delay_unit', 0):
+                case 0:
+                    delay_num = delay
+                case 1:
+                    delay_num = delay * 1000
+        else:
+            match self.delay_combo.currentIndex():
+                case 0:
+                    delay_num = delay
+                case 1:
+                    delay_num = delay * 1000
+                case 2:
+                    delay_num = delay * 60 * 1000
+                case _:
+                    delay_num = delay
+
+        if is_inf:
+            self.total_time_label.setText('连点总耗时: 无限')
+            if delay_num == 0:
+                self.on_delay_error()
+        else:
+            if settings.get('click_times', '') != '' and input_times == '':
+                match settings.get('times_unit', 0):
+                    case 0:
+                        time_num = times
+                    case 1:
+                        time_num = times * 10000
+            else:
+                match self.times_combo.currentIndex():
+                    case 0:
+                        time_num = times
+                    case 1:
+                        time_num = times * 10000
+                    case 2:
+                        time_num = times * 100_0000
+                    case _:
+                        time_num = times
+            
+            if (delay_num == 0 and time_num != 0) or (delay_num != 0 and time_num == 0):
+                self.on_delay_error()
+                return
+                                        
+            self.total_run_time = delay_num * time_num
+            self.total_time_label.setText(f'连点总耗时: {self.total_run_time}毫秒')
+            self.total_run_time = get_unit_value(self.total_run_time)
+            self.total_time_label.setText(f'连点总耗时: {self.get_full_unit(self.total_run_time)}')
+    
+    def on_click_counter(self, totel, now, delay):
+        '''连点计数器'''
+        if is_inf:
+            now_total_delay = get_unit_value(delay * now)
+            delay = get_unit_value(delay)
+            self.status_bar.showMessage(f'{'已暂停-' if clicker.paused else ''}共无限次连点,已完成{now}次;已花费{self.get_full_unit(now_total_delay)},连点间隔{self.get_full_unit(delay)}')
+        else:
+            left = totel - now
+            totel_delay = get_unit_value(delay * totel)
+            now_total_delay = get_unit_value(delay * now)
+            left_delay = get_unit_value(delay * left)
+            delay = get_unit_value(delay)
+            self.status_bar.showMessage(f'{'已暂停-' if clicker.paused else ''}共{totel}次连点,已完成{now}次,剩余{left}次;共花费{self.get_full_unit(totel_delay)},已花费{self.get_full_unit(now_total_delay)},剩余{self.get_full_unit(left_delay)},连点间隔{self.get_full_unit(delay)}')
+            
+    def get_full_unit(self, unit_text: tuple) -> str:
+        '''获取完整单位'''
+        return f'{unit_text[0]:.2f}{unit_text[1]}'
+    
+    def sync_input(self, get_handle, set_handle, source, dest):
+        '''同步输入框'''
+        set_handle(dest, get_handle(source))
 
 class AboutWindow(QDialog):
     def __init__(self):
@@ -967,8 +1202,11 @@ class UpdateLogWindow(QDialog):
 
         # 通过字典存储的日志信息来绘制日志内容，并动态计算日志的高度，减少代码量且更加方便管理
         for k, v in self.update_logs.items():
-            label = QLabel(f'{k}    {v[0]}\n{v[1]}')
-            layout.addWidget(label)
+            title_label = QLabel(f'{k}    {v[0]}')
+            title_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+            log_label = QLabel(f'{v[1]}')
+            layout.addWidget(title_label)
+            layout.addWidget(log_label)
 
         # 调整页面高度，适配现在的更新日志界面大小
         logger.debug('调整页面高度')
@@ -985,8 +1223,8 @@ class UpdateLogWindow(QDialog):
         ok_button.setStyleSheet(selected_style)
         more_update_log = QPushButton(get_lang('23'))
         
-        bottom_layout.addWidget(more_update_log)
         bottom_layout.addStretch(1)
+        bottom_layout.addWidget(more_update_log)
         bottom_layout.addWidget(ok_button)
         
         # 绑定事件
@@ -1119,11 +1357,9 @@ class CleanCacheWindow(QDialog):
         # 布局4
         logger.debug('加载布局-4')        
         bottom_layout = QHBoxLayout()
-        bottom_layout.addSpacing(200)
+        bottom_layout.addStretch(1)
         bottom_layout.addWidget(scan_cache)
-        bottom_layout.addStretch(1)
         bottom_layout.addWidget(clean_cache)
-        bottom_layout.addStretch(1)
         bottom_layout.addWidget(ok)
         
         layout.addLayout(bottom_layout, line + 1, 2)
@@ -1397,6 +1633,7 @@ class TrayApp:
         
         # 创建设置延迟窗口
         self.set_dalay_window = FastSetClickWindow()
+        self.click_attr_window = ClickAttrWindow()
         
         # 创建热键监听器
         self.hotkey_listener = HotkeyListener()
@@ -1411,6 +1648,8 @@ class TrayApp:
         
         clicker.pause.connect(main_window.on_pause)
         clicker.click_changed.connect(main_window.on_click_changed)
+        clicker.stopped.connect(main_window.on_stop)
+        clicker.click_conuter.connect(main_window.on_click_counter)
 
     def setup_tray_icon(self):
         '''设置系统托盘图标'''
@@ -1483,53 +1722,31 @@ class TrayApp:
             
     def check_delay(self, input_delay):
         try:
-            delay = int(input_delay)
-            if delay < 1:
-                raise ValueError
-        except ValueError:
-            if settings.get('click_delay', '') == '':
-                self.tray_icon.showMessage(get_lang('14'), get_lang('1a'), QSystemTrayIcon.MessageIcon.Critical, 1000)
-                logger.error('用户输入错误：请输入有效的正整数延迟')
-                return
-            else:
-                if input_delay == '':
-                    if check_default_delay():
-                        delay = int(settings.get('click_delay', ''))
-                    else:
-                        return
-                elif settings.get('failed_use_default', False):
-                    if check_default_delay():
-                        delay = int(settings.get('click_delay', ''))
-                    else:
-                        return
-                else:
-                    self.tray_icon.showMessage(get_lang('14'), get_lang('1a'), QSystemTrayIcon.MessageIcon.Critical, 1000)
-                    logger.error('用户输入错误：请输入有效的正整数延迟')
-                    return
+            math.ceil(float(input_delay))
+        except Exception as e:
+            QMessageBox.critical(None, get_lang('14'), f'{get_lang("1b")} {str(e)}')
+            logger.critical(f'发生错误:{e}')
+            return False
         return True
     
     def on_key_pressed(self, key):
         '''处理按键事件'''
-        if key == keyboard.Key.f1:
-            self.set_dalay_window.exec()
-        elif key == keyboard.Key.f2:
+        if key == keyboard.Key.f2:
+            clicker.default_stop_1 = True
             # 判断参数有效性
-            input_delay = main_window.input_delay.text()
-            
-            if not self.check_delay(input_delay):
+            if not (self.check_delay(delay_num) or self.check_delay(time_num)):
                 return
 
             self.tray_icon.showMessage('热键提示', '已启动左键连点', QSystemTrayIcon.MessageIcon.Information, 1000)
-            clicker.mouse_left(input_delay)
+            clicker.mouse_left(delay_num, time_num)
         elif key == keyboard.Key.f3:
+            clicker.default_stop_1 = True
             # 判断参数有效性
-            input_delay = main_window.input_delay.text()
-            
-            if not self.check_delay(input_delay):
+            if not (self.check_delay(delay_num) or self.check_delay(time_num)):
                 return
 
             self.tray_icon.showMessage('热键提示', '已启动右键连点', QSystemTrayIcon.MessageIcon.Information, 1000)
-            clicker.mouse_right(input_delay)
+            clicker.mouse_right(delay_num, time_num)
         elif key == keyboard.Key.f4:
             clicker.pause_click()
             if clicker.running:
@@ -1568,12 +1785,25 @@ class TrayApp:
             temp_combination[index] = i.replace('Key.', '').replace('_l', '').replace('_r', '').replace('_gr', '')
         combination = temp_combination.copy()
 
-        if all_in_list(combination, ['<68>', 'ctrl', 'alt']):
-            # 处理Ctrl+Alt+D组合键
+        # print(combination)
+        if all_in_list(combination, ['<70>', 'ctrl', 'alt']):
+            # 处理Ctrl+Alt+F组合键
+            if self.set_dalay_window.isVisible():
+                self.set_dalay_window.hide()
+            else:
+                self.set_dalay_window.show()
+        elif all_in_list(combination, ['<77>', 'ctrl', 'alt']):
+            # 处理Ctrl+Alt+M组合键
             if main_window.isVisible():
                 main_window.hide()
             else:
                 main_window.show()
+        elif all_in_list(combination, ['<65>', 'ctrl', 'alt']):
+            # 处理Ctrl+Alt+F组合键
+            if self.set_dalay_window.isVisible():
+                self.click_attr_window.hide()
+            else:
+                self.click_attr_window.show()
 
 class HotkeyHelpWindow(QDialog):
     def __init__(self):
@@ -1619,47 +1849,305 @@ class HotkeyHelpWindow(QDialog):
         
         self.setLayout(layout)
 
-class FastSetClickWindow(QDialog):
+class FastSetClickWindow(QMainWindow):
     def __init__(self):
-        logger.info('初始化快速设置延迟窗口')
+        logger.info('初始化')
+
         super().__init__()
-        self.setWindowTitle('设置延迟')
+        self.setWindowTitle('快速连点设置')
         self.setWindowIcon(icon)
-        self.setGeometry(100, 100, 400, 50)
-        self.setFixedSize(self.width(), self.height())        
+        self.setGeometry(100, 100, 475, 125)
+        self.setWindowFlags(
+            Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
+        ) # 设置窗口属性
+        app.styleHints().setColorScheme(Qt.ColorScheme.Unknown)
+        
+        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
+
+        logger.debug('初始化状态控制变量')
+        self.total_run_time = 0  # 总运行时间
+        
+        logger.debug('初始化ui')
         self.init_ui()
     
     def init_ui(self):
-        # 创建面板
-        logger.debug('创建面板')
-        layout = QFormLayout()
+        # 创建主控件和布局
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        central_layout = QVBoxLayout(central_widget)
         
-        # 面板控件
-        logger.debug('创建面板控件')
-  
+        # 单位输入框
+        unit_layout = UnitInputLayout()
+        
         self.input_delay = QLineEdit()
         self.input_delay.setFixedWidth(300)
         self.input_delay.setFixedHeight(30)
         
-        layout.addRow(get_lang('11'), self.input_delay)
+        self.delay_combo = QComboBox()
+        self.delay_combo.addItems(['毫秒', '秒'])
+        self.delay_combo.setFixedWidth(60)
+        self.delay_combo.setFixedHeight(30)
         
-        # 添加信号
-        self.input_delay.textChanged.connect(self.on_input_delay_changed)
+        unit_layout.addUnitRow(get_lang('11'), self.input_delay, self.delay_combo)
+        
+        self.input_times = QLineEdit()
+        self.input_times.setFixedWidth(300)
+        self.input_times.setFixedHeight(30)
+        
+        self.times_combo = QComboBox()
+        self.times_combo.addItems(['次', '万次', '无限'])
+        
+        unit_layout.addUnitRow('连点次数', self.input_times, self.times_combo)
+        
+        # 总连点时长提示
+        self.total_time_label = QLabel('连点总耗时: ')
+        self.total_time_label.setAlignment(Qt.AlignHCenter)
+        self.total_time_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+        
+        # 创建布局
+        logger.debug('创建按钮布局')
+    
+        central_layout.addLayout(unit_layout)
+        central_layout.addWidget(self.total_time_label)
+        self.setLayout(central_layout)
+        
+        # 按钮信号连接
+        logger.debug('信号连接')
+        
+        self.input_delay.textChanged.connect(self.on_input_change)
+        self.input_times.textChanged.connect(self.on_input_change)
+        self.delay_combo.currentIndexChanged.connect(self.on_input_change)
+        self.times_combo.currentIndexChanged.connect(self.on_input_change)
+
+        main_window.input_delay.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, main_window.input_delay, self.input_delay))
+        main_window.input_times.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, main_window.input_times, self.input_times))
+        main_window.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, main_window.delay_combo, self.delay_combo))
+        main_window.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, main_window.times_combo, self.times_combo))
+        
+        self.input_delay.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.input_delay, main_window.input_delay))
+        self.input_times.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.input_times, main_window.input_times))
+        self.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.delay_combo, main_window.delay_combo))
+        self.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.times_combo, main_window.times_combo))
+
+        # 刷新按钮状态
+        logger.debug('刷新按钮状态')
+        self.on_input_change()
+        
+        logger.info('初始化完成')
+        
+    def sync_input(self, get_handle, set_handle, source, dest):
+        '''同步输入框'''
+        set_handle(dest, get_handle(source))
+
+    def check_default_var(self, value):
+        '''检查默认延迟是否有效'''
+        try:
+            var = int(settings.get(f'click_{value}', ''))
+            if not var:
+                return True
+            if var < 1:
+                raise ValueError
+            return True
+        except ValueError:
+            self.on_delay_error('默认值错误')
+            return False
+        
+    def on_delay_error(self, error_text='错误'):
+        '''输入延迟错误'''
+        global is_error
+        
+        is_error = True
+        self.total_time_label.setText(f'连点总耗时: {error_text}')
+    
+    def on_input_change(self, var=None):
+        '''输入延迟改变'''
+        global is_inf, is_error, delay_num, time_num
+
+        # 判断参数有效性
+        input_delay = self.input_delay.text().strip()
+        input_times = self.input_times.text().strip()
+        is_inf = False
+        is_error = False
+        delay_num = settings.get('click_delay', '')
+        time_num = settings.get('click_times', '')
+        delay = 0
+
+        self.input_times.setEnabled(not self.times_combo.currentIndex() == latest_index)
+
+        if self.times_combo.currentIndex() == latest_index or input_times == '0':
+            is_inf = True
+        
+        try:
+            delay = math.ceil(float(input_delay))
+            if delay < 1:
+                raise ValueError
+        except ValueError:
+            if not settings.get('click_delay', '') == '':
+                if input_delay == '':
+                    if self.check_default_var('delay'):
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        return
+                elif settings.get('failed_use_default', False):
+                    if self.check_default_var('delay'):
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        return
+                else:
+                    self.on_delay_error()
+                    return
+        except Exception:
+            self.on_delay_error()
+            return
+
+        if not is_inf:
+            try:
+                times = math.ceil(float(input_times))
+                if times < 1:
+                    raise ValueError
+            except ValueError:
+                if settings.get('click_times', '') == '' and settings.get('click_delay', '') == '':
+                    self.on_delay_error('无')
+                    return
+                else:
+                    if input_times == '':
+                        if self.check_default_var('times'):
+                            times = int(settings.get('click_times', ''))
+                        else:
+                            return
+                    elif settings.get('times_failed_use_default', False):
+                        if self.check_default_var('times'):
+                            times = int(settings.get('click_times', ''))
+                        else:
+                            return
+                    else:
+                        self.on_delay_error()
+                        return
+            except Exception:
+                self.on_delay_error()
+                return
+        
+        is_error = False
+        
+        if settings.get('click_delay', '') != '' and input_delay == '':
+            match settings.get('delay_unit', 0):
+                case 0:
+                    unit_text = get_lang('ms', source=unit_lang)
+                    delay_num = delay
+                case 1:
+                    unit_text = get_lang('s', source=unit_lang)
+                    delay_num = delay * 1000
+        else:
+            match self.delay_combo.currentIndex():
+                case 0:
+                    delay_num = delay
+                case 1:
+                    delay_num = delay * 1000
+                case 2:
+                    delay_num = delay * 60 * 1000
+                case _:
+                    delay_num = delay
+
+        if is_inf:
+            self.total_time_label.setText('连点总耗时: 无限')
+            if delay_num == 0:
+                self.on_delay_error()
+        else:
+            if settings.get('click_times', '') != '' and input_times == '':
+                match settings.get('times_unit', 0):
+                    case 0:
+                        time_num = times
+                    case 1:
+                        time_num = times * 10000
+            else:
+                match self.times_combo.currentIndex():
+                    case 0:
+                        time_num = times
+                    case 1:
+                        time_num = times * 10000
+                    case 2:
+                        time_num = times * 100_0000
+                    case _:
+                        time_num = times
+            
+            if (delay_num == 0 and time_num != 0) or (delay_num != 0 and time_num == 0):
+                self.on_delay_error()
+                return
+                                        
+            self.total_run_time = delay_num * time_num
+            self.total_time_label.setText(f'连点总耗时: {self.total_run_time}毫秒')
+            self.total_run_time = get_unit_value(self.total_run_time)
+            self.total_time_label.setText(f'连点总耗时: {self.get_full_unit(self.total_run_time)}')
+            
+    def get_full_unit(self, unit_text: tuple) -> str:
+        '''获取完整单位'''
+        return f'{unit_text[0]:.2f}{unit_text[1]}'
+
+class ClickAttrWindow(QDialog):
+    def __init__(self):
+        logger.info('初始化连点器属性窗口')
+        super().__init__()
+        self.setWindowTitle('连点器属性')
+        self.setWindowIcon(icon)
+
+        # 定义变量
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_attr)
+        self.timer.start(1000)
+        
+        self.init_ui()
+
+    def init_ui(self):
+        # 创建主布局
+        central_layout = QVBoxLayout()
+        
+        # 内容
+        self.left_clicked = QLabel('左键点击:')
+        self.right_clicked = QLabel('右键点击:')
+        self.click_delay = QLabel('连点延迟:')
+        self.click_times = QLabel('连点次数:')
+        self.paused = QLabel('暂停:')
+        self.stopped = QLabel('停止:')
+        self.total_run_time = QLabel('总运行时间:')
+        
+        # 底边栏
+        bottom_layout = QHBoxLayout()
+        ok_button = QPushButton(get_lang('1e'))
+        ok_button.setStyleSheet(selected_style)
+        ok_button.clicked.connect(self.close)
         
         # 布局
-        self.setLayout(layout)
+        bottom_layout.addStretch(1)
+        bottom_layout.addWidget(ok_button)
+
+        central_layout.addWidget(self.left_clicked)
+        central_layout.addWidget(self.right_clicked)
+        central_layout.addWidget(self.click_delay)
+        central_layout.addWidget(self.click_times)
+        central_layout.addWidget(self.paused)
+        central_layout.addWidget(self.stopped)
+        central_layout.addWidget(self.total_run_time)
+        central_layout.addLayout(bottom_layout)
         
-    def exec(self):
-        '''显示窗口'''
-        super().exec()
-        self.input_delay.setText(main_window.input_delay.text())
-    
-    def on_input_delay_changed(self, text):
-        '''输入框内容变化事件'''
-        main_window.input_delay.setText(text)
+        self.setLayout(central_layout)
         
+    def update_attr(self):
+        '''更新属性'''
+        self.left_clicked.setText(f'左键点击: {'运行中' if clicker.left_clicked else '未启动'}')
+        self.right_clicked.setText(f'右键点击: {'运行中' if clicker.right_clicked else '未启动'}')
+        self.click_delay.setText(f'连点延迟: {delay_num}毫秒')
+        self.click_times.setText(f'连点次数: {'无限' if is_inf else time_num}')
+        self.paused.setText(f'暂停: {"是" if clicker.paused else "否"}')
+        self.stopped.setText(f'停止: {"是" if not clicker.running else "否"}')
+        try:
+            self.total_run_time.setText(f'总运行时间: {main_window.total_run_time[0]:.2f}{main_window.total_run_time[1]}')
+        except TypeError:
+            value = get_unit_value(main_window.total_run_time)
+            self.total_run_time.setText(f'总运行时间: {value[0]:.2f}{value[1]}')
+
 class SettingWindow(SelectUI):
     closed_use_reload = Signal()
+    click_setting_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__()
@@ -1693,6 +2181,15 @@ class SettingWindow(SelectUI):
         
         def set_content_label(text):
             content_label.setText(text)
+            
+        def new_need_restart_text(index, someone_need_restart = True):
+            need_restart = QLabel(get_lang('56') if someone_need_restart else '需要重启才能生效')
+            need_restart.setStyleSheet(need_restart_style)
+            if need_restart_list[index]:
+                need_restart.show()
+            else:
+                need_restart.hide()
+            return need_restart
         
         restart_layout = QHBoxLayout()
         self.restart_button = QPushButton('立即重启')
@@ -1722,12 +2219,7 @@ class SettingWindow(SelectUI):
                 self.lang_choice = QComboBox()
                 self.lang_choice.addItems([i['lang_name'] for i in langs])
                 self.lang_choice.setCurrentIndex(settings.get('select_lang', 0))
-                lang_choice_need_restart = QLabel(get_lang('56'))
-                lang_choice_need_restart.setStyleSheet(need_restart_style)
-                if need_restart_list[0]:
-                    lang_choice_need_restart.show()
-                else:
-                    lang_choice_need_restart.hide()
+                lang_choice_need_restart = new_need_restart_text(0)
                 
                 # 布局
                 lang_choice_layout.addWidget(choice_text)
@@ -1740,27 +2232,24 @@ class SettingWindow(SelectUI):
                 
                 style_layout = QHBoxLayout() # 窗口风格布局
                 style_choice = QComboBox()
+                style_choice_need_restart = new_need_restart_text(1)
                 
-                items = list(style_indexes[settings['select_lang']]['lang_package'].values())
+                items = list(style_indexes[settings.get('select_lang', 0)]['lang_package'].values())
     
                 style_choice.addItems(['跟随Windows系统'] + items + ['禁用'])
                 style_choice.setCurrentIndex(settings.get('select_style', 0))
                 
                 style_layout.addWidget(style_text)
                 style_layout.addWidget(style_choice)
-                style_layout.addStretch(1)
+                style_layout.addWidget(style_choice_need_restart)
+                style_layout.addStretch(1)      
                 
                 # 显示托盘图标
                 # 选择窗口风格  
                 tray_layout = QHBoxLayout() # 窗口风格布局
                 tray = QCheckBox('保留托盘图标')
                 tray.setChecked(settings.get('show_tray_icon', True))
-                tray_need_restart = QLabel('需要重启软件才能生效。')
-                tray_need_restart.setStyleSheet(need_restart_style)
-                if need_restart_list[1]:
-                    tray_need_restart.show()
-                else:
-                    tray_need_restart.hide()
+                tray_need_restart = new_need_restart_text(2, False)
     
                 tray_layout.addWidget(tray)
                 tray_layout.addWidget(tray_need_restart)
@@ -1773,29 +2262,64 @@ class SettingWindow(SelectUI):
                 
                 # 绑定事件
                 self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang', lang_choice_need_restart, 0))
-                style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(style_choice.currentIndex, 'select_style'))
-                tray.stateChanged.connect(lambda: self.on_need_restart_setting_changed(tray.isChecked,'show_tray_icon', tray_need_restart, 1))
+                style_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(style_choice.currentIndex, 'select_style', style_choice_need_restart, 1))
+                tray.stateChanged.connect(lambda: self.on_need_restart_setting_changed(tray.isChecked,'show_tray_icon', tray_need_restart, 2))
             case self.page_click:
                 set_content_label('用于设置连点器的一些参数。')
                 # 选择默认连点器延迟
-                default_delay_layout = QFormLayout() # 窗口风格布局
+                unit_layout = UnitInputLayout() # 窗口风格布局
                 self.default_delay = QLineEdit()
                 self.default_delay.setText(str(settings.get('click_delay', '')))
-                default_delay_layout.addRow(get_lang('46'), self.default_delay)
+                self.delay_combo = QComboBox()
+                self.delay_combo.addItems(['毫秒', '秒'])
+                self.delay_combo.setCurrentIndex(settings.get('delay_unit', 0))
+                unit_layout.addUnitRow(get_lang('46'), self.default_delay, self.delay_combo)
                 
                 # 连点出错时使用默认值
                 use_default_delay = QCheckBox(get_lang('47'))
                 use_default_delay.setChecked(settings.get('failed_use_default', False))
                 if not self.default_delay.text():
                     use_default_delay.setEnabled(False)
-                    
+
                 # 布局
-                layout.addLayout(default_delay_layout)
-                layout.addWidget(use_default_delay)
+                unit_layout.newRow()
+                unit_layout.addWidget(use_default_delay)
+                
+                self.default_time = QLineEdit()
+                self.default_time.setText(str(settings.get('click_times', '')))
+                self.times_combo = QComboBox()
+                self.times_combo.addItems(['次', '万次', '无限'])
+                self.times_combo.setCurrentIndex(settings.get('times_unit', 0))
+                unit_layout.addUnitRow('连点次数默认值', self.default_time, self.times_combo)
+                
+                # 连点出错时使用默认值
+                use_default_time = QCheckBox('连点次数错误时使用默认值')
+                use_default_time.setChecked(settings.get('times_failed_use_default', False))
+                if not self.default_time.text():
+                    use_default_time.setEnabled(False)
+                unit_layout.newRow()
+                unit_layout.addWidget(use_default_time)
+                
+                self.total_time_label = QLabel('连点总耗时: 无')
+                self.total_time_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+                self.total_time_label.setAlignment(Qt.AlignHCenter)
+                self.on_input_change()
+                
+                # 布局
+                layout.addLayout(unit_layout)
+                layout.addWidget(self.total_time_label)
                 
                 # 连接信号
-                self.default_delay.textChanged.connect(lambda: self.on_default_delay_changed(use_default_delay))
-                use_default_delay.stateChanged.connect(lambda: self.on_setting_changed(use_default_delay.isChecked, 'failed_use_default'))
+                self.default_delay.textChanged.connect(lambda: self.on_default_input_changed(self.default_delay, 'click_delay', use_default_delay))
+                self.default_delay.textChanged.connect(self.on_input_change)
+                use_default_delay.stateChanged.connect(lambda: self.on_setting_changed(use_default_delay.isChecked, 'times_failed_use_default'))
+                self.default_time.textChanged.connect(lambda: self.on_default_input_changed(self.default_time, 'click_times', use_default_time))
+                self.default_time.textChanged.connect(self.on_input_change)
+                use_default_time.stateChanged.connect(lambda: self.on_setting_changed(use_default_time.isChecked, 'times_failed_use_default'))
+                self.delay_combo.currentIndexChanged.connect(lambda: self.on_setting_changed(self.delay_combo.currentIndex, 'delay_unit'))
+                self.delay_combo.currentIndexChanged.connect(self.on_input_change)
+                self.times_combo.currentIndexChanged.connect(lambda: self.on_setting_changed(self.times_combo.currentIndex, 'times_unit'))
+                self.times_combo.currentIndexChanged.connect(self.on_input_change)
             case self.page_update:
                 set_content_label('用于设置软件更新相关设置。')
                 # 选择更新检查提示
@@ -1836,14 +2360,143 @@ class SettingWindow(SelectUI):
         self.closed_use_reload.emit()
         self.close()
         
-    def on_default_delay_changed(self, use_default_delay):
+    def on_default_input_changed(self, default: QLineEdit, key: str, use_default: QCheckBox):
         '''默认延迟输入框内容变化事件'''
-        if not self.default_delay.text():
-            use_default_delay.setEnabled(False)
+        if not default.text():
+            use_default.setEnabled(False)
         else:
-            use_default_delay.setEnabled(True)
-        settings['click_delay'] = self.default_delay.text()
-        save_settings(settings)
+            use_default.setEnabled(True)
+        self.on_setting_changed(default.text, key)
+        
+    def check_default_var(self, value):
+        '''检查默认延迟是否有效'''
+        try:
+            var = int(settings.get(f'click_{value}', ''))
+            if not var:
+                return True
+            if var < 1:
+                raise ValueError
+            return True
+        except ValueError:
+            return False
+        
+    def on_delay_error(self, error_text='错误'):
+        '''输入延迟错误'''
+        self.total_time_label.setText(f'连点总耗时: {error_text}')
+    
+    def on_input_change(self, var=None):
+        '''输入延迟改变'''
+        # 判断参数有效性
+        input_delay = self.default_delay.text().strip()
+        input_times = self.default_time.text().strip()
+        is_inf = False
+        delay = 0
+        self.click_setting_changed.emit()
+        
+        self.times_combo.setEnabled(not self.times_combo.currentIndex() == latest_index)
+
+        if self.times_combo.currentIndex() == latest_index or input_times == '0':
+            is_inf = True
+        
+        try:
+            delay = math.ceil(float(input_delay))
+            if delay < 1:
+                raise ValueError
+        except ValueError:
+            if not settings.get('click_delay', '') == '':
+                if input_delay == '':
+                    if self.check_default_var('delay'):
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        self.on_delay_error()
+                        return
+                elif settings.get('failed_use_default', False):
+                    if self.check_default_var('delay'):
+                        delay = int(settings.get('click_delay', ''))
+                    else:
+                        self.on_delay_error()
+                        return
+                else:
+                    self.on_delay_error()
+                    return
+        except Exception:
+            self.on_delay_error()
+            return
+
+        if not is_inf:
+            try:
+                times = math.ceil(float(input_times))
+                if times < 1:
+                    raise ValueError
+            except ValueError:
+                if settings.get('click_times', '') == '' and settings.get('click_delay', '') == '':
+                    self.on_delay_error('无')
+                    return
+                else:
+                    if input_times == '':
+                        if self.check_default_var('times'):
+                            times = int(settings.get('click_times', ''))
+                        else:
+                            self.on_delay_error()
+                            return
+                    elif settings.get('times_failed_use_default', False):
+                        if self.check_default_var('times'):
+                            times = int(settings.get('click_times', ''))
+                        else:
+                            self.on_delay_error()
+                            return
+                    else:
+                        self.on_delay_error()
+                        return
+            except Exception:
+                self.on_delay_error()
+                return
+        
+        if settings.get('click_delay', '') != '' and input_delay == '':
+            match settings.get('delay_unit', 0):
+                case 0:
+                    delay_num = delay
+                case 1:
+                    delay_num = delay * 1000
+        else:
+            match self.delay_combo.currentIndex():
+                case 0:
+                    delay_num = delay
+                case 1:
+                    delay_num = delay * 1000
+                case 2:
+                    delay_num = delay * 60 * 1000
+                case _:
+                    delay_num = delay
+
+        if is_inf:
+            self.total_time_label.setText('连点总耗时: 无限')
+        else:
+            if settings.get('click_times', '') != '' and input_times == '':
+                match settings.get('times_unit', 0):
+                    case 0:
+                        time_num = times
+                    case 1:
+                        time_num = times * 10000
+            else:
+                match self.times_combo.currentIndex():
+                    case 0:
+                        time_num = times
+                    case 1:
+                        time_num = times * 10000
+                    case 2:
+                        time_num = times * 100_0000
+                    case _:
+                        time_num = times
+                        
+            if (delay_num == 0 and time_num != 0) or (delay_num != 0 and time_num == 0):
+                self.on_delay_error()
+                return
+                                        
+            self.total_run_time = delay_num * time_num
+            self.total_time_label.setText(f'连点总耗时: {self.total_run_time}毫秒')
+            self.total_run_time = get_unit_value(self.total_run_time)
+            self.total_time_label.setText(f'连点总耗时: {self.total_run_time[0]:.2f}{self.total_run_time[1]}')
 
     def on_setting_changed(self, handle, key):
         '''更新检查提示选择事件'''
@@ -1864,11 +2517,12 @@ class SettingWindow(SelectUI):
     
     def restart(self):
         run_software('main.py', 'main.exe')
-        exit(0)
+        sys.exit(0)
     
     def init_right_pages(self):
         super().init_right_pages()
         self.buttons[0].setStyleSheet(selected_style)
+
 def main():
     app = TrayApp()
     app.run()
