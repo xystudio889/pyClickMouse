@@ -12,7 +12,7 @@
         <img src="https://img.shields.io/github/license/xystudio889/pyclickmouse" alt="license">
     </a>
     <a href="https://github.com/xystudio889/pyclickmouse/commits/master">
-        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse/master" alt="commit">
+        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
     </a>
     <a href="https://github.com/sponsors/xystudio889">
         <img src="https://img.shields.io/badge/%E2%9D%A4-Sponsor%20me-%23c96198?style=flat&logo=GitHub"
@@ -66,7 +66,7 @@ using namespace std;
 
 int main(){
     cout << CLICKMOUSE_VERSION << endl; // 打印版本信息,若成功输出一串数字，则安装成功
-    clickMouse(LEFT, 1000, 10, 10); // 连点10次左键，间隔为1000ms，按下时间为10ms，
+    clickMouse(LEFT, 1000, 10, 10); // 连点10次左键，间隔为1000ms，按下时间为10ms
     return 0;
 }
 ```
@@ -78,7 +78,7 @@ python调用或.pyd调用可以直接使用以下代码调用：
 ```python
 import clickmouse
 
-clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms，
+clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms
 ```
 ~~命令行调用~~
 ```bash
@@ -105,15 +105,20 @@ ClickMouse.exe /h # 查看帮助
 编译结束后，该目录下应该会有个以`.pyd`结尾的文件。
 #### gui版本
 使用python打包工具打包，注意需要添加`res/`目录。
-如：
-`python -m nuitka --onefile --remove-output --msvc=latest --windows-console-mode="disable"  --company-name="xystudio" --file-description="鼠标连点器" --file-version="2.1.0.5" --product-version="2.1.0" --product-name="ClickMouse" --copyright="Copyright © 2025 xystudio" --trademarks="®xystudio™"  --windows-icon-from-ico=gui/res/icons/icon.ico --include-data-dir=gui/res=res gui/main.py`
 
 ## 功能
 - 鼠标连点
 - 自定义连点间隔
 
 ## 下载
-前往releases下载，更新需要替换clickMouse.exe文件。
+前往[releases](https://github.com/xystudio889/pyClickMouse/releases)下载
+
+## 更新注意事项
+暂时不支持自动更新。
+
+更新删除除了data目录的安装目录下的其他文件或目录，然后将新下载的更新包移动到安装目录。
+> [!IMPORTANT]
+> 请不要删除data目录，要不然会导致设置等数据更新，如果需要删除data下的文件将会在release notes中说明。
 
 ## 使用方法
 鼠标连点，目前支持左键和右键。
@@ -133,11 +138,38 @@ C[C/C++] --> E[dll调用] --> D
 ```
 鼠标连点器会一直保持运行，直到关闭程序或手动停止。
 目前支持暂停和停止功能。
+
+## Clickmouse 软件
+### 版本
+clickmouse版本格式为：`A.B.C.D[alpha E][beta F]`
+#### 正式版本
+正式版不带alpha或beta后缀。
+
+A位代表有重大更新，有代码级的变动。如1.0升级到2.0就重构了代码。
+
+B位代表有普通更新，通常是更新一些大功能。
+
+C位代表有修复更新，通常会更新一些小功能和一些bug。
+
+D位代表版本代号，通常每A, B, C位有变动时候+1。也有可能A, B, C位没有变动，D位+1，这代表紧急更新，通常是修复几个重大影响的bug。
+
+#### 测试版本
+测试版本带alpha或beta后缀。
+
+通常前面的`A.B.C.D`在一个测试周期内不变，代表下一个版本。
+
+`alpha`代表开发更新，功能不完善，bug较多，不会发布release。
+
+`beta`代表发布预备更新，功能完善，bug较少，将不会更新功能，会发布release，但无法被更新工具捕获。
+
 ## 内容展望
 - [x] 连点功能
 - [x] 输入间隔
 - [ ] 热键启动
 - [ ] 输入次数
 - [x] 自动更新
-- [ ] 设置
+- [x] 设置
 - [ ] 命令行参数
+- [ ] 扩展
+- [x] 官方安装助手
+- [x] 包管理

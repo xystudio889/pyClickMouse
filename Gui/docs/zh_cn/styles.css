@@ -1,0 +1,9 @@
+.horizonal {
+    display: flex;
+}
+.web {
+    color: blue;
+    text-decoration: underline;
+    text-decoration-color: blue;
+    text-underline-offset: 0.2em;
+}

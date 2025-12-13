@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML lang="zh-cn">
+
+<HEAD>
+    <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+    <Title>ClickMouse 开发文档</Title>
+</HEAD>
+
+<BODY>
+    <h1>Clickmouse 开发文档</h1>
+    <blockquote>此为技术性文档，仅推荐开发者阅读。</blockquote>
+
+    <h2>版权声明</h2>
+    <p><a target="_blank" href="https://icons8.com/icon/13347/mouse">鼠标</a> 的图标 <a target="_blank"
+            href="https://icons8.com">Icons8</a></p>
+    <h2>介绍</h2>
+    <p>一款快捷，使用python制作的鼠标连点器。目前项目处于早期阶段，功能还不完善，欢迎大家提出宝贵意见。</p>
+    <p>这个软件可以有较多的版本，基本都是C/C++调用版本、python调用版本和命令行交互版本。</p>
+    <h2>使用的第三方库和使用的功能</h2>
+    <h3>python</h3>
+    <ul>
+        <li>wxpython：对于gui界面，他是图形核心框架pyautogui：鼠标连点器核心</li>
+        <li>requests：用于检查版本号</li>
+        <li>nuitka：打包为gui或<del>交互式命令行</del>的库</li>
+        <li>cython：打包为pyd的库</li>
+        <li>setuptools：打包为python包的库</li>
+        <li>pywin32:创建快捷方式库</li>
+    </ul>
+    <h3>快速安装</h3>
+    <p>输入<code>pip install -r requirements.txt</code>安装</p>
+    <h2>支持调用的工具</h2>
+    <ul>
+        <li><input type="checkbox" disabled checked> C/C++头文件调用 使用原本C++版本的clickMouse改装而来 速度最快，兼容性最好，但是使用失效的可能性最大。可以从<a
+                href="https://github.com/xystudio889/pyClickMouse">releases</a>下载</li>
+        <li><input type="checkbox" disabled checked> 使用原本C++版本的clickMouse 速度最快，兼容性最好，但是使用失效的可能性最大，但是以停止更新，可以从<a
+                href="https://github.com/xystudio889/pyClickMouse">releases</a>下载，<a
+                href="https://github.com/xystudio889/ClickMouse">之前的clickmouse项目</a></li>
+        <li><input type="checkbox" disabled checked> 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)可以从<a
+                href="https://github.com/xystudio889/pyClickMouse">releases</a>下载</li>
+        <li><input type="checkbox" disabled checked> (开发人员推荐)python调用
+            速度中等，兼容性最好，使用失效的可能性最小。可以使用<code>pip install clickmouse</code>下载</li>
+        <li><input type="checkbox" disabled checked> 使用.pyd调用 基于python语言，速度较快，兼容性较差（不同版本的python可能不兼容），使用失效的可能性较小。可以从<a
+                href="https://github.com/xystudio889/pyClickMouse">releases</a>下载(单独编译仅需编译cython/目录)</li>
+        <li><input type="checkbox" disabled> (普通用户推荐)使用exe 使用 基于交互式命令行添加了gui。可以从<a
+                href="https://github.com/xystudio889/pyClickMouse">releases</a>下载</li>
+        <li><input type="checkbox" disabled> 使用交互式命令行 使用 基于python语言，比gui轻便。<del>可以从<a
+                    href="https://github.com/xystudio889/pyClickMouse">releases</a>下载</del>
+            暂时没有该版本，敬请期待</li>
+        <li><input type="checkbox" disabled> 使用标准命令行 使用 基于python语言。<del>将会自带在除了C++版本外的所有发行版</del> 暂时没有该版本，敬请期待</li>
+    </ul>
+    <h2>安装和调用</h2>
+    <p>Gui版本和<del>命令行交互版本</del>无需安装，直接运行即可。</p>
+    <p>C/C++头文件调用可以直接使用以下代码调用(需要配置include目录)</p>
+    <code>
+#include &lt;clickMouse.h&gt;<br />
+#include &lt;iostream&gt;<br />
+using namespace std;<br />
+int main(){<br />
+&nbsp;&nbsp;&nbsp;&nbsp;cout &lt;&lt; CLICKMOUSE_VERSION &lt;&lt; endl; // 打印版本信息,若成功输出一串数字，则安装成功<br />
+&nbsp;&nbsp;&nbsp;&nbsp;clickMouse(LEFT, 1000, 10, 10); // 连点10次左键，间隔为1000ms，按下时间为10ms，<br />
+&nbsp;&nbsp;&nbsp;&nbsp;return 0;<br />
+}<br />
+</code>
+    <blockquote>
+        下载基于pyd的文件时候需要注意:必须下载是你python版本的文件(如<code>lickmouse.cp39-win_amd64.pyd</code>)仅支持python3.9(cp后面的是版本，如果你使用python3.13以后的版本，不需要下载后面有t的版本(除非你使用freethread开发))
+    </blockquote>
+    <p>python调用或.pyd调用可以直接使用以下代码调用：</p>
+    <code>
+import clickmouse<br /><br />
+clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms
+</code>
+
+    <del>命令行调用</del>
+    <code>ClickMouse.exe /h # 查看帮助</code>
+    <h2>再次编译方法</h2>
+    <p>请先<code>cd</code>到这个项目的根目录</p>
+    <h3>C/C++</h3>
+    <h4>头文件</h4>
+    <p>仅需修改头文件，就可以被调用</p>
+    <h4>dll调用</h4>
+    <p>使用visual studio修改<code>./dll/dll.sln</code>里的<code>源文件/dllmain.cpp</code></p>
+    <h4>gui旧版本</h4>
+    <blockquote>
+        <p>
+            gui旧版本的再编译不接受pull request
+            使用visual studio修改<code>./ClickMouse-old/ClickMouse.sln</code>里的<code>源文件/clickmouse.cpp</code>
+        </p>
+    </blockquote>
+    <h3>python</h3>
+    <p>建议先执行<code>pip install -r requirements.txt</code></p>
+    <h4>python库调用</h4>
+    <p>修改<code>clickmouse/</code>下的代码，运行<code>pip install .</code>安装</p>
+    <h4>pyd调用</h4>
+    <p>修改<code>cython/main.py</code>的代码，然后执行
+        <code>python cython-setup.py build_ext --inplace</code>
+        编译结束后，该目录下应该会有个以<code>.pyd</code>结尾的文件。
+    </p>
+    <h4>gui版本</h4>
+    <p>使用python打包工具打包，注意需要添加<code>res/</code>目录。
+    <h2>功能</h2>
+    <ul>
+        <li>鼠标连点</li>
+        <li>自定义连点间隔</li>
+    </ul>
+    <h2>下载</h2>
+    <p>前往releases下载，更新需要替换clickMouse.exe文件。</p>
+    <h2>使用方法</h2>
+    <p>鼠标连点，目前支持左键和右键。
+        下方的输入框输入间隔，再选择想要点击的类型即可开始连点。</p>
+    <h3>使用优先级</h3>
+    <p>
+        普通用户：A[exe] --&gt; B[交互式命令行]</code><br />
+        开发人员：A[python] --&gt; B[pyd调用] --&gt; D[命令行调用]或C[C/C++] --&gt; E[dll调用] --&gt; D[命令行调用]<br />
+        鼠标连点器会一直保持运行，直到关闭程序或手动停止。<br />
+        目前支持暂停和停止功能。
+    </p>
+    <h2>内容展望</h2>
+    <ul>
+        <li><input type="checkbox" disabled checked> 增加更多的鼠标连点功能</li>
+        <li><input type="checkbox" disabled checked> 输入间隔</li>
+        <li><input type="checkbox" disabled checked> 热键启动</li>
+        <li><input type="checkbox" disabled> 输入次数</li>
+        <li><input type="checkbox" disabled checked> 自动更新</li>
+        <li><input type="checkbox" disabled checked> 设置</li>
+        <li><input type="checkbox" disabled> 命令行参数</li>
+        <li><input type="checkbox" disabled> 扩展</li>
+        <li><input type="checkbox" disabled checked> 官方安装助手</li>
+        <li><input type="checkbox" disabled checked> 包管理</li>
+    </ul>
+</BODY>
+
+</HTML>

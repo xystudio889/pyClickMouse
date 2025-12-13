@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft-07/schema#", "type": "array", "items": {"type": "object", "properties": {"config_in_data": {"type": "string", "minLength": 1}, "cases": {"type": "object", "properties": {}, "minProperties": 1}}, "required": ["config_in_data", "cases"]}, "minItems": 1}

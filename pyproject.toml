@@ -25,4 +25,4 @@ dependencies = [
 pyplus = "pyplus_cmd:main"
 
 [project.urls]
-homepage = "https://github.com/xystudio/pyClickMouse"
+homepage = "https://github.com/xystudio889/pyClickMouse"

@@ -1,8 +1,8 @@
 """读取版本号信息"""
-import sharelibs
+import json
+from sharelibs import get_resource_path
 
-with open(sharelibs.get_resource_path('version'), 'r') as f:
-    version = f.read()
-
-__version__ = version    
+with open(get_resource_path('versions.json'), 'r') as f:
+    __version__ = json.load(f)['clickmouse']
+ 
 __author__ = "xystudio"

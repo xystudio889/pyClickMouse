@@ -6,6 +6,7 @@ import threading # 用于鼠标点击
 from time import sleep, time # 延迟
 from webbrowser import open as open_url # 关于作者
 import wx # GUI库
+
 from version import __version__, __author__ # 版本信息
 from log import Logger # 日志库
 from check_update import check_update # 更新检查
@@ -15,9 +16,17 @@ import os # 系统库
 import shutil # 用于删除文件夹
 import sys # 系统库
 import uiStyles # 软件界面样式
-import sharelibs # 共享库
+from sharelibs import run_software
+import zipfile # 压缩库
+import parse_dev # 解析开发固件配置
+import winreg # 注册表库
 
 logger = Logger('主程序日志')
+logger.info('日志系统启动')
+
+logger.debug('定义函数')
+
+dev_config = parse_dev.parse()
 
 def get_resource_path(*paths):
     '''
@@ -33,9 +42,6 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         wx.MessageBox(f'{get_lang('12')}{e}', get_lang('14'), wx.OK | wx.ICON_ERROR)
         exit(1)
-        
-with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
 
 def get_lang(lang_package_id, lang_id = None):
     lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
@@ -53,17 +59,15 @@ def get_lang(lang_package_id, lang_id = None):
         lang_text = {}
         return lang_text.get(lang_package_id, default_lang_text[lang_package_id])
     
-def fitter_hotkey(text:str):
+def get_lang_system_name(lang_id = None):
+    # 获取系统语言名称
+    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
+    for i in langs:
+        if lang_id == i['lang_id']:
+            return i['lang_system_name']
+    
+def filter_hotkey(text:str):
     return text.split('(')[0]
-
-# 定义数据路径
-data_path = Path('data')
-cache_path = Path('cache')
-update_cache_path = cache_path / 'update.json'
-
-# 创建文件夹（如果不存在）
-data_path.mkdir(parents=True, exist_ok=True)
-cache_path.mkdir(parents=True, exist_ok=True)
 
 def replace_extension(filepath):
     """将文件路径最后一段的.py替换为.exe"""
@@ -140,13 +144,52 @@ def save_settings(settings):
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
 
+def extract_zip(file_path, extract_path):
+    '''
+    解压zip文件
+    '''
+    with zipfile.ZipFile(file_path, 'r') as f:
+        f.extractall(extract_path)
+        
+def get_system_language():
+    '''通过Windows注册表获取系统语言'''
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International")
+        lang, _ = winreg.QueryValueEx(key, "LocaleName")
+        return lang
+    except Exception:
+        return 'en-US'
+    
+def parse_system_language_to_lang_id():
+    '''将系统语言转换为语言ID'''
+    system_lang = get_system_language()
+    for i in langs:
+        if i['is_official']:
+            if i.get('lang_system_name', 'en-US') == system_lang:
+                return i['lang_id']
+    return 0
+        
+def check_doc_exists():
+    is_installed_docs = True
+    is_installed_this_lang_docs = True
+
+    if not(os.path.exists(get_resource_path('docs', 'en.chm'))):
+        wx.MessageBox('软件目录下缺少默认文档文件，所以"文档"功能将被禁用\n修复方法：这可能是再编译版本，请找到源程序的docs目录，使用HTML Help Workshop等工具制作chm文档，并将其放入res\\docs目录下后再编译', get_lang('16'), wx.OK | wx.ICON_WARNING)
+        is_installed_docs = False
+        is_installed_this_lang_docs = False
+    elif not(os.path.exists(get_resource_path('docs', f'{get_lang_system_name()}.chm'))):
+        wx.MessageBox(f'软件目录下缺少{get_lang_system_name()}语言的文档文件，所以"文档"功能将会显示英文文档\n修复方法：这可能是第三方语言包，需要重新对这个语言包制作html版本文档', get_lang('16'), wx.OK | wx.ICON_WARNING)
+        is_installed_this_lang_docs = False
+
+    return (is_installed_docs, is_installed_this_lang_docs)
+
 class ResultThread(threading.Thread):
     '''带有返回值的线程'''
-    def __init__(self, target, args=(), deamon=False):
+    def __init__(self, target, args=(), daemon=False):
         super().__init__()
         self.target = target
         self.args = args
-        self.deamon = deamon
+        self.daemon = daemon
         self._result = None
     
     def run(self):
@@ -155,57 +198,81 @@ class ResultThread(threading.Thread):
     def result(self):
         return self._result
 
-logger.info('加载库成功')
-
+# 变量
 # 自定义的事件
+logger.debug('定义事件')
+
 ID_UPDATE = wx.NewIdRef()
 ID_UPDATE_LOG = wx.NewIdRef()
-ID_SUPPORT_AUTHOR = wx.NewIdRef()
-ID_MORE_UPDATE_LOG = wx.NewIdRef()
-ID_MOUSE_LEFT = wx.NewIdRef()
-ID_MOUSE_RIGHT = wx.NewIdRef()
 ID_CLEAN_CACHE = wx.NewIdRef()
-ID_OPEN_UPDATE_LOG = wx.NewIdRef()
 ID_SETTING = wx.NewIdRef()
-ID_SCAN_CACHE = wx.NewIdRef()
+ID_DOC = wx.NewIdRef()
+ID_MANAGE = wx.NewIdRef()
 
+class SpecialExtensionID:
+    '''特殊扩展ID'''
+    ID_MANAGE = ID_MANAGE
 
+logger.debug('定义资源')
+
+logger.debug('定义广播完成')
+logger.debug('定义数据路径和创建文件夹')
+
+# 定义数据路径
+data_path = Path('data')
+cache_path = Path('cache')
+update_cache_path = cache_path / 'update.json'
+
+# 创建文件夹（如果不存在）
+data_path.mkdir(parents=True, exist_ok=True)
+cache_path.mkdir(parents=True, exist_ok=True)
+
+# 创建资源
 should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 settings = load_settings()
 
+logger.debug('定义语言包')
+with open(get_resource_path('langs.json'), 'r', encoding='utf-8') as f:
+    langs = json.load(f)
+logger.debug('定义资源完成')
+
+logger.debug('检查更新')
 # 检查更新
 if should_check_update_res:
     shutil.rmtree(str(cache_path), ignore_errors=True) # 删除旧缓存
-    check_update_thread = ResultThread(target=check_update, args=('gitee', False), deamon=True)
+    check_update_thread = ResultThread(target=check_update, args=('gitee', False), daemon=True)
     check_update_thread.start()
-    
+logger.debug('检查更新完成')
+
+logger.debug('加载ui')
+
 class SelectLanguage(wx.Frame):
     def __init__(self, parent=None):
         # 初始化
-        logger.info('初始化选择语言窗口')
         super().__init__(parent, title='Please select language.', size=(300, 150),style=wx.DEFAULT_FRAME_STYLE & ~(wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.CLOSE_BOX))
+        system_lang = parse_system_language_to_lang_id()
+        settings['select_lang'] = system_lang
+        save_settings(settings)
+        self.SetTitle(get_lang('54', system_lang))
 
         # 窗口初始化
         self.Icon = wx.Icon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')), wx.BITMAP_TYPE_ICO)
 
         # 创建面板
-        logger.debug('创建选择语言面板')
         panel = wx.Panel(self)
 
         # 面板控件
-        logger.debug('创建控件')
-        wx.StaticText(panel, -1, 'Please select language.', pos=(60, 0))
+        wx.StaticText(panel, -1, get_lang('54', system_lang), pos=(60, 0))
         choices = [i['lang_name'] for i in langs]
 
-        nxt_btn = wx.Button(panel, -1, 'next', (200, 80))
+        nxt_btn = wx.Button(panel, -1, get_lang('55', system_lang), (200, 80))
         
         self.lang_choice = wx.Choice(panel, -1, (75, 30), choices=choices)
-        self.lang_choice.SetSelection(0)
+        self.lang_choice.SetSelection(system_lang)
         
         self.lang_choice.Bind(wx.EVT_CHOICE, self.on_choice_change)
         nxt_btn.Bind(wx.EVT_BUTTON, self.on_nxt_btn)
-        logger.info('页面加载完成')
         
     def on_choice_change(self, event):
         settings['select_lang'] = self.lang_choice.GetSelection()
@@ -298,12 +365,6 @@ class MainWindow(wx.Frame):
         
         # 绑定事件
         logger.debug('绑定事件')
-        self.Bind(wx.EVT_MENU, self.on_exit, id=wx.ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.on_about, id=wx.ID_ABOUT)
-        self.Bind(wx.EVT_MENU, self.on_update, id=ID_UPDATE)
-        self.Bind(wx.EVT_MENU, self.on_update_log, id=ID_UPDATE_LOG)
-        self.Bind(wx.EVT_MENU, self.on_clean_cache, id=ID_CLEAN_CACHE)
-        self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
         self.button_left.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_left)
         self.button_right.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_right)
         # 判断更新结果
@@ -314,29 +375,40 @@ class MainWindow(wx.Frame):
         logger.info('主窗口初始化完成')
         
     def create_menu(self):
+        '''创建菜单栏'''
         menubar = wx.MenuBar()
 
+        # 文件菜单
         file_menu = wx.Menu()
         file_menu.Append(ID_CLEAN_CACHE, get_lang('02'))
-        file_menu.Append(wx.ID_EXIT, get_lang('03'))
         
         # 帮助菜单
         help_menu = wx.Menu()
         help_menu.Append(wx.ID_ABOUT, get_lang('0a'))
         
+        # 更新菜单
         update_menu = wx.Menu()
         update_menu.Append(ID_UPDATE, get_lang('07'))
         update_menu.Append(ID_UPDATE_LOG, get_lang('08'))
 
+        # 设置菜单
         view_menu = wx.Menu()
-        view_menu.Append(ID_SETTING, get_lang('05'))
-        
+        view_menu.Append(ID_SETTING, get_lang('05')) 
+ 
         # 添加菜单到菜单栏
         logger.debug('添加菜单到菜单栏')
         menubar.Append(file_menu, get_lang('01'))
         menubar.Append(view_menu, get_lang('04'))
         menubar.Append(update_menu, get_lang('06'))
         menubar.Append(help_menu, get_lang('09'))
+        
+        # 绑定事件
+        self.Bind(wx.EVT_MENU, self.on_exit, id=wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, self.on_about, id=wx.ID_ABOUT)
+        self.Bind(wx.EVT_MENU, self.on_update, id=ID_UPDATE)
+        self.Bind(wx.EVT_MENU, self.on_update_log, id=ID_UPDATE_LOG)
+        self.Bind(wx.EVT_MENU, self.on_clean_cache, id=ID_CLEAN_CACHE)
+        self.Bind(wx.EVT_MENU, self.on_setting, id=ID_SETTING)
         
         # 设置菜单栏
         self.SetMenuBar(menubar)
@@ -348,7 +420,7 @@ class MainWindow(wx.Frame):
         # 判断是否需要检查更新
         if should_check_update_res:
             if check_update_thread.is_alive():
-                logger.info('更新检查仍在进行中，忽略')
+                logger.debug('更新检查仍在进行中，忽略')
                 return
         else:
             logger.info('距离上次更新检查不到1天，使用缓存')
@@ -457,7 +529,7 @@ class MainWindow(wx.Frame):
             if delay < 1:
                 raise ValueError
         except ValueError:
-            if settings.get('click_delay') == '':
+            if settings.get('click_delay', '') == '':
                 wx.MessageBox(get_lang('1a'), get_lang('14'), wx.ICON_ERROR)
                 logger.error('用户输入错误：请输入有效的正整数延迟')
                 return
@@ -469,7 +541,7 @@ class MainWindow(wx.Frame):
                 else:
                     wx.MessageBox(get_lang('1a'), get_lang('14'), wx.ICON_ERROR)
                     logger.error('用户输入错误：请输入有效的正整数延迟')
-                    # return
+                    return
 
         # 创建独立线程避免阻塞GUI
         def click_loop():
@@ -527,7 +599,7 @@ class MainWindow(wx.Frame):
 class AboutWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
         logger.info('初始化关于窗口')
-        super().__init__(parent, title=fitter_hotkey(get_lang('0a')), size=(300, 225)) # 初始化
+        super().__init__(parent, title=filter_hotkey(get_lang('0a')), size=(325, 225)) # 初始化
 
         # 创建面板
         logger.debug('创建面板')
@@ -539,18 +611,21 @@ class AboutWindow(wx.Dialog):
 
         # 绘制内容
         logger.debug('绘制内容')
+        version_status_text = '预览版' if ('alpha' in __version__) or ('beta' in __version__) else ''
         wx.StaticBitmap(panel, -1, image, wx.Point(0, 0))
-        wx.StaticText(panel, -1, get_lang('1c').format(__version__), wx.Point(64, 15))
+        wx.StaticText(panel, -1, get_lang('1c').format(__version__, version_status_text), wx.Point(64, 15))
+        if not dev_config['verify_clickmouse']:
+            wx.StaticText(panel, -1, '此clickmouse不是官方版本', wx.Point(64, 30))
         wx.StaticText(panel, -1, get_lang('1d'), wx.Point(5, 100), wx.Size(270, 50))
         
         # 按钮
         logger.debug('创建按钮')
         wx.Button(panel, wx.ID_OK, get_lang('1e'), wx.Point(200, 150))
-        wx.Button(panel, ID_SUPPORT_AUTHOR, get_lang('20'), wx.Point(0, 150))
+        support_author = wx.Button(panel, wx.ID_ANY, get_lang('20'), wx.Point(0, 150))
 
         # 绑定事件
         logger.debug('绑定事件')
-        self.Bind(wx.EVT_BUTTON, self.on_support_author, id=ID_SUPPORT_AUTHOR)
+        support_author.Bind(wx.EVT_BUTTON, self.on_support_author)
         logger.info('初始化关于窗口完成')
 
     def on_support_author(self, event):
@@ -560,7 +635,7 @@ class AboutWindow(wx.Dialog):
 class UpdateLogWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
         logger.info('初始化更新日志窗口')
-        super().__init__(parent, title=fitter_hotkey(get_lang('08')))# 初始化
+        super().__init__(parent, title=filter_hotkey(get_lang('08')))# 初始化
 
         logger.debug('加载更新日志')
         
@@ -573,8 +648,8 @@ class UpdateLogWindow(wx.Dialog):
         
         for k, v in load_log.items():
             update_logs[k] = v # 动态加载日志信息
-            if len(v) > 1:
-                update_logs[k][1] = wx.Size(270, v[1] * 17) # 动态计算日志内容的高度
+            if len(v) > 2:
+                update_logs[k][2] = wx.Size(270, v[2] * 17) # 动态计算日志内容的高度
 
         # 创建面板
         panel = wx.Panel(self)
@@ -582,13 +657,13 @@ class UpdateLogWindow(wx.Dialog):
         # 动态加载ui
         logger.debug('加载ui')
         point_y = 5 # 初始y坐标
-        size_index = 1 # 自定义字符大小的索引
+        size_index = 2 # 自定义字符大小的索引
         # 通过字典存储的日志信息来绘制日志内容，并动态计算日志的高度，减少代码量且更加方便管理
         for k, v in update_logs.items():
             len_v = len(v)
-            wx.StaticText(panel, -1, k, wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
+            wx.StaticText(panel, -1, f'{k}    {v[0]}', wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
             point_y += 17 # 动态计算下一个日志内容的y坐标
-            wx.StaticText(panel, -1, v[0], wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
+            wx.StaticText(panel, -1, v[1], wx.Point(5, point_y), v[size_index] if len_v > size_index else wx.Size(270, 17))
             point_y += (v[size_index].height if len_v > size_index else 17) + 5 # 动态计算下一个日志日期信息的y坐标
 
         # 调整页面高度，适配现在的更新日志界面大小
@@ -601,10 +676,10 @@ class UpdateLogWindow(wx.Dialog):
         # 按钮
         logger.debug('创建按钮')
         wx.Button(panel, wx.ID_OK, get_lang('1e'), wx.Point(200, point_y + 50))
-        wx.Button(panel, ID_MORE_UPDATE_LOG, get_lang('23'), wx.Point(0, point_y + 50))
+        more_update_log = wx.Button(panel, wx.ID_ANY, get_lang('23'), wx.Point(0, point_y + 50))
         # 绑定事件
         logger.debug('绑定事件')
-        self.Bind(wx.EVT_BUTTON, self.on_more_update_log, id=ID_MORE_UPDATE_LOG)
+        more_update_log.Bind(wx.EVT_BUTTON, self.on_more_update_log)
         logger.info('初始化更新日志窗口完成')
 
     def on_more_update_log(self, event):
@@ -623,12 +698,12 @@ class UpdateWindow(wx.Dialog):
         wx.StaticText(panel, -1, get_lang('24'), wx.Point(5, 5)).SetFont(wx.Font(16, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         wx.StaticText(panel, -1, get_lang('25').format(__version__, result[1]), wx.Point(5, 30), wx.Size(180, 40))
         # 按钮
-        wx.Button(panel, ID_UPDATE, get_lang('26'), wx.Point(5, 70))
-        wx.Button(panel, ID_OPEN_UPDATE_LOG, get_lang('27'), wx.Point(80, 70))
+        update = wx.Button(panel, wx.ID_ANY, get_lang('26'), wx.Point(5, 70))
+        update_log = wx.Button(panel, wx.ID_ANY, get_lang('27'), wx.Point(80, 70))
         wx.Button(panel, wx.ID_CANCEL, get_lang('1f'), wx.Point(200, 70))
         # 绑定事件
-        self.Bind(wx.EVT_BUTTON, self.on_update, id=ID_UPDATE)
-        self.Bind(wx.EVT_BUTTON, self.on_open_update_log, id=ID_OPEN_UPDATE_LOG)
+        update.Bind(wx.EVT_BUTTON, self.on_update)
+        update_log.Bind(wx.EVT_BUTTON, self.on_open_update_log)
 
     def on_update(self, event):
         '''更新'''
@@ -650,7 +725,7 @@ class UpdateWindow(wx.Dialog):
 class CleanCacheWindow(wx.Dialog):
     def __init__(self, parent=MainWindow):
         logger.info('初始化清理缓存窗口')
-        super().__init__(parent, title=fitter_hotkey(get_lang('02'))) # 初始化
+        super().__init__(parent, title=filter_hotkey(get_lang('02'))) # 初始化
 
         # 创建面板
         panel = wx.Panel(self)
@@ -670,7 +745,21 @@ class CleanCacheWindow(wx.Dialog):
         wx.StaticText(panel, -1, get_lang('35'), self.point(200))
         wx.StaticText(panel, -1, get_lang('36'), self.point(400))
         
-        cache_list = {get_lang('2d') : ['logs/', get_lang('2e')],get_lang('2f') : ['update.json', get_lang('30'), 4, False], get_lang('31') : ['', get_lang('32')]} # 缓存列表
+        # 从json读取缓存列表
+        cache_list = {}
+        
+        with open(get_resource_path('vars', 'cleancache.json'), 'r', encoding='utf-8') as f:
+            load_cache = json.load(f)
+        
+        # 解析缓存源文件
+        for k, v in load_cache.items():
+            if k.startswith(' '):
+                cache_list[get_lang(k[1:])] = [] # 初始化空项
+            for value in v:
+                if type(value) is str and value.startswith(' '):
+                    cache_list[get_lang(k[1:])].append(get_lang(value[1:]))
+                else:
+                    cache_list[get_lang(k[1:])].append(value)
 
         self.cache_dir_list = {'logs'} # 缓存文件路径的列表
         self.cache_file_list = {'update.json'} # 缓存文件列表
@@ -700,13 +789,14 @@ class CleanCacheWindow(wx.Dialog):
         
         # 按钮
         logger.debug('创建按钮')
-        wx.Button(panel, ID_SCAN_CACHE, get_lang('38'), wx.Point(5, self.point_y + 20))
-        wx.Button(panel, wx.ID_CANCEL, get_lang('1f'), wx.Point(100, self.point_y + 20))
-        wx.Button(panel, ID_CLEAN_CACHE, get_lang('39'), wx.Point(200, self.point_y + 20))
+        scan_cache = wx.Button(panel, wx.ID_ANY, get_lang('38'), wx.Point(5, self.point_y + 20))
+        wx.Button(panel, wx.ID_CANCEL, get_lang('1f'), wx.Point(200, self.point_y + 20))
+        clean_cache = wx.Button(panel, wx.ID_ANY, get_lang('39'), wx.Point(100, self.point_y + 20))
 
+        # 绑定事件
         self.btn_all.Bind(wx.EVT_BUTTON, self.on_all_check)
-        self.Bind(wx.EVT_BUTTON, self.on_scan_cache, id=ID_SCAN_CACHE)
-        self.Bind(wx.EVT_BUTTON, self.on_clean_cache, id=ID_CLEAN_CACHE)
+        scan_cache.Bind(wx.EVT_BUTTON, self.on_scan_cache)
+        clean_cache.Bind(wx.EVT_BUTTON, self.on_clean_cache)
         
         for checkbox in self.cache_size_checkbox_list:
             checkbox.Bind(wx.EVT_CHECKBOX, self.update_all_check_status)
@@ -886,7 +976,7 @@ class SettingWindow(uiStyles.SelectUI):
         # 初始化
         logger.info('初始化设置窗口')
         self.cache_setting = settings.copy()
-        super().__init__(title=fitter_hotkey(get_lang('05')), size=(400, 300))
+        super().__init__(title=filter_hotkey(get_lang('05')), size=(400, 300))
         self.page_titles = [get_lang('42'), get_lang('43'), get_lang('44')]
         self.create_pages()
         self.switch_page(0)
@@ -1053,7 +1143,7 @@ class SettingWindow(uiStyles.SelectUI):
         try:
             if self.cache_setting.get('click_delay', '') != '':
                 self.cache_setting['click_delay'] = int(self.cache_setting['click_delay'])
-        except ValueError as e:
+        except ValueError:
             wx.MessageBox(get_lang('51'), get_lang('14'), wx.ICON_ERROR)
             logger.error(f'用户输入错误：请输入有效的正整数延迟')
             return -1
@@ -1086,6 +1176,7 @@ class SettingWindow(uiStyles.SelectUI):
                 return  # 取消关闭操作
         self.Destroy()
 
+logger.debug('加载ui完成')
 # 显示窗口
 def main(app_name=MainWindow):
     frame = app_name()
@@ -1099,18 +1190,15 @@ def command():
     print('ClickMouse命令行工具未实现，敬请期待')
 
 if __name__ == '__main__':
+    logger.info('加载完成')
     if argv[1:]:
         # 调用命令行工具
         command()
     else:
         # 调用GUI工具
         app = wx.App()
-        if not(data_path / 'runonce.json').exists():
+        if os.path.exists(str(data_path / 'first_run')):
             main(SelectLanguage)
-            with open(data_path / 'runonce.json', 'w', encoding='utf-8') as f:
-                json.dump({'run_first': False}, f, ensure_ascii=False)
         main()
         app.MainLoop()
         logger.info('程序退出')
-
-    app.MainLoop()

@@ -63,14 +63,8 @@ def remove_reg_key(sub_key):
         # 关闭父键后删除空项
         winreg.CloseKey(parent_key)
         winreg.DeleteKey(root_key, sub_key)
-        print(f"成功删除: {root_key}\\{sub_key}")
-
-    except PermissionError:
-        print(f"权限不足，请以管理员身份运行")
-    except FileNotFoundError:
-        print(f"注册表项不存在: {root_key}\\{sub_key}")
-    except Exception as e:
-        print(f"操作失败: {e}")
+    except:
+        pass
 
 def read_reg_key(key, value):
     try:
@@ -138,5 +132,5 @@ if __name__ == "__main__":
         if data == 0:
             run_as_admin()
         elif data == 1:
-            messagebox.showerror("错误", "程序已请求提升权限，但是仍然以非管理员权限运行，请联系系统管理员")
+            messagebox.showerror("错误", "请以管理员身份运行！")
             os.remove('run_as_admin.json')
