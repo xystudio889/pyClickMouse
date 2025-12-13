@@ -19,7 +19,7 @@ def _show_message(message, title, status):
         QMessageBox.critical(None, title, message)
 
 try:
-    lang_path = Path('res', 'langs.json')
+    lang_path = Path('res', 'langs', 'langs.json')
     with open(lang_path, 'r', encoding='utf-8') as f:
         langs = json.load(f)
 except FileNotFoundError:
@@ -95,7 +95,7 @@ def run_software(code_path, exe_path):
     '''
     运行软件
     '''
-    subprocess.Popen(f'python {code_path}' if in_dev else f'start {exe_path}')
+    subprocess.Popen(f'python {code_path}' if in_dev else f'{exe_path}')
     
 def is_dark_mode():
     '''是否是深色模式'''
