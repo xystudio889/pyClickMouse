@@ -13,60 +13,7 @@ class Style:
     QUESTION = 0b1000000
     WARNING = 0b10000000
     ERROR = 0b100000000
-    
 
-class MoreButtonDialog(wx.Dialog):
-    def __init__(self, parent, title:str, message:str, buttons:list, msgbox_style=Style.DEFAULT, window_style=wx.DEFAULT_DIALOG_STYLE):
-        super().__init__(parent, title=title, style=window_style, size=(300, 300))
-        
-        self.msgbox_style = msgbox_style
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        icon = self.parse_box_icon()
-        if icon is not None:
-            title_sizer.Add(wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(icon, wx.ART_MESSAGE_BOX, (32, 32))), 0, wx.ALL, 15)
-        else:
-            title_sizer.AddSpacer(15)
-        title_sizer.Add(wx.StaticText(self, label=message), 0, wx.ALL, 15)
-        
-        self.button_text_list = buttons.copy()
-        self.buttons_text_list = self.parse_button_style()
-        self.buttons = []
-        for i, btn_text in enumerate(self.buttons_text_list):
-            btn = wx.Button(self, wx.ID_ANY, btn_text)
-            btn.Bind(wx.EVT_BUTTON, lambda evt, idx=i: self.EndModal(idx))
-            btn_sizer.Add(btn)
-            self.buttons.append(btn)
-
-        sizer.Add(title_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        self.SetSizer(sizer)
-        self.Fit()
-    
-    def parse_box_icon(self):
-        if self.msgbox_style & Style.INFO:
-            return wx.ART_INFORMATION
-        elif self.msgbox_style & Style.QUESTION:
-            return wx.ART_QUESTION
-        elif self.msgbox_style & Style.WARNING:
-            return wx.ART_WARNING
-        elif self.msgbox_style & Style.ERROR:
-            return wx.ART_ERROR
-        else:
-            return None
-    
-    def parse_button_style(self):
-        buttons = self.button_text_list.copy()
-        if self.msgbox_style & Style.YES:
-            buttons.append("是")
-        if self.msgbox_style & Style.NO:
-            buttons.append("否")   
-        if self.msgbox_style & Style.CANCEL:
-            buttons.append("取消")
-        if self.msgbox_style & Style.OK:
-            buttons.append("确定")
-        return buttons
 
 class SelectUI(wx.Dialog):
     def __init__(self, title, size, parent=None, **kwargs):
@@ -142,7 +89,60 @@ class SelectUI(wx.Dialog):
             btn.SetBackgroundColour(color)
         # 调整布局
         self.content_sizer.Layout()
+
+class MoreButtonDialog(wx.Dialog):
+    def __init__(self, parent, title:str, message:str, buttons:list, msgbox_style=Style.DEFAULT, window_style=wx.DEFAULT_DIALOG_STYLE):
+        super().__init__(parent, title=title, style=window_style, size=(300, 300))
         
+        self.msgbox_style = msgbox_style
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        title_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        icon = self.parse_box_icon()
+        if icon is not None:
+            title_sizer.Add(wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(icon, wx.ART_MESSAGE_BOX, (32, 32))), 0, wx.ALL, 15)
+        else:
+            title_sizer.AddSpacer(15)
+        title_sizer.Add(wx.StaticText(self, label=message), 0, wx.ALL, 15)
+        
+        self.button_text_list = buttons.copy()
+        self.buttons_text_list = self.parse_button_style()
+        self.buttons = []
+        for i, btn_text in enumerate(self.buttons_text_list):
+            btn = wx.Button(self, wx.ID_ANY, btn_text)
+            btn.Bind(wx.EVT_BUTTON, lambda evt, idx=i: self.EndModal(idx))
+            btn_sizer.Add(btn)
+            self.buttons.append(btn)
+
+        sizer.Add(title_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.SetSizer(sizer)
+        self.Fit()
+    
+    def parse_box_icon(self):
+        if self.msgbox_style & Style.INFO:
+            return wx.ART_INFORMATION
+        elif self.msgbox_style & Style.QUESTION:
+            return wx.ART_QUESTION
+        elif self.msgbox_style & Style.WARNING:
+            return wx.ART_WARNING
+        elif self.msgbox_style & Style.ERROR:
+            return wx.ART_ERROR
+        else:
+            return None
+    
+    def parse_button_style(self):
+        buttons = self.button_text_list.copy()
+        if self.msgbox_style & Style.YES:
+            buttons.append("是")
+        if self.msgbox_style & Style.NO:
+            buttons.append("否")   
+        if self.msgbox_style & Style.CANCEL:
+            buttons.append("取消")
+        if self.msgbox_style & Style.OK:
+            buttons.append("确定")
+        return buttons
+
 class PagesUI(wx.Frame):
     '''页面UI样式'''
     def __init__(self, title, size, parent=None, **kwargs):
@@ -248,10 +248,3 @@ class PagesUI(wx.Frame):
     def on_close(self, event):
         '''关闭窗口'''
         self.Destroy()
-
-if __name__ == '__main__':
-    app = wx.App()
-    frame = PagesUI('test', (300, 200))
-    
-    frame.Show()
-    app.MainLoop()

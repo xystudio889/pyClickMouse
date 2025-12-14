@@ -154,15 +154,24 @@ class PagesUI(wx.Frame):
         self.total_pages = 0
         
         # 主面板
+<<<<<<<< HEAD:clickmouse_api/clickmouse_API/GUI/styles.py
         main_panel = wx.Panel(self)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         
         # 创建内容面板容器
         self.content_panel = wx.Panel(main_panel)
+========
+        self.main_panel = wx.Panel(self)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        # 创建内容面板容器
+        self.content_panel = wx.Panel(self.main_panel)
+>>>>>>>> main:Gui/uiStyles.py
         self.content_sizer = wx.BoxSizer(wx.VERTICAL)
         self.content_panel.SetSizer(self.content_sizer)
         
         # 创建按钮面板
+<<<<<<<< HEAD:clickmouse_api/clickmouse_API/GUI/styles.py
         btn_panel = wx.Panel(main_panel)
         
         # 创建按钮
@@ -182,12 +191,26 @@ class PagesUI(wx.Frame):
         main_sizer.Add(self.content_panel, 5, wx.EXPAND)
         main_sizer.Add(btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
         main_panel.SetSizer(main_sizer)
+========
+        self.btn_panel = wx.Panel(self.main_panel)
+        
+        # 创建按钮
+        self.btn_prev = wx.Button(self.btn_panel, label='上一步', pos = (0,5))
+        self.btn_next = wx.Button(self.btn_panel, label='下一步', pos = (100, 5))
+        self.btn_cancel = wx.Button(self.btn_panel, label='取消', pos = (200, 5))
+        self.btn_exit = wx.Button(self.btn_panel, label='退出', pos = (200, 5))
+        self.btn_exit.Hide()
+        
+        # 主布局调整
+        self.main_panel.SetSizer(self.main_sizer)
+>>>>>>>> main:Gui/uiStyles.py
         
         # 绑定事件
         self.btn_prev.Bind(wx.EVT_BUTTON, self.on_prev)
         self.btn_next.Bind(wx.EVT_BUTTON, self.on_next)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_close)
         self.btn_exit.Bind(wx.EVT_BUTTON, self.on_close)
+<<<<<<<< HEAD:clickmouse_api/clickmouse_API/GUI/styles.py
         
         self.update_buttons()
         self.update_page(0)
@@ -205,6 +228,33 @@ class PagesUI(wx.Frame):
             panel.Hide()
             self.content_sizer.Add(panel, 1, wx.EXPAND)  # 将页面加入Sizer
             self.pages.append(panel)
+========
+            
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+        
+    def init_show(self):
+        """初始化显示框架结构"""
+        self.content = self.main_sizer.Add(self.content_panel, 5, wx.EXPAND)
+        self.btn = self.main_sizer.Add(self.btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
+        
+    def init_pages(self, varible_name: list):
+        '''初始化页面值'''
+        for i in varible_name:
+            self.__dict__[i] = self.new_page()
+            
+    def draw_page(self, index):
+        '''根据索引绘制页面内容'''
+        pass
+    
+    def create_pages(self):
+        """创建显示器页面"""    
+        for i in range(self.total_pages):
+            self.panel = wx.Panel(self.content_panel)
+            self.draw_page(i)
+            self.panel.Hide()
+            self.content_sizer.Add(self.panel, 1, wx.EXPAND)  # 将页面加入Sizer
+            self.pages.append(self.panel)
+>>>>>>>> main:Gui/uiStyles.py
     
     def new_page(self):
         '''创建新页面'''
@@ -213,7 +263,11 @@ class PagesUI(wx.Frame):
         return self.total_pages - 1
 
     def update_buttons(self):
+<<<<<<<< HEAD:clickmouse_api/clickmouse_API/GUI/styles.py
         '''更新按钮状态'''
+========
+        '''更新按钮状态，如果有按钮显示操作则重载此函数'''
+>>>>>>>> main:Gui/uiStyles.py
         if self.current_page >= self.total_pages - 1:
             self.btn_prev.Hide()
             self.btn_next.Hide()
