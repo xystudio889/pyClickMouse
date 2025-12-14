@@ -23,10 +23,10 @@ try:
     with open(lang_path, 'r', encoding='utf-8') as f:
         langs = json.load(f)
 except FileNotFoundError:
-    _show_message('资源损坏: 语言文件丢失', '错误', 2)
+    _show_message('Resource file missing: langs.json not found', 'Error', 2)
     exit(1)
 except json.JSONDecodeError:
-    _show_message('资源损坏: 语言文件格式错误', '错误', 2)
+    _show_message('Resource file damaged: langs.json format error', 'Error', 2)
     exit(1)
     
 def get_style_sheet(style_name: str, mode: str = None) -> str:
@@ -39,7 +39,7 @@ def get_style_sheet(style_name: str, mode: str = None) -> str:
         with open(get_resource_path('styles', mode, f'{style_name}.qss'), 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        raise FileNotFoundError(f'样式表{style_name}.qss不存在')
+        raise FileNotFoundError(f'Style sheet {style_name}.qss not found')
     
 def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
     '''
@@ -86,7 +86,7 @@ def get_resource_path(*paths):
             raise FileNotFoundError('资源文件出现损坏')
         return str(resource.joinpath(*paths))
     except Exception as e:
-        _show_message(f'资源文件损坏: {e}', '错误', 2)
+        _show_message(f'Resource file missing: {e}', 'Error', 2)
         exit(1)
 
 in_dev = os.path.exists('dev_list/in_dev') # 是否处于开发模式
