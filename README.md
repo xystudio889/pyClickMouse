@@ -34,13 +34,52 @@
 
 ## 使用的第三方库和使用的功能
 ### python
-wxpython：对于gui界面，他是图形核心框架
-pyautogui：鼠标连点器核心
-requests：用于检查版本号
-nuitka：打包为gui或~~交互式命令行~~的库
-cython：打包为pyd的库
-setuptools：打包为python包的库
-pywin32:创建快捷方式库
+# Clickmouse
+
+<div align = "center">
+    <a href="https://pypi.org/project/ClickMouse/">
+        <img src="https://img.shields.io/pypi/v/clickMouse.svg" 
+        alt="pypi">
+    </a>
+    <a href="https://img.shields.io/pypi/pyversions/ClickMouse">
+        <img src="https://img.shields.io/pypi/pyversions/ClickMouse" alt="support-version">
+    </a>
+    <a href="https://github.com/gaogaotiantian/viztracer/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/xystudio889/pyclickmouse" alt="license">
+    </a>
+    <a href="https://github.com/xystudio889/pyclickmouse/commits/master">
+        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
+    </a>
+    <a href="https://github.com/sponsors/xystudio889">
+        <img src="https://img.shields.io/badge/%E2%9D%A4-Sponsor%20me-%23c96198?style=flat&logo=GitHub"
+            alt="sponsor">
+    </a>
+    <br />
+    <a href="https://github.com/xystudio889/clickmouse/releases">
+        <img src="https://img.shields.io/badge/点击下载-旧版本clickmouse-536af5?color=63eafa&logoColor=white">
+    </a>
+</div>
+
+## 版权声明
+<a target="_blank" href="https://icons8.com/icon/13347/mouse">鼠标</a> 的图标 <a target="_blank" href="https://icons8.com">Icons8</a>
+
+## 介绍
+一款快捷，使用python制作的鼠标连点器。目前项目处于早期阶段，功能还不完善，欢迎大家提出宝贵意见。
+
+这个软件可以有较多的版本，基本都是C/C++调用版本、python调用版本和命令行交互版本。
+
+## 使用的第三方库和使用的功能
+### python
+- PySide6：对于gui界面，他是图形核心框架
+- pyautogui：鼠标连点器核心
+- requests：用于检查版本号
+- uitka：打包为gui或~~交互式命令行~~的库
+- cython：打包为pyd的库
+- setuptools：打包为python包的库
+- pywin32:创建快捷方式库
+- pynput: 键盘控制库
+- pyperclip: 剪贴板库
+
 ### 快速安装
 输入`pip install -r requirements.txt`安装
 
