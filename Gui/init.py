@@ -9,8 +9,7 @@ import zipfile # 解压文件
 import json # 读写json文件
 import sys # 运行权限
 from sharelibs import (get_resource_path, settings, run_software) # 共享库
-from uiStyles import PagesUI # 界面样式
-from datetime import datetime # 时间
+from uiStyles.old import PagesUI
 
 with open('res/init_langs.json', 'r', encoding='utf-8') as f:
     langs = json.load(f)

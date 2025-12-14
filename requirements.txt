@@ -1,9 +1,11 @@
-wxPython>=4.0.0
+pySide6>=6.5.0
 pyautogui>=0.9.53
 requests>=2.26.0
 setuptools>=61.0.0
 cython >= 0.29.24
 pywin32>=303
 pyperclip >= 1.5.2
+pynput>=1
 clickmouse
 ClickMouse_api
+qtmodernredux6>=0.6
