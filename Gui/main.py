@@ -347,7 +347,7 @@ class Click(QObject):
     pause = Signal(bool)
     click_changed = Signal(bool, bool)
     stopped = Signal()
-    click_conuter = Signal(int, int, int)
+    click_conuter = Signal(str, str, str) # 用于修复overflow问题
     
     def __init__(self):
         super().__init__()
@@ -425,7 +425,10 @@ class Click(QObject):
                         pyautogui.click(button=button)
                         sleep(delay / 1000)
                         i += 1
-                        self.click_conuter.emit(times, i, delay)
+                        if times == float('inf'):
+                            self.click_conuter.emit('inf', str(i), str(delay))
+                        else:
+                            self.click_conuter.emit(str(times), str(i), str(delay))
                     except Exception as e:
                         QMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
                         logger.critical(f'发生错误:{e}')
@@ -1069,11 +1072,15 @@ class MainWindow(QMainWindow):
     
     def on_click_counter(self, totel, now, delay):
         '''连点计数器'''
-        if is_inf:
+        now = int(now)
+        delay = int(delay)
+        if totel == 'inf':
             now_total_delay = get_unit_value(delay * now)
             delay = get_unit_value(delay)
             self.status_bar.showMessage(f'{get_lang('62') if clicker.paused else ''}{get_lang('63').format(now, self.get_full_unit(now_total_delay), self.get_full_unit(delay))}')
         else:
+            totel = int(totel)
+    
             left = totel - now
             totel_delay = get_unit_value(delay * totel)
             now_total_delay = get_unit_value(delay * now)
@@ -1094,7 +1101,7 @@ class AboutWindow(QDialog):
         super().__init__()
         logger.info('初始化关于窗口')
         self.setWindowTitle(filter_hotkey(get_lang('0a')))
-        self.setGeometry(100, 100, 375, 150)
+        self.setGeometry(100, 100, 375, 175)
         self.setWindowIcon(icon)
         self.setFixedSize(self.width(), self.height())
         self.init_ui()
@@ -1116,7 +1123,7 @@ class AboutWindow(QDialog):
         self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'))
         
         # 版本信息
-        version_status_text = get_lang('65') if ('alpha' in __version__) or ('beta' in __version__) or ('.dev' in __version__) else ''
+        version_status_text = get_lang('65') if ('alpha' in __version__) or ('beta' in __version__) or ('dev' in __version__) else ''
         version = QLabel(get_lang('1c').format(__version__, version_status_text))
         if not dev_config['verify_clickmouse']:
             not_official_version = QLabel(get_lang('67'))
@@ -1176,7 +1183,6 @@ class UpdateLogWindow(QDialog):
 
         with open(get_resource_path('vars', 'update_log.json'), 'r', encoding='utf-8') as f:
             self.update_logs = json.load(f) # 加载更新日志
-            
             
         logger.debug('初始化更新日志窗口')
         self.init_ui()
