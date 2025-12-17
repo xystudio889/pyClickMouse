@@ -176,15 +176,17 @@ def get_packages():
     list_packages = [] # 包名列表
     lang_index = [] # 语言包索引
     package_path = [] # 包路径列表
+    package_index = [] # 包索引
     show = []
     
-    # 加载包信息
+    # # 加载包信息
     # for package in packages:
     #     list_packages.append(package.get('package_name', None))
     #     lang_index.append(package.get('package_name_lang_index', None))
     #     package_path.append(package.get('install_location', None))
+    #     package_index.append(package.get('package_id', None))
     #     show.append(package.get('show_in_extension_list', True))
-    return (list_packages, lang_index, package_path, show)
+    return (list_packages, lang_index, package_path, package_index, show)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -776,41 +778,11 @@ class MainWindow(QMainWindow):
         
         # 热键帮助
         hotkey_help = help_menu.addAction(get_lang('5e'))
-        
-        # 文档菜单
-        doc = help_menu.addAction(get_lang('5f'))
-        if not(is_installed_doc):
-            doc.setEnabled(False)
+
+        # doc = help_menu.addAction(get_lang('5f'))
+        # if not(is_installed_doc):
+        #     doc.setEnabled(False)
             
-        # 扩展菜单
-        extension_menu = menu_bar.addMenu('扩展(&X)')
-        official_extension_menu = extension_menu.addMenu('官方扩展(&O)')
-        if not any(show_list):
-            # 无官方扩展提示
-            official_extension_menu.addAction('暂无官方扩展').setDisabled(True)
-        else:
-            # 加载官方扩展菜单
-            for index, show in zip(indexes, show_list):
-                if show:
-                    official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=index: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
-        official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_extension) # 管理扩展菜单
-        
-        not_official_extension_menu = extension_menu.addMenu('第三方扩展(&T)')
-        
-        cge_menu = not_official_extension_menu.addMenu('clickmouse扩展(&C)')
-        cge_menu.addAction('暂无第三方扩展').setDisabled(True)
-        
-        cmm_menu = not_official_extension_menu.addMenu('clickmouse宏(&M)')
-        cmm_menu.addAction('暂无宏').setDisabled(True)
-
-        not_official_extension_menu.addAction('导入扩展(&I)').triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
-        not_official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
-        
-        # 宏菜单
-        macro_menu = menu_bar.addMenu('宏(&M)')
-        for action in cmm_menu.actions():
-            macro_menu.addAction(action)
-
         # 绑定动作
         about_action.triggered.connect(self.show_about)
         update_log.triggered.connect(self.show_update_log)
@@ -819,54 +791,6 @@ class MainWindow(QMainWindow):
         settings_action.triggered.connect(self.show_setting)
         hotkey_help.triggered.connect(self.show_hotkey_help)
         exit_action.triggered.connect(app.quit)
-        
-    def do_extension(self, index):
-        '''执行扩展'''
-        match index:
-            case 1:
-                # 扩展1
-                print('扩展1')
-            
-    def show_manage_extension(self):
-        '''管理扩展'''
-        logger.info('打开扩展管理窗口')
-        # run_software('install_pack.py' ,'inst_pks.exe')
-        QMessageBox.information(self, '管理扩展', '管理扩展功能暂未开放，敬请期待')
-        
-    def show_import_extension_mode(self):
-        '''导入扩展模式'''
-        logger.info('打开导入扩展窗口')
-        # import_extension_window = SetImportExtensionModeWindow()
-        # import_extension_window.exec()
-        QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
-        
-    def show_import_extension(self, mode):
-        '''导入扩展'''
-        logger.info('导入扩展')
-        if mode == 1:
-            file_name, _ = QFileDialog.getOpenFileName(self, '选择扩展文件', '', 'clickmouse扩展可执行程序(*.cge);;clickmouse语言扩展(*.cle);;clickmouse宏(*.cmm);;导出的clickmouse设置(*.cms);;clickmouse自定义样式(*.cst)')
-        else :
-            file_name = QFileDialog.getExistingDirectory(self, '选择扩展目录', '')
-
-        if file_name:
-            ans = QMessageBox.warning(self, '管理扩展', 'clickmouse扩展支持任意的exe，请确保你的扩展包受信任。', QMessageBox.Yes | QMessageBox.No)
-            try:
-                if ans == QMessageBox.No:
-                    raise Exception('用户未信任此扩展包')
-                # 导入扩展
-                QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
-            except Exception as e:
-                logger.error(f'导入扩展失败: {e}')
-                QMessageBox.critical(self, '管理扩展', f'导入扩展失败: {e}')
-                return
-        else:
-            return
-        
-    def show_manage_not_official_extension(self):
-        '''管理第三方扩展'''
-        logger.info('打开第三方扩展管理窗口')
-        
-        QMessageBox.information(self, '管理扩展', '管理扩展功能暂未开放，敬请期待')
             
     def show_about(self):
         '''显示关于窗口'''
@@ -1183,6 +1107,7 @@ class AboutWindow(QDialog):
         self.init_ui()
 
     def init_ui(self):
+        
         # 创建面板
         logger.debug('创建面板')
         central_layout = QGridLayout()
@@ -2409,51 +2334,9 @@ class SettingWindow(SelectUI):
     def init_right_pages(self):
         super().init_right_pages()
         self.buttons[0].setStyleSheet(selected_style)
-
-class SetImportExtensionModeWindow(QDialog):
-    def __init__(self):
-        super().__init__()
-        logger.info('初始化管理扩展窗口')
-        self.setWindowTitle('管理扩展')
-        self.setGeometry(100, 100, 200, 125)
-        self.setWindowIcon(icon)
-        self.setFixedSize(self.width(), self.height())
-        self.init_ui()
-        
-    def init_ui(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        
-        # 选择扩展模式
-        # 提示
-        mode_label = QLabel('请选择扩展模式')
-        mode_label.setAlignment(Qt.AlignCenter)
-        mode_label.setStyleSheet(big_title)
-
-        # 选择框
-        self.mode_combo = QComboBox()
-        self.mode_combo.addItems(['文件夹模式', '单文件模式'])
-        self.mode_combo.setCurrentIndex(1)
-        
-        # 按钮
-        mode_button = QPushButton('确定')
-        
-        # 布局
-        layout.addWidget(mode_label)
-        layout.addWidget(self.mode_combo)
-        layout.addWidget(mode_button)
-
-        # 连接信号
-        mode_button.clicked.connect(self.on_mode_button_clicked)
-        
-    def on_mode_button_clicked(self):
-        self.close()
-        main_window.show_import_extension(self.mode_combo.currentIndex())
         
 class TrayApp:
     def __init__(self):
-        global is_installed_doc, is_installed_lang_doc
-        
         self.app = get_application_instance()
 
         show_tray_icon = settings.get('show_tray_icon', True)
@@ -2462,30 +2345,6 @@ class TrayApp:
         
         # 激活主窗口
         main_window.show()
-        
-        # 加载警告
-        required_files = ['main.qss', 'big_text.qss', 'dest.qss', 'selected_button.qss']
-        for root, dirs, files in os.walk(get_resource_path('styles/')):
-            for dir in dirs:
-                not_found = []
-                
-                for file in required_files:
-                    if not os.path.exists(os.path.join(root, dir, file)):
-                        not_found.append(file)
-                
-                if not_found:
-                    try:
-                        del maps[dir]
-                    except KeyError:
-                        pass
-                
-                    for index, _ in enumerate(style_indexes):
-                        try:
-                            del style_indexes[index]['lang_package'][dir]
-                        except KeyError:
-                            pass
-                    
-                    QMessageBox.warning(main_window, '警告', f'软件目录下缺少{dir}的部分文件:{not_found}，所以{dir}样式不会加载\n修复方法:这可能是第三方语言包，或者文件损坏，请尝试重新安装软件或联系作者')
         
         # 创建设置延迟窗口
         self.set_dalay_window = FastSetClickWindow()
@@ -2674,14 +2533,14 @@ def main():
 if __name__ == '__main__':
     # if not(data_path / 'first_run').exists():
     #     run_software('init.py', 'cminit.exe')
+    # else:
 
     is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
-    
     # with open('packages.json', 'r', encoding='utf-8') as f:
     #     packages = json.load(f)
     packages = None
 
-    package_list, indexes, install_location, show_list = get_packages()
+    # package_list, indexes, install_location, package_id, show_list = get_packages()
 
     if not (data_path / 'first_run').exists():
         SelectLanguage_window = SelectLanguage()
@@ -2689,7 +2548,5 @@ if __name__ == '__main__':
         app.exec()
     main_window = MainWindow()
     hotkey_help_window = HotkeyHelpWindow()
-
     main()
-    
     logger.info('主程序退出')
