@@ -64,6 +64,11 @@ QMenuBar::item:selected {
     background-color: #e0e0e0;
 }
 
+QMenu:disabled {
+    background-color: #f0f0f0;
+    color: #d0d0d0;
+}
+
 /* 选中且悬停 */
 QCheckBox {
     color: black;
