@@ -1,4 +1,0 @@
-QPushButton {
-    background-color: dodgerblue;
-    color: white;
-}
