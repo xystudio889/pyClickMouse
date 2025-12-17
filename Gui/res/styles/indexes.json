@@ -12,8 +12,7 @@
         "lang_id": 1,
         "lang_package": {
             "light": "浅色",
-            "dark": "深色",
-            "light copy": "浅色副本"
+            "dark": "深色"
         }
     }
 ]
