@@ -5,6 +5,7 @@
         "is_official": true,
         "lang_system_name": "en",
         "lang_info": {},
+        "has_plural": true,
         "lang_package": {
             "01": "File(&F)",
             "02": "Clean Cache(&C)",
@@ -143,6 +144,7 @@
         "lang_id": 1,
         "is_official": true,
         "lang_system_name": "zh-CN",
+        "has_plural": false,
         "lang_package": {
             "01": "文件(&F)",
             "02": "清理缓存(&C)",
