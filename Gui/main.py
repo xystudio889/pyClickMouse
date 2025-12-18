@@ -176,15 +176,17 @@ def get_packages():
     list_packages = [] # 包名列表
     lang_index = [] # 语言包索引
     package_path = [] # 包路径列表
+    package_index = [] # 包索引
     show = []
     
-    # 加载包信息
+    # # 加载包信息
     # for package in packages:
     #     list_packages.append(package.get('package_name', None))
     #     lang_index.append(package.get('package_name_lang_index', None))
     #     package_path.append(package.get('install_location', None))
+    #     package_index.append(package.get('package_id', None))
     #     show.append(package.get('show_in_extension_list', True))
-    return (list_packages, lang_index, package_path, show)
+    return (list_packages, lang_index, package_path, package_index, show)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -824,6 +826,10 @@ class MainWindow(QMainWindow):
         macro_menu.addAction('导入宏(&I)').triggered.connect(self.show_import_macro) # 导入宏
         macro_menu.addAction('管理宏(&M)').triggered.connect(lambda chk: self.show_manage_not_official_extension(2)) # 管理宏
 
+        # doc = help_menu.addAction(get_lang('5f'))
+        # if not(is_installed_doc):
+        #     doc.setEnabled(False)
+            
         # 绑定动作
         about_action.triggered.connect(self.show_about)
         update_log.triggered.connect(self.show_update_log)
@@ -1221,6 +1227,7 @@ class AboutWindow(QDialog):
         self.init_ui()
 
     def init_ui(self):
+        
         # 创建面板
         logger.debug('创建面板')
         central_layout = QGridLayout()
@@ -2434,51 +2441,9 @@ class SettingWindow(SelectUI):
     def init_right_pages(self):
         super().init_right_pages()
         self.buttons[0].setStyleSheet(selected_style)
-
-class SetImportExtensionModeWindow(QDialog):
-    def __init__(self):
-        super().__init__()
-        logger.info('初始化管理扩展窗口')
-        self.setWindowTitle('管理扩展')
-        self.setGeometry(100, 100, 200, 125)
-        self.setWindowIcon(icon)
-        self.setFixedSize(self.width(), self.height())
-        self.init_ui()
-        
-    def init_ui(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        
-        # 选择扩展模式
-        # 提示
-        mode_label = QLabel('请选择扩展模式')
-        mode_label.setAlignment(Qt.AlignCenter)
-        mode_label.setStyleSheet(big_title)
-
-        # 选择框
-        self.mode_combo = QComboBox()
-        self.mode_combo.addItems(['文件夹模式', '单文件模式'])
-        self.mode_combo.setCurrentIndex(1)
-        
-        # 按钮
-        mode_button = QPushButton('确定')
-        
-        # 布局
-        layout.addWidget(mode_label)
-        layout.addWidget(self.mode_combo)
-        layout.addWidget(mode_button)
-
-        # 连接信号
-        mode_button.clicked.connect(self.on_mode_button_clicked)
-        
-    def on_mode_button_clicked(self):
-        self.close()
-        main_window.show_import_extension(self.mode_combo.currentIndex())
         
 class TrayApp:
     def __init__(self):
-        global is_installed_doc, is_installed_lang_doc
-        
         self.app = get_application_instance()
 
         show_tray_icon = settings.get('show_tray_icon', True)
@@ -2699,9 +2664,9 @@ def main():
 if __name__ == '__main__':
     # if not(data_path / 'first_run').exists():
     #     run_software('init.py', 'cminit.exe')
+    # else:
 
     is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
-    
     # with open('packages.json', 'r', encoding='utf-8') as f:
     #     packages = json.load(f)
     packages = None
@@ -2715,7 +2680,5 @@ if __name__ == '__main__':
         app.exec()
     main_window = MainWindow()
     hotkey_help_window = HotkeyHelpWindow()
-
     main()
-    
     logger.info('主程序退出')
