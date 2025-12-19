@@ -80,6 +80,8 @@ def check_update(
 
     # 判断是否需要更新
     if latest_version:
+        if installed_version == 'dev': 
+            return False, latest_version, ''
         installed_parsed = parse(installed_version)
         latest_parsed = parse(latest_version)
         needs_update = installed_parsed < latest_parsed

@@ -409,8 +409,6 @@ cache/
 Gui/data/*
 data/
 xQklN2n.py
-logs/
-tests/
 key*
 default_key
 gui/dev_list/*
