@@ -178,7 +178,7 @@ def get_packages():
     package_path = [] # 包路径列表
     show = []
     
-    # # 加载包信息
+    # 加载包信息
     # for package in packages:
     #     list_packages.append(package.get('package_name', None))
     #     lang_index.append(package.get('package_name_lang_index', None))
@@ -565,62 +565,6 @@ select_lang = settings.get('select_lang', 0)
 logger.debug('定义资源完成')
 
 logger.debug('加载ui')
-class SelectLanguage(QMainWindow):
-    def __init__(self):
-        # 初始化
-        logger.info('初始化')
-        super().__init__()
-        
-        self.system_lang = parse_system_language_to_lang_id()
-
-        self.setWindowIcon(icon)
-        self.setGeometry(100, 100, 200, 100)
-        self.setWindowTitle(get_lang('54', self.system_lang))
-        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
-        
-        self.init_ui()
-    
-    def init_ui(self):
-        settings['select_lang'] = self.system_lang
-        save_settings(settings)
-
-        # 创建面板
-        logger.debug('创建面板')
-        widget = QWidget()
-        self.setCentralWidget(widget)
-        layout = QVBoxLayout(widget)
-
-        # 面板控件
-        logger.debug('创建面板控件')
-        text = QLabel(get_lang('54', self.system_lang))
-        choices = [i['lang_name'] for i in langs]
-
-        nxt_btn = QPushButton(get_lang('55', self.system_lang))
-        
-        self.lang_choice = QComboBox()
-        self.lang_choice.addItems(choices) # 语言选择下拉框
-        
-        self.lang_choice.setCurrentIndex(self.system_lang)
-        
-        self.lang_choice.currentIndexChanged.connect(self.on_choice_change)
-        nxt_btn.clicked.connect(self.on_nxt_btn)
-        
-        # 布局
-        logger.debug('布局')
-        layout.addWidget(text)
-        layout.addWidget(self.lang_choice)
-        layout.addWidget(nxt_btn)
-        
-        self.setLayout(layout)
-
-    def on_choice_change(self, event):
-        settings['select_lang'] = self.lang_choice.currentIndex()
-        save_settings(settings)
-        
-    def on_nxt_btn(self, event):
-        with open(data_path / 'first_run', 'w'):
-            pass
-        self.close()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -2651,10 +2595,6 @@ class TrayApp:
             else:
                 hotkey_help_window.show()
 
-def main():
-    app = TrayApp()
-    app.run()
-
 if __name__ == '__main__':
     # if not(data_path / 'first_run').exists():
     #     run_software('init.py', 'cminit.exe')
@@ -2669,10 +2609,15 @@ if __name__ == '__main__':
     has_plural = get_has_plural()
 
     if not (data_path / 'first_run').exists():
-        SelectLanguage_window = SelectLanguage()
-        SelectLanguage_window.show()
-        app.exec()
+        with open(data_path / 'first_run', 'w'):
+            pass
+        settings['select_lang'] = parse_system_language_to_lang_id()
+        select_lang = settings.get('select_lang', 0)
+        save_settings(settings)
     main_window = MainWindow()
     hotkey_help_window = HotkeyHelpWindow()
-    main()
+    
+    app = TrayApp()
+    app.run()
+    
     logger.info('主程序退出')
