@@ -48,9 +48,9 @@ def get_resource_path(*paths):
         return str(resource.joinpath(*paths))
     except Exception as e:
         logger.error(f'获取资源文件路径失败: {e}')
-        QMessageBox.critical(None, f'{get_lang('12')}{e}', get_lang('14'))
+        QMessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
         sys.exit(1)
-        
+
 def get_style_sheet(style_name: str, mode) -> str:
     '''
     获取样式表
@@ -63,7 +63,7 @@ def get_style_sheet(style_name: str, mode) -> str:
             return f.read()
     except FileNotFoundError:
         logger.error(f'样式表{style_name}.qss不存在')
-        raise FileNotFoundError(f'样式表{style_name}.qss不存在')
+        QMessageBox.critical(None, get_lang('14'), get_lang('88'.format(style_name)))
     
 def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
     '''

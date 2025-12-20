@@ -64,9 +64,10 @@ def load_settings():
     
 settings = load_settings()
 
-def get_lang(lang_package_id, lang_id = None):
+def get_lang(lang_package_id, lang_id = None, source = None):
+    source = langs if source is None else source
     lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
-    for i in langs:
+    for i in source:
         if i['lang_id'] == 0: # 设置默认语言包
             lang_text = i['lang_package']
         if i['lang_id'] == lang_id: # 设置目前语言包
