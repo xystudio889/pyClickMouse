@@ -133,7 +133,9 @@
             "85": "Default click times",
             "86": "Use default click times when non-positive integer",
             "87": "Some settings for software updates.",
-            "88": "Stylesheet {}.qss not found"
+            "88": "Stylesheet {0}.qss not found",
+            "89": "Restart the following services",
+            "8a": "Some files of {0} are missing in the software directory, so the {0} style will not load.\nFix method: This may be a third-party language package, or the file is corrupted, please try reinstalling the software or contact the style author."
         }
     },
     {
@@ -268,7 +270,9 @@
             "85": "连点次数默认值",
             "86": "连点次数错误时使用默认值",
             "87": "用于设置软件更新相关设置。",
-            "88": "样式表{}.qss不存在"
+            "88": "样式表{0}.qss不存在",
+            "89": "需要重启以下服务",
+            "8a": "软件目录下缺少{0}的部分文件:{1}，所以{0}样式不会加载\n修复方法:这可能是第三方语言包，或者文件损坏，请尝试重新安装软件或联系样式作者"
         }
     }
 ]
