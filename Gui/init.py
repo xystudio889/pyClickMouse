@@ -577,41 +577,7 @@ class InstallFrame(PagesUI):
     def on_cancel(self, event):
         '''取消按钮'''
         self.update_page(self.PAGE_CANCEL)
-    
-class SelectLanguage(wx.Frame):
-    def __init__(self, parent=None):
-        # 初始化
-        super().__init__(parent, title='Please select language.', size=(300, 150),style=wx.DEFAULT_FRAME_STYLE & ~(wx.MAXIMIZE_BOX | wx.RESIZE_BORDER | wx.CLOSE_BOX))
-        system_lang = parse_system_language_to_lang_id()
-        settings['select_lang'] = system_lang
-        save_settings(settings)
-        self.SetTitle(get_lang('01', system_lang))
 
-        # 窗口初始化
-        self.Icon = wx.Icon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')), wx.BITMAP_TYPE_ICO)
-
-        # 创建面板
-        panel = wx.Panel(self)
-
-        # 面板控件
-        wx.StaticText(panel, -1, get_lang('01', system_lang), pos=(60, 0))
-        choices = [i['lang_name'] for i in langs]
-
-        nxt_btn = wx.Button(panel, -1, get_lang('02', system_lang), (200, 80))
-        
-        self.lang_choice = wx.Choice(panel, -1, (75, 30), choices=choices)
-        self.lang_choice.SetSelection(system_lang)
-        
-        self.lang_choice.Bind(wx.EVT_CHOICE, self.on_choice_change)
-        nxt_btn.Bind(wx.EVT_BUTTON, self.on_nxt_btn)
-        
-    def on_choice_change(self, event):
-        settings['select_lang'] = self.lang_choice.GetSelection()
-        save_settings(settings)
-        
-    def on_nxt_btn(self, event):
-        self.Close()
-        
 # 显示窗口
 def main(app_name):
     frame = app_name()
