@@ -728,9 +728,9 @@ class MainWindow(QMainWindow):
         hotkey_help = help_menu.addAction(get_lang('5e'))
         
         # 文档菜单
-        doc = help_menu.addAction(get_lang('5f'))
-        if not(is_installed_doc):
-            doc.setEnabled(False)
+        # doc = help_menu.addAction(get_lang('5f'))
+        # if not(is_installed_doc):
+        #     doc.setEnabled(False)
             
         # 扩展菜单
         # extension_menu = menu_bar.addMenu('扩展(&X)')
