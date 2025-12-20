@@ -2214,7 +2214,7 @@ class SettingWindow(SelectUI):
         self.on_setting_changed(handle, key)
         settings_need_restart = True
         
-        need_restart = QMessageBox.warning(self, '警告', f'需要重启以下服务: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        need_restart = QMessageBox.warning(self, get_lang('15'), f'{get_lang('89')}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if need_restart == QMessageBox.Yes:
             self.restart()
         else:
@@ -2417,7 +2417,7 @@ class TrayApp:
                         except KeyError:
                             pass
                     
-                    QMessageBox.warning(main_window, '警告', f'软件目录下缺少{dir}的部分文件:{', '.join(not_found)}，所以{dir}样式不会加载\n修复方法:这可能是第三方语言包，或者文件损坏，请尝试重新安装软件或联系作者')
+                    QMessageBox.warning(main_window, get_lang('15'), get_lang('8a').format(dir, ', '.join(not_found)))
         
         # 创建设置延迟窗口
         self.set_dalay_window = FastSetClickWindow()
