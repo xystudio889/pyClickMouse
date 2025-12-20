@@ -48,9 +48,9 @@ def get_resource_path(*paths):
         return str(resource.joinpath(*paths))
     except Exception as e:
         logger.error(f'获取资源文件路径失败: {e}')
-        QMessageBox.critical(None, f'{get_lang('12')}{e}', get_lang('14'))
+        QMessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
         sys.exit(1)
-        
+
 def get_style_sheet(style_name: str, mode) -> str:
     '''
     获取样式表
@@ -63,7 +63,7 @@ def get_style_sheet(style_name: str, mode) -> str:
             return f.read()
     except FileNotFoundError:
         logger.error(f'样式表{style_name}.qss不存在')
-        raise FileNotFoundError(f'样式表{style_name}.qss不存在')
+        QMessageBox.critical(None, get_lang('14'), get_lang('88'.format(style_name)))
     
 def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
     '''
@@ -75,7 +75,7 @@ def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_st
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
+    lang_id = select_lang if lang_id is None else lang_id
     for i in source:
         if i['lang_id'] == 0: # 设置默认语言包
             default_lang_text = i['lang_package']
@@ -176,17 +176,15 @@ def get_packages():
     list_packages = [] # 包名列表
     lang_index = [] # 语言包索引
     package_path = [] # 包路径列表
-    package_index = [] # 包索引
     show = []
     
-    # # 加载包信息
+    # 加载包信息
     # for package in packages:
     #     list_packages.append(package.get('package_name', None))
     #     lang_index.append(package.get('package_name_lang_index', None))
     #     package_path.append(package.get('install_location', None))
-    #     package_index.append(package.get('package_id', None))
     #     show.append(package.get('show_in_extension_list', True))
-    return (list_packages, lang_index, package_path, package_index, show)
+    return (list_packages, lang_index, package_path, show)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -251,13 +249,6 @@ def check_default_delay():
     except ValueError:
         QMessageBox.critical(None, get_lang('14'), get_lang('5b'))
         return False
-
-def init_need_restart_list(i):
-    global need_restart_list
-    
-    need_restart_list = []
-    for i in range(i):
-        need_restart_list.append(False)
         
 def init_units():
     units = {'ms': 1}
@@ -275,7 +266,19 @@ def get_unit_value(value):
         if value >= v:
             unit_text = get_lang(k, source=unit_lang)
             unit = v
+    
+    if unit_text == get_lang('d', source=unit_lang):
+        unit_text = plural(value // unit, unit_text[:-1], unit_text)
     return (value / unit, unit_text)
+
+def get_has_plural():
+    return langs[settings.get('select_lang', 0)]['has_plural']
+
+def plural(count, value, plural):
+    if has_plural:
+        return value if count == 1 else plural
+    else:
+        return value
 
 class QtThread(QThread):
     '''检查更新工作线程'''
@@ -347,7 +350,7 @@ class Click(QObject):
     pause = Signal(bool)
     click_changed = Signal(bool, bool)
     stopped = Signal()
-    click_conuter = Signal(int, int, int)
+    click_conuter = Signal(str, str, str) # 用于修复overflow问题
     
     def __init__(self):
         super().__init__()
@@ -425,7 +428,10 @@ class Click(QObject):
                         pyautogui.click(button=button)
                         sleep(delay / 1000)
                         i += 1
-                        self.click_conuter.emit(times, i, delay)
+                        if times == float('inf'):
+                            self.click_conuter.emit('inf', str(i), str(delay))
+                        else:
+                            self.click_conuter.emit(str(times), str(i), str(delay))
                     except Exception as e:
                         QMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
                         logger.critical(f'发生错误:{e}')
@@ -551,69 +557,14 @@ with open(get_resource_path('langs', 'langs.json'), 'r', encoding='utf-8') as f:
 with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
     unit_lang = json.load(f)
     
-init_need_restart_list(7)
+settings_need_restart = False
 units = init_units()
 latest_index = 2
+select_lang = settings.get('select_lang', 0)
 
 logger.debug('定义资源完成')
 
 logger.debug('加载ui')
-class SelectLanguage(QMainWindow):
-    def __init__(self):
-        # 初始化
-        logger.info('初始化')
-        super().__init__()
-        
-        self.system_lang = parse_system_language_to_lang_id()
-
-        self.setWindowIcon(icon)
-        self.setGeometry(100, 100, 200, 100)
-        self.setWindowTitle(get_lang('54', self.system_lang))
-        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
-        
-        self.init_ui()
-    
-    def init_ui(self):
-        settings['select_lang'] = self.system_lang
-        save_settings(settings)
-
-        # 创建面板
-        logger.debug('创建面板')
-        widget = QWidget()
-        self.setCentralWidget(widget)
-        layout = QVBoxLayout(widget)
-
-        # 面板控件
-        logger.debug('创建面板控件')
-        text = QLabel(get_lang('54', self.system_lang))
-        choices = [i['lang_name'] for i in langs]
-
-        nxt_btn = QPushButton(get_lang('55', self.system_lang))
-        
-        self.lang_choice = QComboBox()
-        self.lang_choice.addItems(choices) # 语言选择下拉框
-        
-        self.lang_choice.setCurrentIndex(self.system_lang)
-        
-        self.lang_choice.currentIndexChanged.connect(self.on_choice_change)
-        nxt_btn.clicked.connect(self.on_nxt_btn)
-        
-        # 布局
-        logger.debug('布局')
-        layout.addWidget(text)
-        layout.addWidget(self.lang_choice)
-        layout.addWidget(nxt_btn)
-        
-        self.setLayout(layout)
-
-    def on_choice_change(self, event):
-        settings['select_lang'] = self.lang_choice.currentIndex()
-        save_settings(settings)
-        
-    def on_nxt_btn(self, event):
-        with open(data_path / 'first_run', 'w'):
-            pass
-        self.close()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -775,10 +726,47 @@ class MainWindow(QMainWindow):
         
         # 热键帮助
         hotkey_help = help_menu.addAction(get_lang('5e'))
-
+        
+        # 文档菜单
         # doc = help_menu.addAction(get_lang('5f'))
         # if not(is_installed_doc):
         #     doc.setEnabled(False)
+            
+        # 扩展菜单
+        # extension_menu = menu_bar.addMenu('扩展(&X)')
+        # official_extension_menu = extension_menu.addMenu('官方扩展(&O)')
+        # if not any(show_list):
+        #     # 无官方扩展提示
+        #     official_extension_menu.addAction('暂无官方扩展').setDisabled(True)
+        # else:
+        #     # 加载官方扩展菜单
+        #     for index, show in zip(indexes, show_list):
+        #         if show:
+        #             official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=index: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
+        # official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_extension) # 管理扩展菜单
+        
+        # not_official_extension_menu = extension_menu.addMenu('第三方扩展(&T)')
+        
+        # cge_menu = not_official_extension_menu.addMenu('clickmouse扩展(&C)')
+        # cge_menu.addAction('暂无第三方扩展').setDisabled(True)
+        
+        # cmm_menu = not_official_extension_menu.addMenu('clickmouse宏(&M)')
+        # cmm_menu.addAction('暂无宏').setDisabled(True)
+
+        # not_official_extension_menu.addSeparator()
+
+        # not_official_extension_menu.addAction('导入扩展(&I)').triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
+        # not_official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
+        
+        # # 宏菜单
+        # macro_menu = menu_bar.addMenu('宏(&M)')
+        
+        # run_marco_menu = macro_menu.addMenu('运行宏')
+        # for action in cmm_menu.actions():
+        #     run_marco_menu.addAction(action)
+            
+        # macro_menu.addAction('导入宏(&I)').triggered.connect(self.show_import_macro) # 导入宏
+        # macro_menu.addAction('管理宏(&M)').triggered.connect(lambda chk: self.show_manage_not_official_extension(2)) # 管理宏
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
@@ -788,6 +776,79 @@ class MainWindow(QMainWindow):
         settings_action.triggered.connect(self.show_setting)
         hotkey_help.triggered.connect(self.show_hotkey_help)
         exit_action.triggered.connect(app.quit)
+        
+    def do_extension(self, index):
+        '''执行扩展'''
+        match index:
+            case _:
+                QMessageBox.critical(self, '运行扩展', '错误的扩展索引')
+            
+    def show_manage_extension(self):
+        '''管理扩展'''
+        logger.info('打开扩展管理窗口')
+        
+        QMessageBox.information(self, '管理扩展', '管理扩展功能暂未开放，敬请期待')
+        return
+        
+        run_software('install_pack.py' ,'inst_pks.exe')
+        
+    def show_import_extension_mode(self):
+        '''导入扩展模式'''
+        logger.info('打开导入扩展窗口')
+        
+        QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
+        return
+
+        import_extension_window = SetImportExtensionModeWindow()
+        import_extension_window.exec()
+        
+    def show_import_extension(self, mode):
+        '''导入扩展'''
+        logger.info('导入扩展')
+        if mode == 1:
+            file_name, _ = QFileDialog.getOpenFileName(self, '选择扩展文件', '', 'clickmouse扩展可执行程序(*.cge);;clickmouse语言扩展(*.cle);;clickmouse宏(*.cmm);;导出的clickmouse设置(*.cms);;clickmouse自定义样式(*.cst)')
+        else :
+            file_name = QFileDialog.getExistingDirectory(self, '选择扩展目录', '')
+
+        if file_name:
+            ans = QMessageBox.warning(self, '管理扩展', 'clickmouse扩展支持任意的exe，请确保你的扩展包受信任。', QMessageBox.Yes | QMessageBox.No)
+            try:
+                if ans == QMessageBox.No:
+                    raise Exception('用户未信任此扩展包')
+                # 导入扩展
+                QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
+            except Exception as e:
+                logger.error(f'导入扩展失败: {e}')
+                QMessageBox.critical(self, '管理扩展', f'导入扩展失败: {e}')
+                return
+        else:
+            return
+        
+    def show_manage_not_official_extension(self, page=1):
+        '''管理第三方扩展'''
+        logger.info('打开第三方扩展管理窗口')
+        
+        QMessageBox.information(self, '管理扩展', '管理扩展功能暂未开放，敬请期待')
+        
+    def show_import_macro(self):
+        '''导入宏'''
+        QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
+        return
+
+        logger.info('导入宏')
+
+        file_name, _ = QFileDialog.getOpenFileName(self, '选择扩展文件', '', 'clickmouse宏(*.cmm)')
+
+        if file_name:
+            try:
+                # 导入扩展
+                QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
+            except Exception as e:
+                logger.error(f'导入宏失败: {e}')
+                QMessageBox.critical(self, '管理扩展', f'导入扩展失败: {e}')
+                return
+        else:
+            return
             
     def show_about(self):
         '''显示关于窗口'''
@@ -811,9 +872,9 @@ class MainWindow(QMainWindow):
     def show_setting(self):
         '''显示设置窗口'''
         setting_window = SettingWindow(self)
-        setting_window.closed_use_reload.connect(self.show_setting)
         setting_window.click_setting_changed.connect(self.on_input_change)
-        # print(self.geometry())
+        setting_window.window_restarted.connect(self.show_setting)
+
         setting_window.show()
 
     def on_check_update(self):
@@ -1069,11 +1130,15 @@ class MainWindow(QMainWindow):
     
     def on_click_counter(self, totel, now, delay):
         '''连点计数器'''
-        if is_inf:
+        now = int(now)
+        delay = int(delay)
+        if totel == 'inf':
             now_total_delay = get_unit_value(delay * now)
             delay = get_unit_value(delay)
             self.status_bar.showMessage(f'{get_lang('62') if clicker.paused else ''}{get_lang('63').format(now, self.get_full_unit(now_total_delay), self.get_full_unit(delay))}')
         else:
+            totel = int(totel)
+    
             left = totel - now
             totel_delay = get_unit_value(delay * totel)
             now_total_delay = get_unit_value(delay * now)
@@ -1094,7 +1159,7 @@ class AboutWindow(QDialog):
         super().__init__()
         logger.info('初始化关于窗口')
         self.setWindowTitle(filter_hotkey(get_lang('0a')))
-        self.setGeometry(100, 100, 375, 150)
+        self.setGeometry(100, 100, 375, 175)
         self.setWindowIcon(icon)
         self.setFixedSize(self.width(), self.height())
         self.init_ui()
@@ -1116,7 +1181,7 @@ class AboutWindow(QDialog):
         self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'))
         
         # 版本信息
-        version_status_text = get_lang('65') if ('alpha' in __version__) or ('beta' in __version__) or ('.dev' in __version__) else ''
+        version_status_text = get_lang('65') if ('alpha' in __version__) or ('beta' in __version__) or ('dev' in __version__) else ''
         version = QLabel(get_lang('1c').format(__version__, version_status_text))
         if not dev_config['verify_clickmouse']:
             not_official_version = QLabel(get_lang('67'))
@@ -1176,7 +1241,6 @@ class UpdateLogWindow(QDialog):
 
         with open(get_resource_path('vars', 'update_log.json'), 'r', encoding='utf-8') as f:
             self.update_logs = json.load(f) # 加载更新日志
-            
             
         logger.debug('初始化更新日志窗口')
         self.init_ui()
@@ -1953,8 +2017,8 @@ class ClickAttrWindow(QDialog):
             self.total_run_time.setText(f'{get_lang("2c")}: {value[0]:.2f}{value[1]}')
 
 class SettingWindow(SelectUI):
-    closed_use_reload = Signal()
     click_setting_changed = Signal()
+    window_restarted = Signal()
 
     def __init__(self, parent=None):
         super().__init__()
@@ -1987,15 +2051,6 @@ class SettingWindow(SelectUI):
         
         def set_content_label(text):
             content_label.setText(text)
-            
-        def new_need_restart_text(index, someone_need_restart = True):
-            need_restart = QLabel(get_lang('56') if someone_need_restart else get_lang('57'))
-            need_restart.setStyleSheet(need_restart_style)
-            if need_restart_list[index]:
-                need_restart.show()
-            else:
-                need_restart.hide()
-            return need_restart
         
         restart_layout = QHBoxLayout()
         self.restart_button = QPushButton(get_lang('7e'))
@@ -2003,12 +2058,10 @@ class SettingWindow(SelectUI):
         self.restart_button.setStyleSheet(selected_style)
         self.restart_button.clicked.connect(self.restart)
 
-        if any(need_restart_list):
+        if settings_need_restart:
             self.restart_button.show()
         else:
             self.restart_button.hide()
-            
-        need_restart_style = replace_style_sheet(dest, 'font-size', '16px', '12px')
         
         self.page_general = self.page_choice_buttons[0] # 默认设置
         self.page_click = self.page_choice_buttons[1] # 连点器设置
@@ -2025,12 +2078,10 @@ class SettingWindow(SelectUI):
                 self.lang_choice = QComboBox()
                 self.lang_choice.addItems([i['lang_name'] for i in langs])
                 self.lang_choice.setCurrentIndex(settings.get('select_lang', 0))
-                lang_choice_need_restart = new_need_restart_text(0)
                 
                 # 布局
                 lang_choice_layout.addWidget(choice_text)
                 lang_choice_layout.addWidget(self.lang_choice)
-                lang_choice_layout.addWidget(lang_choice_need_restart)
                 lang_choice_layout.addStretch(1)
                 
                 # 选择窗口风格
@@ -2038,7 +2089,6 @@ class SettingWindow(SelectUI):
                 
                 style_layout = QHBoxLayout() # 窗口风格布局
                 style_choice = QComboBox()
-                style_choice_need_restart = new_need_restart_text(1)
                 
                 items = list(style_indexes[settings.get('select_lang', 0)]['lang_package'].values())
     
@@ -2047,7 +2097,6 @@ class SettingWindow(SelectUI):
                 
                 style_layout.addWidget(style_text)
                 style_layout.addWidget(style_choice)
-                style_layout.addWidget(style_choice_need_restart)
                 style_layout.addStretch(1)      
                 
                 # 显示托盘图标
@@ -2055,10 +2104,8 @@ class SettingWindow(SelectUI):
                 tray_layout = QHBoxLayout() # 窗口风格布局
                 tray = QCheckBox(get_lang('80'))
                 tray.setChecked(settings.get('show_tray_icon', True))
-                tray_need_restart = new_need_restart_text(2, False)
     
                 tray_layout.addWidget(tray)
-                tray_layout.addWidget(tray_need_restart)
                 tray_layout.addStretch(1)
 
                 # 布局
@@ -2067,9 +2114,9 @@ class SettingWindow(SelectUI):
                 layout.addLayout(tray_layout)
                 
                 # 绑定事件
-                self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang', lang_choice_need_restart, 0))
-                style_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(style_choice.currentIndex, 'select_style', style_choice_need_restart, 1))
-                tray.stateChanged.connect(lambda: self.on_need_restart_setting_changed(tray.isChecked,'show_tray_icon', tray_need_restart, 2))
+                self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang', 0))
+                style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(style_choice.currentIndex, 'select_style'))
+                tray.stateChanged.connect(lambda: self.on_need_restart_setting_changed(tray.isChecked,'show_tray_icon', 2))
             case self.page_click:
                 set_content_label(get_lang('84'))
                 # 选择默认连点器延迟
@@ -2156,15 +2203,24 @@ class SettingWindow(SelectUI):
         
         return page
         
-    def on_need_restart_setting_changed(self, handle: Callable, setting_key: str, need_restart_label: QLabel, index: int, *args):
+    def on_need_restart_setting_changed(self, handle: Callable, key: str, index: int, restart_place: list[str] = ['clickmouse 核心'], *args):
         '''托盘图标选择事件'''
-        need_restart_label.show()
-        self.restart_button.show()
-        need_restart_list[index] = True
-        settings[setting_key] = handle(*args)
+        global settings_need_restart
+        
+        self.on_setting_changed(handle, key)
+        settings_need_restart = True
+        
+        need_restart = QMessageBox.warning(self, get_lang('15'), f'{get_lang('89')}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if need_restart == QMessageBox.Yes:
+            self.restart()
+        else:
+            self.window_restarted.emit()
+            self.close()
+        
+    def on_setting_changed(self, handle, key):
+        '''更新检查提示选择事件'''
+        settings[key] = handle()
         save_settings(settings)
-        self.closed_use_reload.emit()
-        self.close()
         
     def on_default_input_changed(self, default: QLineEdit, key: str, use_default: QCheckBox):
         '''默认延迟输入框内容变化事件'''
@@ -2303,11 +2359,6 @@ class SettingWindow(SelectUI):
             self.total_time_label.setText(f'{get_lang('2c')}: {self.total_run_time}{get_lang('ms', source=unit_lang)}')
             self.total_run_time = get_unit_value(self.total_run_time)
             self.total_time_label.setText(f'{get_lang('2c')}: {self.total_run_time[0]:.2f}{self.total_run_time[1]}')
-
-    def on_setting_changed(self, handle, key):
-        '''更新检查提示选择事件'''
-        settings[key] = handle()
-        save_settings(settings)
     
     def on_page_button_clicked(self, index):
         '''处理页面按钮点击事件'''
@@ -2339,6 +2390,30 @@ class TrayApp:
         
         # 激活主窗口
         main_window.show()
+        
+        # 加载警告
+        required_files = ['main.qss', 'big_text.qss', 'dest.qss', 'selected_button.qss']
+        for root, dirs, files in os.walk(get_resource_path('styles/')):
+            for dir in dirs:
+                not_found = []
+                
+                for file in required_files:
+                    if not os.path.exists(os.path.join(root, dir, file)):
+                        not_found.append(file)
+                
+                if not_found:
+                    try:
+                        del maps[dir]
+                    except KeyError:
+                        pass
+                
+                    for index, _ in enumerate(style_indexes):
+                        try:
+                            del style_indexes[index]['lang_package'][dir]
+                        except KeyError:
+                            pass
+                    
+                    QMessageBox.warning(main_window, get_lang('15'), get_lang('8a').format(dir, ', '.join(not_found)))
         
         # 创建设置延迟窗口
         self.set_dalay_window = FastSetClickWindow()
@@ -2520,10 +2595,6 @@ class TrayApp:
             else:
                 hotkey_help_window.show()
 
-def main():
-    app = TrayApp()
-    app.run()
-
 if __name__ == '__main__':
     # if not(data_path / 'first_run').exists():
     #     run_software('init.py', 'cminit.exe')
@@ -2534,13 +2605,19 @@ if __name__ == '__main__':
     #     packages = json.load(f)
     packages = None
 
-    # package_list, indexes, install_location, package_id, show_list = get_packages()
+    package_list, indexes, install_location, show_list = get_packages()
+    has_plural = get_has_plural()
 
     if not (data_path / 'first_run').exists():
-        SelectLanguage_window = SelectLanguage()
-        SelectLanguage_window.show()
-        app.exec()
+        with open(data_path / 'first_run', 'w'):
+            pass
+        settings['select_lang'] = parse_system_language_to_lang_id()
+        select_lang = settings.get('select_lang', 0)
+        save_settings(settings)
     main_window = MainWindow()
     hotkey_help_window = HotkeyHelpWindow()
-    main()
+    
+    app = TrayApp()
+    app.run()
+    
     logger.info('主程序退出')
