@@ -57,6 +57,11 @@ QMenu {
     border: 1px solid #303030;
 }
 
+QMenu:disabled {
+    background-color: #252525;
+    color: #505050;
+}
+
 QMenu:selected {
     background-color: #353535;
 }

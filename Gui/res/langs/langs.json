@@ -54,7 +54,7 @@
             "2d": "Log File",
             "2e": "Log File, can be cleared",
             "2f": "Update Cache",
-            "30": "Update Cache, can solve the problem of not prompting for updates even if there is an update, but frequent cleaning may cause update requests to fail.",
+            "30": "Update Cache, can solve the problem of not prompting for updates\neven if there is an update, but frequent cleaning may cause update\nrequests to fail.",
             "31": "Other Temporary Files",
             "32": "Other temporary files, can be cleared",
             "33": "File Type",
@@ -84,11 +84,7 @@
             "4b": "Cancel Settings",
             "4f": "Some languages need to restart the software to take effect.",
             "51": "User input error: Please enter a valid positive integer delay",
-            "52": "There are unsaved settings, do you want to save them?",
-            "54": "Please select language.",
             "55": "Next",
-            "56": "Some places need to restart the software to take effect.",
-            "57": "Need to restart the software to take effect.",
             "58": "Failed to get update content",
             "59": "The default document file is missing in the software directory, so the \"Document\" function will be disabled.\nFix method: This may be a recompiled version, please find the source program's docs directory, use a tool to create a chm document, and put it in the software res\\docs directory.",
             "5a": "The {0} language document file is missing in the software directory, so the \"Document\" function will display English documents.\nFix method: This may be a third-party language package, you need to remake the html version of the document for this language package.",
@@ -136,7 +132,8 @@
             "84": "Some parameters for the clicker.",
             "85": "Default click times",
             "86": "Use default click times when non-positive integer",
-            "87": "Some settings for software updates."
+            "87": "Some settings for software updates.",
+            "88": "Stylesheet {}.qss not found"
         }
     },
     {
@@ -222,12 +219,7 @@
             "4b": "取消设置",
             "4f": "部分语言显示需要重启软件才能生效。",
             "51": "用户输入错误:请输入有效的正整数延迟",
-            "52": "当前有未保存的设置，是否要保存？",
-            "53": "未保存的更改",
-            "54": "请选择语言。",
             "55": "下一步",
-            "56": "部分地方需要重启软件才能生效。",
-            "57": "需要重启软件才能生效",
             "58": "更新内容获取失败",
             "59": "软件目录下缺少默认文档文件，所以\"文档\"功能将被禁用\n修复方法:这可能是再编译版本，请找到源程序的docs目录，使用工具制作chm文档，并将其放入软件res\\docs目录下",
             "5a": "软件目录下缺少{0}语言的文档文件，所以\"文档\"功能将会显示英文文档\n修复方法:这可能是第三方语言包，需要重新对这个语言包制作html版本文档",
@@ -275,7 +267,8 @@
             "84": "用于设置连点器的一些参数。",
             "85": "连点次数默认值",
             "86": "连点次数错误时使用默认值",
-            "87": "用于设置软件更新相关设置。"
+            "87": "用于设置软件更新相关设置。",
+            "88": "样式表{}.qss不存在"
         }
     }
 ]
