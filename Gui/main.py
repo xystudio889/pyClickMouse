@@ -19,7 +19,7 @@ import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
 from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
-from uiStyles.WidgetStyles import (styles, maps) # 界面组件样式
+from uiStyles.WidgetStyles import (styles, maps, style_attrs) # 界面组件样式
 from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
 from sharelibs import (get_style_sheet, replace_style_sheet, is_dark_mode, run_software) # 共享库
 import zipfile # 压缩库
@@ -28,6 +28,10 @@ import winreg # 注册表库
 from pynput import keyboard # 热键功能库
 from typing import Callable # 类型提示库
 import math # 数学库
+
+# 系统api
+import ctypes
+from ctypes import wintypes
 
 logger = Logger('主程序日志')
 logger.info('日志系统启动')
@@ -455,25 +459,45 @@ class Click(QObject):
         logger.info('连点器暂停或重启')
         self.paused = not self.paused
         self.pause.emit(self.paused)
+        
+class RefreshWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Service: Refresh')
+
+        try:
+            QTimer.singleShot(100, color_getter.style_changed.emit)
+        except NameError:
+            pass
+        
+        try:
+            setting_window.window_restarted.emit()
+            setting_window.close()
+        except NameError:
+            pass
 
 class ColorGetter(QObject):
+    style_changed = Signal()
+    
     def __init__(self):
         super().__init__()
         
         # 记录当前主题，避免不必要的重绘
         self.style = settings.get('select_style', 0)
-        self.current_theme = self.load_theme()
+        self.current_theme, self.windows_theme = self.load_theme()
 
         # 初始化时应用一次主题
         self.apply_global_theme()
 
-        # 使用定时器定期检测主题变化（例如每秒一次）
+        # 使用定时器定期检测主题变化
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_and_apply_theme)
         self.timer.start(1000)
     
     def load_theme(self):
         theme = None
+        windows_theme = None
+        
         if self.style == 0:
             theme = QApplication.styleHints().colorScheme()
             if theme == Qt.ColorScheme.Dark:
@@ -481,19 +505,45 @@ class ColorGetter(QObject):
             elif theme == Qt.ColorScheme.Light:
                 theme = 'light'
         
+        windows_theme = QApplication.styleHints().colorScheme()   
+        if theme == Qt.ColorScheme.Dark:
+            windows_theme = 'dark'
+        elif theme == Qt.ColorScheme.Light:
+            windows_theme = 'light'
+        
         for k, v in maps.items():
             if v == settings.get('select_style', 0):
                 theme = k
-        return theme
+    
+        return theme, windows_theme
 
     def check_and_apply_theme(self):
         '''检查主题是否变化，变化则重新应用'''
         self.style = settings.get('select_style', 0)
         
-        new_theme = self.load_theme()
+        new_theme, new_windows_theme = self.load_theme()
+        
         if new_theme != self.current_theme:
             self.current_theme = new_theme
             self.apply_global_theme()
+            
+        if new_windows_theme != self.windows_theme:
+            self.windows_theme = new_windows_theme
+            refresh = RefreshWindow()
+            refresh.show()
+            refresh.close()
+            
+    def apply_titleBar(self, window: QMainWindow | QDialog):
+        '''应用标题栏样式'''
+        hwnd = window.winId().__int__()
+
+        # 设置深色模式
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            wintypes.HWND(hwnd),
+            DWMWA_USE_IMMERSIVE,
+            ctypes.byref(wintypes.INT(1 if style_attrs.get(current_theme, {'title_is_dark': False}).get('title_is_dark', False) else 0)),
+            ctypes.sizeof(wintypes.INT)
+        )
 
     def apply_global_theme(self):
         '''根据当前主题，为整个应用设置全局样式表'''
@@ -510,6 +560,8 @@ class ColorGetter(QObject):
             current_theme = 'light'
             app.setStyleSheet('')  # 全局应用
         else:
+            self.style_changed.emit()
+            
             select_styles = styles[self.current_theme]
             default_style = select_styles['main']
             big_title = select_styles['big_text']
@@ -517,6 +569,19 @@ class ColorGetter(QObject):
             current_theme = self.current_theme
             
             app.setStyleSheet(default_style)  # 全局应用
+            
+def new_color_bar(obj):
+    '''
+    给创建添加更多样式标题栏
+    '''
+    color_getter.style_changed.connect(lambda: QTimer.singleShot(100, lambda: color_getter.apply_titleBar(obj)))
+    color_getter.style_changed.emit()
+    
+# Windows API常量
+DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+DWM_WINDOW_CORNER_PREFERENCE = 33
+DWMWCP_ROUND = 2
+DWMNCRP_ENABLED = 1
 
 data_path = Path('data')
 settings = load_settings()
@@ -528,6 +593,12 @@ select_styles = styles[current_theme]
 default_style = select_styles['main']
 big_title = select_styles['big_text']
 selected_style = select_styles['selected_button']
+
+# Windows API常量
+DWMWA_USE_IMMERSIVE = 20
+DWMWA_WINDOW_CORNER_PREFERENCE = 33
+DWMWCP_ROUND = 2
+
 color_getter = ColorGetter()
 
 # 变量
@@ -587,6 +658,8 @@ class MainWindow(QMainWindow):
         
         logger.debug('初始化ui')
         self.init_ui()
+        
+        new_color_bar(self)
         
         logger.debug('检查更新')
         self.on_check_update()
@@ -871,6 +944,8 @@ class MainWindow(QMainWindow):
     
     def show_setting(self):
         '''显示设置窗口'''
+        global setting_window
+        
         setting_window = SettingWindow(self)
         setting_window.click_setting_changed.connect(self.on_input_change)
         setting_window.window_restarted.connect(self.show_setting)
@@ -1163,6 +1238,8 @@ class AboutWindow(QDialog):
         self.setWindowIcon(icon)
         self.setFixedSize(self.width(), self.height())
         self.init_ui()
+        
+        new_color_bar(self)
 
     def init_ui(self):
         
@@ -1244,6 +1321,8 @@ class UpdateLogWindow(QDialog):
             
         logger.debug('初始化更新日志窗口')
         self.init_ui()
+        
+        new_color_bar(self)
 
     def init_ui(self):
         # 创建面板
@@ -1302,6 +1381,8 @@ class CleanCacheWindow(QDialog):
         self.setWindowTitle(filter_hotkey(get_lang('02')))
         self.setWindowIcon(icon)
         self.init_ui()
+        
+        new_color_bar(self)
 
     def init_ui(self):
         # 加载常量
@@ -1606,6 +1687,8 @@ class UpdateWindow(QDialog):
         self.setWindowIcon(icon)
         
         self.init_ui()
+        
+        new_color_bar(self)
 
     def init_ui(self):
         # 创建面板
@@ -1677,6 +1760,8 @@ class HotkeyHelpWindow(QDialog):
         self.setWindowIcon(icon)
         
         self.init_ui()
+        
+        new_color_bar(self)
     
     def init_ui(self):
         # 创建面板
@@ -1735,6 +1820,8 @@ class FastSetClickWindow(QMainWindow):
         
         logger.debug('初始化ui')
         self.init_ui()
+        
+        new_color_bar(self)
     
     def init_ui(self):
         # 创建主控件和布局
@@ -1964,6 +2051,8 @@ class ClickAttrWindow(QDialog):
         self.timer.start(1000)
         
         self.init_ui()
+        
+        new_color_bar(self)
 
     def init_ui(self):
         # 创建主布局
@@ -2033,6 +2122,8 @@ class SettingWindow(SelectUI):
         
         self.page_choice_buttons = [get_lang('42'), get_lang('43'), get_lang('44')]
         self.init_ui()
+        
+        new_color_bar(self)
 
     def create_setting_page(self, title):
         page = QWidget()
@@ -2379,7 +2470,7 @@ class SettingWindow(SelectUI):
     def init_right_pages(self):
         super().init_right_pages()
         self.buttons[0].setStyleSheet(selected_style)
-        
+
 class TrayApp:
     def __init__(self):
         self.app = get_application_instance()
@@ -2518,6 +2609,10 @@ class TrayApp:
         if key == keyboard.Key.f2:
             clicker.default_stop_1 = True
             # 判断参数有效性
+            if not main_window.left_click_button.isEnabled():
+                QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
+                return
+
             if not (self.check_delay(delay_num) or self.check_delay(time_num)):
                 return
 
@@ -2526,6 +2621,10 @@ class TrayApp:
         elif key == keyboard.Key.f3:
             clicker.default_stop_1 = True
             # 判断参数有效性
+            if not main_window.right_click_button.isEnabled():
+                QMessageBox.critical(None, get_lang('14'), get_lang('1a'))
+                return
+            
             if not (self.check_delay(delay_num) or self.check_delay(time_num)):
                 return
 
@@ -2618,6 +2717,7 @@ if __name__ == '__main__':
     hotkey_help_window = HotkeyHelpWindow()
     
     app = TrayApp()
+    
     app.run()
     
     logger.info('主程序退出')

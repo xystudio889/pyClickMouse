@@ -1,0 +1,8 @@
+{
+    "light": {
+        "title_is_dark": false
+    },
+    "dark": {
+        "title_is_dark": true
+    }
+}
