@@ -8,5 +8,7 @@
             "fileMatch": ["vars/*"],
             "url": "./gui/res/rules/vars.json"
         }
-    ]
+    ],
+    "liveServer.settings.port": 5645,
+    "liveServer.settings.multiRootWorkspaceName": "ClickMouse"
 }
