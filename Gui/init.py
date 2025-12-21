@@ -11,7 +11,7 @@ import sys # 运行权限
 from sharelibs import (get_resource_path, settings, run_software) # 共享库
 from uiStyles.old import PagesUI
 
-with open('res/init_langs.json', 'r', encoding='utf-8') as f:
+with open(get_resource_path('langs', 'init_langs.json'), 'r', encoding='utf-8') as f:
     langs = json.load(f)
     
 with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:

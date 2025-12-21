@@ -22,3 +22,6 @@ with open(get_resource_path(style_path, 'indexes.json'), 'r', encoding='utf-8') 
     
 with open(get_resource_path(style_path, 'maps.json'), 'r', encoding='utf-8') as f:
     maps = json.load(f)
+
+with open(get_resource_path(style_path, 'style_attrs.json'), 'r', encoding='utf-8') as f:
+    style_attrs = json.load(f)
