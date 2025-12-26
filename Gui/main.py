@@ -28,6 +28,7 @@ import winreg # 注册表库
 from pynput import keyboard # 热键功能库
 from typing import Callable # 类型提示库
 import math # 数学库
+import re # 正则表达式库
 
 # 系统api
 import ctypes
@@ -284,6 +285,27 @@ def plural(count, value, plural):
     else:
         return value
 
+def get_windows_accent_color():
+    """读取Windows强调色"""
+    # 主题色存储在 HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\DWM")
+    
+    # 读取 AccentColor 值（DWORD类型）
+    accent_color, _ = winreg.QueryValueEx(key, "AccentColor")
+    winreg.CloseKey(key)
+    
+    # 转换为RGB格式（注册表中的顺序是ABGR）
+    r = accent_color & 0xFF # R通道
+    b = (accent_color >> 16) & 0xFF # B通道
+    g = (accent_color >> 8) & 0xFF # G通道
+
+    r_str = f"{r:02x}".zfill(2)
+    g_str = f"{g:02x}".zfill(2)
+    b_str = f"{b:02x}".zfill(2)
+    
+    # 通常我们使用RGB格式，忽略Alpha通道
+    return f'#{r_str}{g_str}{b_str}'
+
 class QtThread(QThread):
     '''检查更新工作线程'''
     finished = Signal(object) # 爬取完成信号
@@ -471,8 +493,7 @@ class RefreshWindow(QMainWindow):
             pass
         
         try:
-            setting_window.window_restarted.emit()
-            setting_window.close()
+            setting_window.restart_window()
         except NameError:
             pass
 
@@ -482,10 +503,11 @@ class ColorGetter(QObject):
     def __init__(self):
         super().__init__()
         
-        # 记录当前主题，避免不必要的重绘
+        # 记录当前主题
         self.style = settings.get('select_style', 0)
-        self.current_theme, self.windows_theme = self.load_theme()
-
+        self.current_theme, self.windows_theme, self.windows_color = self.load_theme()
+        self.current_theme = self.current_theme.replace('auto-', '')
+    
         # 初始化时应用一次主题
         self.apply_global_theme()
 
@@ -497,41 +519,51 @@ class ColorGetter(QObject):
     def load_theme(self):
         theme = None
         windows_theme = None
+        windows_color = None
         
         if self.style == 0:
             theme = QApplication.styleHints().colorScheme()
             if theme == Qt.ColorScheme.Dark:
-                theme = 'dark'
+                theme = 'auto-dark'
             elif theme == Qt.ColorScheme.Light:
-                theme = 'light'
+                theme = 'auto-light'
         
         windows_theme = QApplication.styleHints().colorScheme()   
         if theme == Qt.ColorScheme.Dark:
             windows_theme = 'dark'
         elif theme == Qt.ColorScheme.Light:
             windows_theme = 'light'
+            
+        windows_color = get_windows_accent_color()
         
         for k, v in maps.items():
             if v == settings.get('select_style', 0):
                 theme = k
     
-        return theme, windows_theme
+        return theme, windows_theme, windows_color
 
     def check_and_apply_theme(self):
         '''检查主题是否变化，变化则重新应用'''
         self.style = settings.get('select_style', 0)
         
-        new_theme, new_windows_theme = self.load_theme()
+        new_theme, new_windows_theme, new_windows_color = self.load_theme()
         
         if new_theme != self.current_theme:
             self.current_theme = new_theme
             self.apply_global_theme()
+
+        if new_windows_color != self.windows_color:
+            self.windows_color = new_windows_color
+            self.apply_global_theme()
             
         if new_windows_theme != self.windows_theme:
             self.windows_theme = new_windows_theme
-            refresh = RefreshWindow()
-            refresh.show()
-            refresh.close()
+            self.refresh()
+            
+    def refresh(self):
+        refresh = RefreshWindow()
+        refresh.show()
+        refresh.close()
             
     def apply_titleBar(self, window: QMainWindow | QDialog):
         '''应用标题栏样式'''
@@ -551,6 +583,7 @@ class ColorGetter(QObject):
 
         theme = self.current_theme
         app = get_application_instance()
+        self.style_changed.emit()
 
         if theme is None:
             select_styles = styles['light']
@@ -560,15 +593,24 @@ class ColorGetter(QObject):
             current_theme = 'light'
             app.setStyleSheet('')  # 全局应用
         else:
-            self.style_changed.emit()
+            current_theme = self.current_theme.replace('auto-', '')
             
-            select_styles = styles[self.current_theme]
-            default_style = select_styles['main']
-            big_title = select_styles['big_text']
+            select_styles = styles[current_theme]
             selected_style = select_styles['selected_button']
-            current_theme = self.current_theme
+            main_style = select_styles['main']
+            default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
+            big_title = select_styles['big_text']
+    
+            if self.style == 0:
+                # 使用正则表达式匹配 background-color 属性及其值
+                pattern = r'background-color\s*:\s*[^;]+;?'
+                
+                # 进行替换，并确保后面有分号
+                selected_style = re.sub(pattern, f'background-color: {self.windows_color};', selected_style, flags=re.IGNORECASE)
+                default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
             
             app.setStyleSheet(default_style)  # 全局应用
+            self.refresh()
             
 def new_color_bar(obj):
     '''
@@ -2309,8 +2351,11 @@ class SettingWindow(SelectUI):
         if need_restart == QMessageBox.Yes:
             self.restart()
         else:
-            self.window_restarted.emit()
-            self.close()
+            self.restart_window()
+            
+    def restart_window(self):
+        self.window_restarted.emit()
+        self.close()
         
     def on_setting_changed(self, handle, key):
         '''更新检查提示选择事件'''
