@@ -6,9 +6,11 @@ from PySide6.QtWidgets import QMessageBox
 import os
 import subprocess
 import winreg
+import re
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
+
 
 def _show_message(message, title, status):
     if status == 0:
@@ -47,6 +49,7 @@ def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_st
     '''
     old_style_tag = f'{style_tag}: {old_style}'
     new_style_tag = f'{style_tag}: {new_style}'
+    
     return style_sheet.replace(old_style_tag, new_style_tag)
     
 def load_settings():
@@ -113,3 +116,8 @@ def is_dark_mode():
         return value == 0
     except FileNotFoundError:
         return False  # 注册表项不存在时默认浅色模式
+
+
+# 单元测试
+if __name__ == '__main__':
+    print(replace_style_sheet('text-color: whit23 ; background-color: red; color: white;', 'text-color', 0, 'blue'))
