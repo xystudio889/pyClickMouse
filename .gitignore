@@ -416,8 +416,6 @@ gui/dev_list/*
 res/packages/
 packages.json
 extensions/
-Gui/res/docs/*
-Gui/docs/*/*.chm
 is_author
 dev.dat
 *.zip
