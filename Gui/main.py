@@ -2534,7 +2534,9 @@ class TrayApp:
         main_window.show()
         
         # 加载警告
-        required_files = 
+        with open(get_resource_path('vars', 'required_styles.json'), 'r', encoding='utf-8') as f:
+            required_files = json.load(f)
+
         for root, dirs, files in os.walk(get_resource_path('styles/')):
             for dir in dirs:
                 not_found = []
