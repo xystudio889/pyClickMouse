@@ -182,6 +182,7 @@ def get_packages():
     lang_index = [] # 语言包索引
     package_path = [] # 包路径列表
     show = []
+    package_id = []
     
     # 加载包信息
     # for package in packages:
@@ -189,7 +190,8 @@ def get_packages():
     #     lang_index.append(package.get('package_name_lang_index', None))
     #     package_path.append(package.get('install_location', None))
     #     show.append(package.get('show_in_extension_list', True))
-    return (list_packages, lang_index, package_path, show)
+    #     package_id.append(package.get('package_id', None))
+    return (list_packages, lang_index, package_path, show, package_id)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -855,9 +857,9 @@ class MainWindow(QMainWindow):
             official_extension_menu.addAction('暂无官方扩展').setDisabled(True)
         else:
             # 加载官方扩展菜单
-            for index, show in zip(indexes, show_list):
+            for index, show, package_id in zip(indexes, show_list, package_ids):
                 if show:
-                    official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=index: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
+                    official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
         official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_extension) # 管理扩展菜单
         
         not_official_extension_menu = extension_menu.addMenu('第三方扩展(&T)')
@@ -2532,7 +2534,7 @@ class TrayApp:
         main_window.show()
         
         # 加载警告
-        required_files = ['main.qss', 'big_text.qss', 'dest.qss', 'selected_button.qss']
+        required_files = 
         for root, dirs, files in os.walk(get_resource_path('styles/')):
             for dir in dirs:
                 not_found = []
@@ -2753,15 +2755,15 @@ if __name__ == '__main__':
     #     packages = json.load(f)
     packages = None
 
-    package_list, indexes, install_location, show_list = get_packages()
+    package_list, indexes, install_location, show_list, package_ids = get_packages()
     has_plural = get_has_plural()
 
     if not (data_path / 'first_run').exists():
-        with open(data_path / 'first_run', 'w'):
-            pass
         settings['select_lang'] = parse_system_language_to_lang_id()
         select_lang = settings.get('select_lang', 0)
         save_settings(settings)
+        with open(data_path / 'first_run', 'w'):
+            pass
     main_window = MainWindow()
     hotkey_help_window = HotkeyHelpWindow()
     
