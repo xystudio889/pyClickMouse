@@ -1,14 +1,7 @@
 {
     "json.schemas": [
-        {
-            "fileMatch": ["dev_data.json"],
-            "url": "./gui/res/rules/dev_data.json"
-        },
-        {
-            "fileMatch": ["vars/*"],
-            "url": "./gui/res/rules/vars.json"
-        }
+
     ],
-    "liveServer.settings.port": 5645,
+    "liveServer.settings.port": 5500,
     "liveServer.settings.multiRootWorkspaceName": "ClickMouse"
 }

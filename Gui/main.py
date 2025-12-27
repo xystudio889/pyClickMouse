@@ -182,6 +182,7 @@ def get_packages():
     lang_index = [] # 语言包索引
     package_path = [] # 包路径列表
     show = []
+    package_id = []
     
     # 加载包信息
     # for package in packages:
@@ -189,7 +190,8 @@ def get_packages():
     #     lang_index.append(package.get('package_name_lang_index', None))
     #     package_path.append(package.get('install_location', None))
     #     show.append(package.get('show_in_extension_list', True))
-    return (list_packages, lang_index, package_path, show)
+    #     package_id.append(package.get('package_id', None))
+    return (list_packages, lang_index, package_path, show, package_id)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -2528,7 +2530,7 @@ class TrayApp:
         main_window.show()
         
         # 加载警告
-        required_files = ['main.qss', 'big_text.qss', 'dest.qss', 'selected_button.qss']
+        required_files = 
         for root, dirs, files in os.walk(get_resource_path('styles/')):
             for dir in dirs:
                 not_found = []
@@ -2749,15 +2751,15 @@ if __name__ == '__main__':
     #     packages = json.load(f)
     packages = None
 
-    package_list, indexes, install_location, show_list = get_packages()
+    package_list, indexes, install_location, show_list, package_ids = get_packages()
     has_plural = get_has_plural()
 
     if not (data_path / 'first_run').exists():
-        with open(data_path / 'first_run', 'w'):
-            pass
         settings['select_lang'] = parse_system_language_to_lang_id()
         select_lang = settings.get('select_lang', 0)
         save_settings(settings)
+        with open(data_path / 'first_run', 'w'):
+            pass
     main_window = MainWindow()
     hotkey_help_window = HotkeyHelpWindow()
     
