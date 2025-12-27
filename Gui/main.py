@@ -845,49 +845,45 @@ class MainWindow(QMainWindow):
         hotkey_help = help_menu.addAction(get_lang('5e'))
         
         # 文档菜单
-        doc = help_menu.addAction(get_lang('5f'))
-        if not(is_installed_doc):
-            doc.setEnabled(False)
-            
-        # 扩展菜单
-        extension_menu = menu_bar.addMenu('扩展(&X)')
-        official_extension_menu = extension_menu.addMenu('官方扩展(&O)')
-        if not any(show_list):
-            # 无官方扩展提示
-            official_extension_menu.addAction('暂无官方扩展').setDisabled(True)
-        else:
-            # 加载官方扩展菜单
-            for index, show, package_id in zip(indexes, show_list, package_ids):
-                if show:
-                    official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
-        official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_extension) # 管理扩展菜单
-        
-        not_official_extension_menu = extension_menu.addMenu('第三方扩展(&T)')
-        
-        cge_menu = not_official_extension_menu.addMenu('clickmouse扩展(&C)')
-        cge_menu.addAction('暂无第三方扩展').setDisabled(True)
-        
-        cmm_menu = not_official_extension_menu.addMenu('clickmouse宏(&M)')
-        cmm_menu.addAction('暂无宏').setDisabled(True)
-
-        not_official_extension_menu.addSeparator()
-
-        not_official_extension_menu.addAction('导入扩展(&I)').triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
-        not_official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
-        
-        # 宏菜单
-        macro_menu = menu_bar.addMenu('宏(&M)')
-        
-        run_marco_menu = macro_menu.addMenu('运行宏')
-        for action in cmm_menu.actions():
-            run_marco_menu.addAction(action)
-            
-        macro_menu.addAction('导入宏(&I)').triggered.connect(self.show_import_macro) # 导入宏
-        macro_menu.addAction('管理宏(&M)').triggered.connect(lambda chk: self.show_manage_not_official_extension(2)) # 管理宏
-
         # doc = help_menu.addAction(get_lang('5f'))
         # if not(is_installed_doc):
         #     doc.setEnabled(False)
+            
+        # 扩展菜单
+        # extension_menu = menu_bar.addMenu('扩展(&X)')
+        # official_extension_menu = extension_menu.addMenu('官方扩展(&O)')
+        # if not any(show_list):
+        #     # 无官方扩展提示
+        #     official_extension_menu.addAction('暂无官方扩展').setDisabled(True)
+        # else:
+        #     # 加载官方扩展菜单
+        #     for index, show in zip(indexes, show_list):
+        #         if show:
+        #             official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=index: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
+        # official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_extension) # 管理扩展菜单
+        
+        # not_official_extension_menu = extension_menu.addMenu('第三方扩展(&T)')
+        
+        # cge_menu = not_official_extension_menu.addMenu('clickmouse扩展(&C)')
+        # cge_menu.addAction('暂无第三方扩展').setDisabled(True)
+        
+        # cmm_menu = not_official_extension_menu.addMenu('clickmouse宏(&M)')
+        # cmm_menu.addAction('暂无宏').setDisabled(True)
+
+        # not_official_extension_menu.addSeparator()
+
+        # not_official_extension_menu.addAction('导入扩展(&I)').triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
+        # not_official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
+        
+        # # 宏菜单
+        # macro_menu = menu_bar.addMenu('宏(&M)')
+        
+        # run_marco_menu = macro_menu.addMenu('运行宏')
+        # for action in cmm_menu.actions():
+        #     run_marco_menu.addAction(action)
+            
+        # macro_menu.addAction('导入宏(&I)').triggered.connect(self.show_import_macro) # 导入宏
+        # macro_menu.addAction('管理宏(&M)').triggered.connect(lambda chk: self.show_manage_not_official_extension(2)) # 管理宏
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
