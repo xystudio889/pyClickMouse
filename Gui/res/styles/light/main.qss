@@ -16,12 +16,7 @@ QPushButton {
 }
 
 QPushButton:hover {
-    background-color: lightskyblue;
-}
-
-QPushButton:pressed {
-    background-color: dodgerblue;
-    color: white;
+    background-color: lightgray;
 }
 
 QPushButton:disabled {
