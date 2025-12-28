@@ -484,31 +484,69 @@ class Click(QObject):
         self.paused = not self.paused
         self.pause.emit(self.paused)
         
-class RefreshWindow(QMainWindow):
+class Refresh:
     def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Service: Refresh')
-
-        try:
-            QTimer.singleShot(100, color_getter.style_changed.emit)
-        except NameError:
-            pass
+        self.steps = [
+            self.refresh_title,
+            self.restart_setting_window,
+            self.left_check,
+            self.right_check,
+        ]
+    
+    def run(self):
+        self.do_step(self.steps)
+                
+    def do_step(self, codes):
+        # 尝试执行代码
+        for code in codes:
+            logger.info(f'执行步骤{code.__name__}')
+            try:
+                code()
+                logger.info(f'步骤{code.__name__}执行成功')
+            except NameError as e:
+                logger.warning(f'步骤{code.__name__}操作存在未定义:{e}')
+            except Exception as e:
+                logger.error(f'步骤{code.__name__}执行失败:{e}')
         
-        try:
+    def refresh_title(self):
+        QTimer.singleShot(100, color_getter.style_changed.emit)
+        
+    def restart_setting_window(self):
+        if setting_window.isVisible():
             setting_window.restart_window()
-        except NameError:
-            pass
+        else:
+            logger.info('设置窗口未打开')
+    
+    def left_check(self):
+        if clicker.left_clicked:
+            main_window.left_click_button.setStyleSheet(selected_style)
+        else:
+            logger.info('左键未连点')
+            main_window.left_click_button.setStyleSheet(default_style)
+    
+    def right_check(self):
+        if clicker.right_clicked:
+            main_window.right_click_button.setStyleSheet(selected_style)
+        else:
+            logger.info('右键未连点')
+            main_window.right_click_button.setStyleSheet(default_style)
 
 class ColorGetter(QObject):
     style_changed = Signal()
     
     def __init__(self):
+        global refresh
+
         super().__init__()
         
         # 记录当前主题
         self.style = settings.get('select_style', 0)
-        self.current_theme, self.windows_theme, self.windows_color = self.load_theme()
+
+        self.current_theme, self.windows_theme, self.windows_color, self.use_windows_color = self.load_theme()
         self.current_theme = self.current_theme.replace('auto-', '')
+        
+        # 加载刷新服务
+        refresh = Refresh()
     
         # 初始化时应用一次主题
         self.apply_global_theme()
@@ -516,12 +554,15 @@ class ColorGetter(QObject):
         # 使用定时器定期检测主题变化
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_and_apply_theme)
-        self.timer.start(1000)
+        self.timer.start(100)
     
     def load_theme(self):
+        logger.debug('获取最新的主题')
+        
         theme = None
         windows_theme = None
         windows_color = None
+        use_windows_color = None
         
         if self.style == 0:
             theme = QApplication.styleHints().colorScheme()
@@ -537,18 +578,21 @@ class ColorGetter(QObject):
             windows_theme = 'light'
             
         windows_color = get_windows_accent_color()
+        use_windows_color = settings.get('use_windows_color', True)
         
         for k, v in maps.items():
             if v == settings.get('select_style', 0):
                 theme = k
     
-        return theme, windows_theme, windows_color
+        return theme, windows_theme, windows_color, use_windows_color
 
     def check_and_apply_theme(self):
         '''检查主题是否变化，变化则重新应用'''
+        logger.debug('检查主题是否变化')
+        
         self.style = settings.get('select_style', 0)
         
-        new_theme, new_windows_theme, new_windows_color = self.load_theme()
+        new_theme, new_windows_theme, new_windows_color, new_use_windows_color = self.load_theme()
         
         if new_theme != self.current_theme:
             self.current_theme = new_theme
@@ -562,13 +606,19 @@ class ColorGetter(QObject):
             self.windows_theme = new_windows_theme
             self.refresh()
             
+        if new_use_windows_color != self.use_windows_color:
+            self.use_windows_color = new_use_windows_color
+            self.apply_global_theme()
+            
     def refresh(self):
-        refresh = RefreshWindow()
-        refresh.show()
-        refresh.close()
+        logger.info('刷新软件')
+
+        refresh.run()
             
     def apply_titleBar(self, window: QMainWindow | QDialog):
         '''应用标题栏样式'''
+        logger.info('应用标题栏样式')
+        
         hwnd = window.winId().__int__()
 
         # 设置深色模式
@@ -583,6 +633,8 @@ class ColorGetter(QObject):
         '''根据当前主题，为整个应用设置全局样式表'''
         global select_styles, default_style, big_title, selected_style, current_theme
 
+        logger.info('应用全局样式表')
+        
         theme = self.current_theme
         app = get_application_instance()
         self.style_changed.emit()
@@ -602,15 +654,15 @@ class ColorGetter(QObject):
             main_style = select_styles['main']
             default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
             big_title = select_styles['big_text']
-    
-            if self.style == 0:
+
+            if self.use_windows_color:
                 # 使用正则表达式匹配 background-color 属性及其值
-                pattern = r'background-color\s*:\s*[^;]+;?'
+                pattern = r'background-color:\s*[^;]+;?'
                 
                 # 进行替换，并确保后面有分号
                 selected_style = re.sub(pattern, f'background-color: {self.windows_color};', selected_style, flags=re.IGNORECASE)
                 default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
-            
+                
             app.setStyleSheet(default_style)  # 全局应用
             self.refresh()
             
@@ -663,8 +715,6 @@ should_check_update_res = should_check_update()
 update_cache = load_update_cache()
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
-icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
-
 logger.debug('定义语言包')
 with open(get_resource_path('langs', 'langs.json'), 'r', encoding='utf-8') as f:
     langs = json.load(f)
@@ -692,13 +742,13 @@ class MainWindow(QMainWindow):
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
-        app.styleHints().setColorScheme(Qt.ColorScheme.Unknown)
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
         logger.debug('初始化状态控制变量')
         self.show_update_in_start = False # 是否在启动时显示更新提示
         self.total_run_time = 0  # 总运行时间
+        self.is_ready = True  # 是否状态栏为“就绪”
         
         logger.debug('初始化ui')
         self.init_ui()
@@ -803,6 +853,8 @@ class MainWindow(QMainWindow):
         self.input_times.textChanged.connect(self.on_input_change)
         self.delay_combo.currentIndexChanged.connect(self.on_input_change)
         self.times_combo.currentIndexChanged.connect(self.on_input_change)
+        
+        self.status_bar.messageChanged.connect(self.reload_status)
 
         # 创建菜单栏
         logger.debug('创建菜单栏')
@@ -813,6 +865,14 @@ class MainWindow(QMainWindow):
         self.on_input_change()
         
         logger.info('初始化完成')
+        
+    def reload_status(self):
+        '''刷新状态栏'''
+        if self.status_bar.currentMessage() == '':
+            if self.is_ready:
+                self.status_bar.showMessage(get_lang('5d'))
+            else:
+                self.status_bar.showMessage('离开菜单栏以显示连点进度')
     
     def create_menu_bar(self):
         menu_bar = self.menuBar()
@@ -884,10 +944,6 @@ class MainWindow(QMainWindow):
             
         macro_menu.addAction('导入宏(&I)').triggered.connect(self.show_import_macro) # 导入宏
         macro_menu.addAction('管理宏(&M)').triggered.connect(lambda chk: self.show_manage_not_official_extension(2)) # 管理宏
-
-        # doc = help_menu.addAction(get_lang('5f'))
-        # if not(is_installed_doc):
-        #     doc.setEnabled(False)
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
@@ -994,11 +1050,18 @@ class MainWindow(QMainWindow):
         '''显示设置窗口'''
         global setting_window
         
+        try:
+            idx = setting_window.stacked_widget.currentIndex()
+        except NameError:
+            idx = 0
+
         setting_window = SettingWindow(self)
+        
         setting_window.click_setting_changed.connect(self.on_input_change)
         setting_window.window_restarted.connect(self.show_setting)
 
         setting_window.show()
+        setting_window.on_page_button_clicked(idx)
 
     def on_check_update(self):
         # 检查更新
@@ -1085,6 +1148,7 @@ class MainWindow(QMainWindow):
         clicker.left_clicked = False
         clicker.right_clicked = False
         clicker.paused = False
+        self.is_ready = True
         
         # 重置按钮样式
         self.left_click_button.setStyleSheet(default_style)
@@ -1253,6 +1317,7 @@ class MainWindow(QMainWindow):
     
     def on_click_counter(self, totel, now, delay):
         '''连点计数器'''
+        self.is_ready = False
         now = int(now)
         delay = int(delay)
         if totel == 'inf':
@@ -1290,7 +1355,6 @@ class AboutWindow(QDialog):
         new_color_bar(self)
 
     def init_ui(self):
-        
         # 创建面板
         logger.debug('创建面板')
         central_layout = QGridLayout()
@@ -1859,7 +1923,6 @@ class FastSetClickWindow(QMainWindow):
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
-        app.styleHints().setColorScheme(Qt.ColorScheme.Unknown)
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
@@ -2168,7 +2231,7 @@ class SettingWindow(SelectUI):
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
         
-        self.page_choice_buttons = [get_lang('42'), get_lang('43'), get_lang('44')]
+        self.page_choice_buttons = [get_lang('42'), '风格设置', get_lang('43'), get_lang('44')]
         self.init_ui()
         
         new_color_bar(self)
@@ -2203,8 +2266,9 @@ class SettingWindow(SelectUI):
             self.restart_button.hide()
         
         self.page_general = self.page_choice_buttons[0] # 默认设置
-        self.page_click = self.page_choice_buttons[1] # 连点器设置
-        self.page_update = self.page_choice_buttons[2] # 更新设置
+        self.page_style = self.page_choice_buttons[1] # 样式设置
+        self.page_click = self.page_choice_buttons[2] # 连点器设置
+        self.page_update = self.page_choice_buttons[3] # 更新设置
         
         # 添加一些示例设置控件
         match title:
@@ -2221,25 +2285,9 @@ class SettingWindow(SelectUI):
                 # 布局
                 lang_choice_layout.addWidget(choice_text)
                 lang_choice_layout.addWidget(self.lang_choice)
-                lang_choice_layout.addStretch(1)
-                
-                # 选择窗口风格
-                style_text = QLabel(get_lang('81')) # 选择窗口风格提示
-                
-                style_layout = QHBoxLayout() # 窗口风格布局
-                style_choice = QComboBox()
-                
-                items = list(style_indexes[settings.get('select_lang', 0)]['lang_package'].values())
-    
-                style_choice.addItems([get_lang('82')] + items + [get_lang('83')])
-                style_choice.setCurrentIndex(settings.get('select_style', 0))
-                
-                style_layout.addWidget(style_text)
-                style_layout.addWidget(style_choice)
-                style_layout.addStretch(1)      
+                lang_choice_layout.addStretch(1)   
                 
                 # 显示托盘图标
-                # 选择窗口风格  
                 tray_layout = QHBoxLayout() # 窗口风格布局
                 tray = QCheckBox(get_lang('80'))
                 tray.setChecked(settings.get('show_tray_icon', True))
@@ -2249,12 +2297,10 @@ class SettingWindow(SelectUI):
 
                 # 布局
                 layout.addLayout(lang_choice_layout)
-                layout.addLayout(style_layout)
                 layout.addLayout(tray_layout)
                 
                 # 绑定事件
                 self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang', 0))
-                style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(style_choice.currentIndex, 'select_style'))
                 tray.stateChanged.connect(lambda: self.on_need_restart_setting_changed(tray.isChecked,'show_tray_icon', 2))
             case self.page_click:
                 set_content_label(get_lang('84'))
@@ -2332,6 +2378,40 @@ class SettingWindow(SelectUI):
                 
                 # 连接信号
                 check_update_notify.currentIndexChanged.connect(lambda: self.on_setting_changed(check_update_notify.currentIndex, 'update_notify'))
+            case self.page_style:
+                set_content_label('用于设置窗口风格')
+                # 选择窗口风格
+                style_text = QLabel(get_lang('81')) # 选择窗口风格提示
+                
+                style_layout = QHBoxLayout() # 窗口风格布局
+                style_choice = QComboBox()
+                
+                items = list(style_indexes[settings.get('select_lang', 0)]['lang_package'].values())
+    
+                style_choice.addItems([get_lang('82')] + items + [get_lang('83')])
+                style_choice.setCurrentIndex(settings.get('select_style', 0))
+                
+                # 布局
+                style_layout.addWidget(style_text)
+                style_layout.addWidget(style_choice)
+                style_layout.addStretch(1)
+                
+                style_use_windows_layout = QHBoxLayout() # 颜色使用windows按钮布局
+                style_choice_use_windows = QCheckBox('使用windows强调色显示组件')
+                
+                style_choice_use_windows.setChecked(settings.get('use_windows_color', True))
+                
+                # 布局
+                style_use_windows_layout.addWidget(style_choice_use_windows)
+                style_use_windows_layout.addStretch(1)
+                
+                # 布局
+                layout.addLayout(style_layout)
+                layout.addLayout(style_use_windows_layout)
+                
+                # 连接信号
+                style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(style_choice.currentIndex, 'select_style'))
+                style_choice_use_windows.stateChanged.connect(lambda: self.on_setting_changed(style_choice_use_windows.isChecked, 'use_windows_color'))
         
         restart_layout.addStretch()
         restart_layout.addWidget(self.restart_button)
