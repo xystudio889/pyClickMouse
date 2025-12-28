@@ -292,3 +292,116 @@ class UnitInputLayout(QLayout):
         self.addWidget(QLabel(text + ': '))
         self.addWidget(input)
         self.addWidget(unit)
+        
+class PagesUI(QMainWindow):
+    '''分页窗口类'''
+    def __init__(self, pages: list[str]):
+        super().__init__()
+        
+        # 页面索引
+        self.total_pages = 0
+        self.current_page = 0
+        
+        self.set_pages(pages)
+        self.init_ui()
+        self.update_buttons()
+        self.init_pages()
+        
+    def set_pages(self, pages: list[str]):
+        '''设置页面'''
+        for index, page in enumerate(pages):
+            self.__setattr__(f'PAGE_{page}', index)
+            self.total_pages += 1
+        
+    def init_ui(self):
+        '''初始化UI'''
+        # 创建中央部件
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        
+        # 创建主布局
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)  # 移除边距
+        main_layout.setSpacing(0)  # 移除间距
+        
+        # 页面堆叠控件
+        self.stacked_widget = QStackedWidget()
+        main_layout.addWidget(self.stacked_widget)
+        
+        # 按钮布局
+        self.button_layout = QHBoxLayout()
+        self.button_layout.addStretch(0)
+        
+        # 上一步按钮
+        self.prev_btn = QPushButton('上一步')
+        self.prev_btn.clicked.connect(self.on_prev)
+        self.button_layout.addWidget(self.prev_btn)
+        
+        # 下一步按钮
+        self.next_btn = QPushButton('下一步')
+        self.next_btn.clicked.connect(self.on_next)
+        self.button_layout.addWidget(self.next_btn)
+        
+        # 取消/完成按钮容器（重叠放置）
+        self.action_button_container = QWidget()
+        self.action_button_layout = QHBoxLayout(self.action_button_container)
+        
+        # 取消按钮
+        self.cancel_btn = QPushButton('取消')
+        self.cancel_btn.clicked.connect(self.close)
+        self.action_button_layout.addWidget(self.cancel_btn)
+        
+        # 完成按钮
+        self.finish_btn = QPushButton('完成')
+        self.finish_btn.clicked.connect(self.close)
+        self.action_button_layout.addWidget(self.finish_btn)
+        
+        self.button_layout.addWidget(self.action_button_container)
+        
+        main_layout.addLayout(self.button_layout)
+        
+    def update_buttons(self):
+        '''更新按钮的显示/隐藏状态'''
+        if (self.current_page == self.total_pages - 1):
+            # 最后一页正常页面（第三页）：只显示完成按钮
+            self.prev_btn.setVisible(False)
+            self.next_btn.setVisible(False)
+            self.cancel_btn.setVisible(False)
+            self.finish_btn.setVisible(True)
+        else:
+            # 正常页面：显示上一步、下一步、取消
+            self.prev_btn.setVisible(self.current_page != 0)
+            self.next_btn.setVisible(True)
+            self.cancel_btn.setVisible(True)
+            self.finish_btn.setVisible(False)
+            
+    def draw_page(self):
+        '''绘制页面内容'''
+        self.stacked_widget.setCurrentIndex(self.current_page)
+        
+    def init_pages(self):
+        '''初始化页面'''
+        for i in range(self.total_pages):
+            self.stacked_widget.addWidget(self.show_page(i))
+            
+    def show_page(self, page_index: int):
+        '''显示指定页面'''
+        page_widget = QWidget()
+        page_layout = QVBoxLayout(page_widget)
+        
+        page_layout.addStretch(1)
+        return page_widget
+        
+    def on_prev(self):
+        '''切换到上一页'''
+        self.set_page(self.current_page - 1)
+    
+    def on_next(self):
+        '''切换到下一页'''
+        self.set_page(self.current_page + 1)
+    
+    def set_page(self, index):
+        '''切换到取消页面'''
+        self.current_page = index
+        self.draw_page()
+        self.update_buttons()
