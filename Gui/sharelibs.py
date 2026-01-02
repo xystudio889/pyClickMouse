@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QMessageBox
 import os
 import subprocess
 import winreg
-import re
+import sys
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -26,10 +26,10 @@ try:
         langs = json.load(f)
 except FileNotFoundError:
     _show_message('Resource file missing: langs.json not found', 'Error', 2)
-    exit(1)
+    sys.exit(1)
 except json.JSONDecodeError:
     _show_message('Resource file damaged: langs.json format error', 'Error', 2)
-    exit(1)
+    sys.exit(1)
     
 def get_style_sheet(style_name: str, mode: str = None) -> str:
     '''

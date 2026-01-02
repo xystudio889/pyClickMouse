@@ -967,7 +967,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, '管理扩展', '管理扩展功能暂未开放，敬请期待')
         return
         
-        run_software('install_pack.py' ,'inst_pks.exe')
+        run_software('install_pack.py' ,'install_pack.exe')
         
     def show_import_extension_mode(self):
         '''导入扩展模式'''
@@ -2828,29 +2828,25 @@ class TrayApp:
                 hotkey_help_window.show()
 
 if __name__ == '__main__':
-    # if not(data_path / 'first_run').exists():
-    #     run_software('init.py', 'cminit.exe')
-    # else:
-
-    is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
-    # with open('packages.json', 'r', encoding='utf-8') as f:
-    #     packages = json.load(f)
-    packages = None
-
-    package_list, indexes, install_location, show_list, package_ids = get_packages()
-    has_plural = get_has_plural()
-
-    if not (data_path / 'first_run').exists():
+    if not(data_path / 'first_run').exists():
         settings['select_lang'] = parse_system_language_to_lang_id()
         select_lang = settings.get('select_lang', 0)
         save_settings(settings)
-        with open(data_path / 'first_run', 'w'):
-            pass
-    main_window = MainWindow()
-    hotkey_help_window = HotkeyHelpWindow()
-    
-    app = TrayApp()
-    
-    app.run()
-    
-    logger.info('主程序退出')
+        run_software('init.py', 'init.exe')
+    else:
+        is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
+        with open('packages.json', 'r', encoding='utf-8') as f:
+            packages = json.load(f)
+        packages = None
+
+        package_list, indexes, install_location, show_list, package_ids = get_packages()
+        has_plural = get_has_plural()
+
+        main_window = MainWindow()
+        hotkey_help_window = HotkeyHelpWindow()
+        
+        app = TrayApp()
+        
+        app.run()
+        
+        logger.info('主程序退出')
