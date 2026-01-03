@@ -3,13 +3,14 @@
         "lang_name": "English",
         "lang_id": 0,
         "lang_package": {
-
+            "01": "ClicMouse main program"
         }
     },
     {
         "lang_name": "简体中文",
         "lang_id": 1,
         "lang_package": {
+            "01": "ClickMouse 主程序"
         }
     }
 ]

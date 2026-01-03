@@ -185,12 +185,12 @@ def get_packages():
     package_id = []
     
     # 加载包信息
-    # for package in packages:
-    #     list_packages.append(package.get('package_name', None))
-    #     lang_index.append(package.get('package_name_lang_index', None))
-    #     package_path.append(package.get('install_location', None))
-    #     show.append(package.get('show_in_extension_list', True))
-    #     package_id.append(package.get('package_id', None))
+    for package in packages:
+        list_packages.append(package.get('package_name', None))
+        lang_index.append(package.get('package_name_lang_index', None))
+        package_path.append(package.get('install_location', None))
+        show.append(package.get('show_in_extension_list', True))
+        package_id.append(package.get('package_id', None))
     return (list_packages, lang_index, package_path, show, package_id)
 
 def extract_zip(file_path, extract_path):
@@ -964,17 +964,11 @@ class MainWindow(QMainWindow):
         '''管理扩展'''
         logger.info('打开扩展管理窗口')
         
-        QMessageBox.information(self, '管理扩展', '管理扩展功能暂未开放，敬请期待')
-        return
-        
-        run_software('install_pack.py' ,'inst_pks.exe')
+        run_software('install_pack.py' ,'install_pack.exe')
         
     def show_import_extension_mode(self):
         '''导入扩展模式'''
         logger.info('打开导入扩展窗口')
-        
-        QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
-        return
 
         import_extension_window = SetImportExtensionModeWindow()
         import_extension_window.exec()
@@ -1009,9 +1003,6 @@ class MainWindow(QMainWindow):
         
     def show_import_macro(self):
         '''导入宏'''
-        QMessageBox.information(self, '管理扩展', '导入扩展功能暂未开放，敬请期待')
-        return
-
         logger.info('导入宏')
 
         file_name, _ = QFileDialog.getOpenFileName(self, '选择扩展文件', '', 'clickmouse宏(*.cmm)')
@@ -2601,6 +2592,46 @@ class SettingWindow(SelectUI):
     def init_right_pages(self):
         super().init_right_pages()
         self.buttons[0].setStyleSheet(selected_style)
+        
+class SetImportExtensionModeWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        logger.info('初始化管理扩展窗口')
+        self.setWindowTitle('管理扩展')
+        self.setGeometry(100, 100, 200, 125)
+        self.setWindowIcon(icon)
+        self.setFixedSize(self.width(), self.height())
+        self.init_ui()
+        
+    def init_ui(self):
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        # 选择扩展模式
+        # 提示
+        mode_label = QLabel('请选择扩展模式')
+        mode_label.setAlignment(Qt.AlignCenter)
+        mode_label.setStyleSheet(big_title)
+
+        # 选择框
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(['文件夹模式', '单文件模式'])
+        self.mode_combo.setCurrentIndex(1)
+        
+        # 按钮
+        mode_button = QPushButton('确定')
+        
+        # 布局
+        layout.addWidget(mode_label)
+        layout.addWidget(self.mode_combo)
+        layout.addWidget(mode_button)
+
+        # 连接信号
+        mode_button.clicked.connect(self.on_mode_button_clicked)
+        
+    def on_mode_button_clicked(self):
+        self.close()
+        main_window.show_import_extension(self.mode_combo.currentIndex())
 
 class TrayApp:
     def __init__(self):
@@ -2828,29 +2859,30 @@ class TrayApp:
                 hotkey_help_window.show()
 
 if __name__ == '__main__':
-    # if not(data_path / 'first_run').exists():
-    #     run_software('init.py', 'cminit.exe')
-    # else:
-
-    is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
-    # with open('packages.json', 'r', encoding='utf-8') as f:
-    #     packages = json.load(f)
-    packages = None
-
-    package_list, indexes, install_location, show_list, package_ids = get_packages()
-    has_plural = get_has_plural()
-
-    if not (data_path / 'first_run').exists():
+    if not(data_path / 'first_run').exists():
         settings['select_lang'] = parse_system_language_to_lang_id()
         select_lang = settings.get('select_lang', 0)
         save_settings(settings)
-        with open(data_path / 'first_run', 'w'):
-            pass
-    main_window = MainWindow()
-    hotkey_help_window = HotkeyHelpWindow()
-    
-    app = TrayApp()
-    
-    app.run()
-    
-    logger.info('主程序退出')
+        run_software('init.py', 'init.exe')
+    else:
+        is_installed_doc, is_installed_lang_doc = (False, False)# check_doc_exists()
+        
+        try:
+            with open('packages.json', 'r', encoding='utf-8') as f:
+                packages = json.load(f)
+        except FileNotFoundError:
+            os.remove(data_path / 'first_run')
+            run_software('init.py', 'init.exe')
+            exit(2)
+
+        package_list, indexes, install_location, show_list, package_ids = get_packages()
+        has_plural = get_has_plural()
+
+        main_window = MainWindow()
+        hotkey_help_window = HotkeyHelpWindow()
+        
+        app = TrayApp()
+        
+        app.run()
+        
+        logger.info('主程序退出')

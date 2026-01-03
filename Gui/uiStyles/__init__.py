@@ -363,7 +363,7 @@ class PagesUI(QMainWindow):
     def update_buttons(self):
         '''更新按钮的显示/隐藏状态'''
         if (self.current_page == self.total_pages - 1):
-            # 最后一页正常页面（第三页）：只显示完成按钮
+            # 最后一页正常页面：只显示完成按钮
             self.prev_btn.setVisible(False)
             self.next_btn.setVisible(False)
             self.cancel_btn.setVisible(False)
