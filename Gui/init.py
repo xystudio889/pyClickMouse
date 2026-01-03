@@ -12,30 +12,20 @@ import pyperclip # 复制错误信息
 import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
-from sharelibs import (get_resource_path, settings, run_software) # 共享库
+from sharelibs import (get_resource_path, run_software, get_lang, langs) # 共享库
 from uiStyles import PagesUI
 from uiStyles.WidgetStyles import (styles)
-from datetime import datetime
 
 with open(get_resource_path('langs', 'init.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
+    init_langs = json.load(f)
+    
+with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+    package_langs = json.load(f)
     
 with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
     packages_info = json.load(f)
     
 software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
-
-def get_lang(lang_package_id, lang_id = None):
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
-    for i in langs:
-        if i['lang_id'] == 0: # 设置默认语言包
-            lang_text = i['lang_package']
-        if i['lang_id'] == lang_id: # 设置目前语言包
-            lang_text = i['lang_package']
-    try:
-        return lang_text[lang_package_id]
-    except KeyError:
-        return 'Language not found'
 
 def save_settings(settings):
     '''
@@ -122,8 +112,8 @@ def import_package(package_id, **config):
     for i in packages_info:
         if i['package_id'] == package_id:
             package = i
-    package.update(config)
-    return package
+            package.update(config)
+            return package
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
@@ -278,7 +268,7 @@ class InstallWindow(PagesUI):
         
     def on_style_changed(self, current_theme):
         if current_theme == 'dark':
-            self.top_widget.setStyleSheet('background-color: black;')
+            self.top_widget.setStyleSheet('background-color: #404040;')
         else:
             self.top_widget.setStyleSheet('background-color: white;')
         
@@ -337,11 +327,15 @@ class InstallWindow(PagesUI):
             case self.PAGE_set_components:
                 # 第四页：设置组件
                 # 初始化数据
-                self.all_components = ['clickMouse 主程序']
-                self.selected_components = ['clickMouse 主程序']
-                self.protected_components = ['clickMouse 主程序']
+                with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
+                    init_packages = json.load(f)
+                    
+                self.all_components = [get_lang(i, source=package_langs) for i in init_packages['all_components']]
+                self.selected_components = [get_lang(i, source=package_langs) for i in init_packages['selected_components']]
+                self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
+                
                 self.templates = {
-                    '默认': ['clickMouse 主程序'],
+                    '默认': self.selected_components,
                     '精简': self.protected_components,
                     '全选': self.all_components,
                 }
@@ -395,6 +389,11 @@ class InstallWindow(PagesUI):
 
                 # 初始化列表
                 self.update_components_lists()
+                
+                # 信号连接
+                self.add_btn.clicked.connect(self.add_selected)
+                self.remove_btn.clicked.connect(self.remove_selected)
+                self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
                 self.install_status = ''
                 # 第五页：安装
@@ -569,7 +568,7 @@ class InstallWindow(PagesUI):
             install_path = Path.cwd()
             self.set_status('正在创建包管理器文件...')
             package = []
-            package.append(import_package('xystudio.clickmouse', install_location=str(install_path), create_in_start_menu=self.create_start_menu_shortcut, create_desktop_shortcut=self.create_desktop_shortcut))
+            package.append(import_package('xystudio.clickmouse', install_location=str(install_path)))
             
             self.set_status('解压安装包...')
             self.set_status('正在写入包管理器文件...')
@@ -634,7 +633,6 @@ class InstallWindow(PagesUI):
             QMessageBox.Yes | QMessageBox.No,
             )
             if message == QMessageBox.No:
-                self.cancel()
                 return
         super().on_next()
         
@@ -651,19 +649,26 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
+    if check_reg_key(r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'):
+        QMessageBox.critical(None, '错误', '检测到已安装 ClickMouse，即将为你尝试修复损坏的Clickmouse文件。')
+        with open(data_path / 'first_run', 'w'):pass
+        if not(os.path.exists('packages.json')):
+            package = []
+            package.append(import_package('xystudio.clickmouse', install_location=str(Path.cwd())))
+            with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
+                json.dump(package, f)
+        run_software('main.py', 'main.exe')
+        sys.exit(1)
+
     has_package = True
     if not get_resource_path('packages'):
         QMessageBox.warning(None, '错误', '再编译版安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。')
         has_package = False
-
-    if check_reg_key(r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'):
-        QMessageBox.critical(None, '错误', '检测到已安装 ClickMouse。')
-        with open(get_resource_path('first_run'), 'w'):pass
-        sys.exit(1)
 
     if is_admin():  # 管理员权限
         window = InstallWindow()
         window.show()
     else:
         QMessageBox.critical(None, '错误', '请以管理员身份运行本程序。')
+        exit(1)
     sys.exit(app.exec())

@@ -116,8 +116,3 @@ def is_dark_mode():
         return value == 0
     except FileNotFoundError:
         return False  # 注册表项不存在时默认浅色模式
-
-
-# 单元测试
-if __name__ == '__main__':
-    print(replace_style_sheet('text-color: whit23 ; background-color: red; color: white;', 'text-color', 0, 'blue'))

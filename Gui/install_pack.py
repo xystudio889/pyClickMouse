@@ -4,85 +4,28 @@ from PySide6.QtGui import *
 import sys
 app = QApplication(sys.argv)
 
+import json
 import os
 from pathlib import Path
-import winreg # 注册表编辑
-import ctypes # 管理员运行
-import pyperclip # 复制错误信息
-import win32com.client # 创建快捷方式
-import zipfile # 解压文件
-import json # 读写json文件
-from sharelibs import (get_resource_path, settings, run_software) # 共享库
+import pyperclip
+from sharelibs import (get_resource_path, get_lang)
+import win32com.client
+import winreg
+import zipfile
+
 from uiStyles import PagesUI
 from uiStyles.WidgetStyles import (styles)
-from datetime import datetime
 
-with open(get_resource_path('langs', 'init.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
-    
-with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
-    packages_info = json.load(f)
-    
-software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
+with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+    package_langs = json.load(f)
 
-def get_lang(lang_package_id, lang_id = None):
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
-    for i in langs:
-        if i['lang_id'] == 0: # 设置默认语言包
-            lang_text = i['lang_package']
-        if i['lang_id'] == lang_id: # 设置目前语言包
-            lang_text = i['lang_package']
-    try:
-        return lang_text[lang_package_id]
-    except KeyError:
-        return 'Language not found'
-
-def save_settings(settings):
-    '''
-    保存设置
-    '''
-    with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
-        json.dump(settings, f)
-
-data_path = Path('data')
-
-def create_shortcut(path, target, description, work_dir = None, icon_path = None):
-    # 创建快捷方式
-    icon_path = target if icon_path is None else icon_path
-    work_dir = os.path.dirname(target) if work_dir is None else work_dir
-    
-    shell = win32com.client.Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortCut(path)
-    shortcut.TargetPath = target # 目标程序
-    shortcut.WorkingDirectory = work_dir # 工作目录
-    shortcut.IconLocation = icon_path # 图标（路径,图标索引）
-    shortcut.Description = description # 备注描述
-    shortcut.Save()
-
-def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
-        return False
-
-def run_as_admin():
-    ctypes.windll.shell32.ShellExecuteW(
-        None, 'runas', sys.executable, ' '.join(sys.argv), None, 1
-    )
-    with open('run_as_admin.json', 'w') as f:
-        json.dump({'is_not_admin': 0}, f)
-    sys.exit(0)
-    
-def get_install_size():
-    pass
-        
 def extract_zip(file_path, extract_path):
     '''
     解压zip文件
     '''
     with zipfile.ZipFile(file_path, 'r') as f:
         f.extractall(extract_path)
-    
+        
 def check_reg_key(subkey):
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, subkey, 0, winreg.KEY_READ):
@@ -97,41 +40,79 @@ def read_reg_key(key, value):
     except:
         return None
 
-def get_system_language():
-    '''通过Windows注册表获取系统语言'''
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Control Panel\International')
-        lang, _ = winreg.QueryValueEx(key, 'LocaleName')
-        return lang
-    except Exception:
-        return 'en-US'
+def create_shortcut(path, target, description, work_dir = None, icon_path = None):
+    # 创建快捷方式
+    icon_path = target if icon_path is None else icon_path
+    work_dir = os.path.dirname(target) if work_dir is None else work_dir
     
-def parse_system_language_to_lang_id():
-    '''将系统语言转换为语言ID'''
-    system_lang = get_system_language()
-    for i in langs:
-        if i['is_official']:
-            if i['lang_info'].get('lang_system_name', 'en-US') == system_lang:
-                return i['lang_id']
-    return 0
+    shell = win32com.client.Dispatch('WScript.Shell')
+    shortcut = shell.CreateShortCut(path)
+    shortcut.TargetPath = target # 目标程序
+    shortcut.WorkingDirectory = work_dir # 工作目录
+    shortcut.IconLocation = icon_path # 图标（路径,图标索引）
+    shortcut.Description = description # 备注描述
+    shortcut.Save()
     
-def get_dir_size_for_reg(dir):
-    size = 0
+with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
+    packages_info = json.load(f)
+
+def get_packages():
+    package_index = [] # 包索引
+    package_path = [] # 包路径
+    package_map = {} # 包映射
     
-    for root, dirs, files in os.walk(dir):
-        for file in files:
-            try:
-                size += os.path.getsize(os.path.join(root, file))
-            except:
-                print(f'Error: {file} does not exist')
-    return size // 1024
+    # 加载包信息
+    for package in packages_source:
+        package_path.append(package.get('install_location', None))
+        package_index.append(get_lang(package.get('package_name_in_select_index', None)))
+        package_map[package['package_id']] = packages_source.index(package)
+    return (package_path, package_index, package_map)
+
+def get_list_diff(list1: list, list2: list) -> list:
+    '''
+    获取两个列表的差集
+
+    :param list1: 列表1
+    :param list2: 列表2
+    :return: 他们的差集，如果是list2中增加了元素，则返回'+多的元素'，如果在list2中删除了元素，则返回'-少的元素'
+    '''
+    set1 = set(list1)
+    set2 = set(list2)
+   
+    diff_list = []
+
+    for i in set1 - set2:# 被删除元素集合
+        diff_list.append(f"-{i}")
+
+    for i in set2 - set1:# 被添加元素集合
+        diff_list.append(f"+{i}")
+    
+    return diff_list
 
 def import_package(package_id, **config):
-    for i in packages_info:
+    global packages_source
+    
+    for index, i in enumerate(packages_info):
         if i['package_id'] == package_id:
-            package = i
-    package.update(config)
-    return package
+            packages_source.append(i)
+            packages_source[index].update(config)
+            break
+    
+def remove_package(package_id: int):
+    '''移除包信息'''
+    global packages_source
+
+    for k, v in package_map.items():
+        if k == package_id:
+            del packages_source[v]
+
+try:
+    with open('packages.json', 'r', encoding='utf-8') as f:
+        packages_source = json.load(f)
+except FileNotFoundError:
+    os.remove(Path('data', 'first_run'))
+
+install_path, packages, package_map = get_packages()
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
@@ -188,6 +169,7 @@ getter = ColorGetter()
 
 class InstallWindow(PagesUI):
     def __init__(self):
+        self.all_packages_name = [get_lang(i['package_name_in_select_index'], source=package_langs) for i in packages_source]
         super().__init__(['hello', 'set_components', 'install', 'finish', 'cancel', 'error'])
         
         self.setWindowTitle('ClickMouse')
@@ -302,11 +284,15 @@ class InstallWindow(PagesUI):
             case self.PAGE_set_components:
                 # 第四页：设置组件
                 # 初始化数据
-                self.all_components = ['clickMouse 主程序']
-                self.selected_components = ['clickMouse 主程序']
-                self.protected_components = ['clickMouse 主程序']
+                with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
+                    init_packages = json.load(f)
+                    
+                self.all_components = [get_lang(i, source=package_langs) for i in init_packages['all_components']]
+                self.selected_components = self.all_packages_name.copy()
+                self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 self.templates = {
-                    '默认': ['clickMouse 主程序'],
+                    '当前': self.selected_components,
+                    '默认': [get_lang(i, source=package_langs) for i in init_packages['selected_components']],
                     '精简': self.protected_components,
                     '全选': self.all_components,
                 }
@@ -360,13 +346,17 @@ class InstallWindow(PagesUI):
 
                 # 初始化列表
                 self.update_components_lists()
+                
+                # 信号连接
+                self.add_btn.clicked.connect(self.add_selected)
+                self.remove_btn.clicked.connect(self.remove_selected)
+                self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
                 self.install_status = ''
                 # 第五页：安装
                 page_layout.addWidget(QLabel('正在更改 ClickMouse...'))
             case self.PAGE_finish:
                 # 第六页：完成        
-                
                 page_layout.addWidget(QLabel('更改完成！'))
             case self.PAGE_cancel:
                 # 第七页：取消
@@ -510,6 +500,22 @@ class InstallWindow(PagesUI):
     def install(self):
         '''安装'''
         try:
+            self.set_status('初始化')
+            if not self.changes:
+                self.set_page(self.PAGE_finish)
+                return
+
+            self.set_status('检查需要更新的文件')
+            remove = []
+            add = []
+            for comp in self.changes:
+                if comp.startswith('-'):
+                    remove.append(comp[1:])
+                elif comp.startswith('+'):
+                    add.append(comp[1:])
+            
+            print(f'移除：{remove} 添加：{add}')
+
             raise Exception('更改包未完成')
         except Exception as e:
             self.error_label.setText(f'发生错误：\n在 {self.install_status} 发生安装错误：{e}\n请重新安装，若错误持续，请联系作者。')
@@ -522,16 +528,18 @@ class InstallWindow(PagesUI):
     def on_next(self):
         if self.current_page == self.PAGE_set_components:
             # 第四页：提示
-            message =QMessageBox.question(
+            self.changes = get_list_diff(self.all_packages_name, self.selected_components)
+            
+            message = QMessageBox.question(
                 self,
                 '提示',
-                f'''即将安装以下组件:
-{'\n'.join(self.selected_components)}
+                f'''即将变动以下组件:
+{'\n'.join(self.changes if self.changes else ['没有包变动'])}
 是否继续？''',
             QMessageBox.Yes | QMessageBox.No,
             )
+
             if message == QMessageBox.No:
-                self.cancel()
                 return
         super().on_next()
         
