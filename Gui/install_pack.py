@@ -58,15 +58,11 @@ with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
 
 def get_packages():
     package_index = [] # 包索引
-    package_path = [] # 包路径
-    package_map = {} # 包映射
     
     # 加载包信息
     for package in packages_source:
-        package_path.append(package.get('install_location', None))
-        package_index.append(get_lang(package.get('package_name_in_select_index', None)))
-        package_map[package['package_id']] = packages_source.index(package)
-    return (package_path, package_index, package_map)
+        package_index.append(get_lang(package.get('package_name_index', None)))
+    return (package_index)
 
 def get_list_diff(list1: list, list2: list) -> list:
     '''
@@ -93,7 +89,7 @@ def import_package(package_id, **config):
     global packages_source
     
     for index, i in enumerate(packages_info):
-        if i['package_id'] == package_id:
+        if i['package_name'] == package_id:
             packages_source.append(i)
             packages_source[index].update(config)
             break
@@ -102,9 +98,10 @@ def remove_package(package_id: int):
     '''移除包信息'''
     global packages_source
 
-    for k, v in package_map.items():
-        if k == package_id:
-            del packages_source[v]
+    for index, i in enumerate(packages_source):
+        if i['package_name'] == package_id:
+            del packages_source[index]
+            break
 
 try:
     with open('packages.json', 'r', encoding='utf-8') as f:
@@ -112,7 +109,8 @@ try:
 except FileNotFoundError:
     os.remove(Path('data', 'first_run'))
 
-install_path, packages, package_map = get_packages()
+packages = get_packages()
+print(packages_source)
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
@@ -158,7 +156,7 @@ class ColorGetter(QObject):
         select_styles = styles[self.current_theme]
         selected_style = select_styles['selected_button']
         main_style = select_styles['main']
-        default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
+        default_style = select_styles['main']
         big_title = select_styles['big_text']
 
         app.setStyleSheet(default_style)  # 全局应用
@@ -169,7 +167,7 @@ getter = ColorGetter()
 
 class InstallWindow(PagesUI):
     def __init__(self):
-        self.all_packages_name = [get_lang(i['package_name_in_select_index'], source=package_langs) for i in packages_source]
+        self.all_packages_name = [get_lang(i['package_name_index'], source=package_langs) for i in packages_source]
         super().__init__(['hello', 'set_components', 'install', 'finish', 'cancel', 'error'])
         
         self.setWindowTitle('ClickMouse')
@@ -287,7 +285,7 @@ class InstallWindow(PagesUI):
                 with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
                     init_packages = json.load(f)
                     
-                self.all_components = [get_lang(i, source=package_langs) for i in init_packages['all_components']]
+                self.all_components = [get_lang(i['package_name_index'], source=package_langs) for i in packages_info]
                 self.selected_components = self.all_packages_name.copy()
                 self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 self.templates = {

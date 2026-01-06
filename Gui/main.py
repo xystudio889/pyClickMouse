@@ -29,6 +29,7 @@ from pynput import keyboard # 热键功能库
 from typing import Callable # 类型提示库
 import math # 数学库
 import re # 正则表达式库
+import subprocess # 子进程库
 
 # 系统api
 import ctypes
@@ -178,20 +179,16 @@ def save_settings(settings):
         json.dump(settings, f)
         
 def get_packages():
-    list_packages = [] # 包名列表
     lang_index = [] # 语言包索引
-    package_path = [] # 包路径列表
     show = []
     package_id = []
     
     # 加载包信息
     for package in packages:
-        list_packages.append(package.get('package_name', None))
-        lang_index.append(package.get('package_name_lang_index', None))
-        package_path.append(package.get('install_location', None))
+        lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
+        package_id.append(package.get('package_name', None))
         show.append(package.get('show_in_extension_list', True))
-        package_id.append(package.get('package_id', None))
-    return (list_packages, lang_index, package_path, show, package_id)
+    return (lang_index, show, package_id)
 
 def extract_zip(file_path, extract_path):
     '''
@@ -651,8 +648,7 @@ class ColorGetter(QObject):
             
             select_styles = styles[current_theme]
             selected_style = select_styles['selected_button']
-            main_style = select_styles['main']
-            default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
+            default_style = select_styles['main']
             big_title = select_styles['big_text']
 
             if self.use_windows_color:
@@ -661,7 +657,6 @@ class ColorGetter(QObject):
                 
                 # 进行替换，并确保后面有分号
                 selected_style = re.sub(pattern, f'background-color: {self.windows_color};', selected_style, flags=re.IGNORECASE)
-                default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
                 
             app.setStyleSheet(default_style)  # 全局应用
             self.refresh()
@@ -718,6 +713,9 @@ icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 logger.debug('定义语言包')
 with open(get_resource_path('langs', 'langs.json'), 'r', encoding='utf-8') as f:
     langs = json.load(f)
+    
+with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+    package_lang = json.load(f)
     
 with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
     unit_lang = json.load(f)
@@ -917,9 +915,9 @@ class MainWindow(QMainWindow):
             official_extension_menu.addAction('暂无官方扩展').setDisabled(True)
         else:
             # 加载官方扩展菜单
-            for index, show, package_id in zip(indexes, show_list, package_ids):
+            for name, show, package_id in zip(package_names, show_list, package_ids):
                 if show:
-                    official_extension_menu.addAction(get_lang(index)).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
+                    official_extension_menu.addAction(name).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
         official_extension_menu.addAction('管理扩展(&M)').triggered.connect(self.show_manage_extension) # 管理扩展菜单
         
         not_official_extension_menu = extension_menu.addMenu('第三方扩展(&T)')
@@ -956,9 +954,7 @@ class MainWindow(QMainWindow):
         
     def do_extension(self, index):
         '''执行扩展'''
-        match index:
-            case _:
-                QMessageBox.critical(self, '运行扩展', '错误的扩展索引')
+        subprocess.Popen(f'extensions/{index}/main.exe')
             
     def show_manage_extension(self):
         '''管理扩展'''
@@ -2874,8 +2870,9 @@ if __name__ == '__main__':
             os.remove(data_path / 'first_run')
             run_software('init.py', 'init.exe')
             exit(2)
+            pass
 
-        package_list, indexes, install_location, show_list, package_ids = get_packages()
+        package_names, show_list, package_ids = get_packages()
         has_plural = get_has_plural()
 
         main_window = MainWindow()
