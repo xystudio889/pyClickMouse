@@ -19,16 +19,15 @@ import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
 from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
-from uiStyles.WidgetStyles import (styles, maps, style_attrs) # 界面组件样式
+from uiStyles.WidgetStyles import (styles, maps, specialStyleReplaceMode) # 界面组件样式
 from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (get_style_sheet, replace_style_sheet, is_dark_mode, run_software) # 共享库
+from sharelibs import (is_dark_mode, run_software) # 共享库
 import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
 from typing import Callable # 类型提示库
 import math # 数学库
-import re # 正则表达式库
 import subprocess # 子进程库
 
 # 系统api
@@ -285,12 +284,12 @@ def plural(count, value, plural):
         return value
 
 def get_windows_accent_color():
-    """读取Windows强调色"""
+    '''读取Windows强调色'''
     # 主题色存储在 HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM
-    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\DWM")
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\DWM')
     
     # 读取 AccentColor 值（DWORD类型）
-    accent_color, _ = winreg.QueryValueEx(key, "AccentColor")
+    accent_color, _ = winreg.QueryValueEx(key, 'AccentColor')
     winreg.CloseKey(key)
     
     # 转换为RGB格式（注册表中的顺序是ABGR）
@@ -298,9 +297,9 @@ def get_windows_accent_color():
     b = (accent_color >> 16) & 0xFF # B通道
     g = (accent_color >> 8) & 0xFF # G通道
 
-    r_str = f"{r:02x}".zfill(2)
-    g_str = f"{g:02x}".zfill(2)
-    b_str = f"{b:02x}".zfill(2)
+    r_str = f'{r:02x}'.zfill(2)
+    g_str = f'{g:02x}'.zfill(2)
+    b_str = f'{b:02x}'.zfill(2)
     
     # 通常我们使用RGB格式，忽略Alpha通道
     return f'#{r_str}{g_str}{b_str}'
@@ -439,7 +438,7 @@ class Click(QObject):
         try:
             delay = math.ceil(float(input_delay))
         except Exception as e:
-            QMessageBox.critical(None, get_lang('14'), f'{get_lang("1b")} {str(e)}')
+            QMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
             logger.critical(f'发生错误:{e}')
             return
 
@@ -516,17 +515,17 @@ class Refresh:
     
     def left_check(self):
         if clicker.left_clicked:
-            main_window.left_click_button.setStyleSheet(selected_style)
+            set_style(main_window.left_click_button, 'selected')
         else:
             logger.info('左键未连点')
-            main_window.left_click_button.setStyleSheet(default_style)
+            set_style(main_window.left_click_button, '')
     
     def right_check(self):
         if clicker.right_clicked:
-            main_window.right_click_button.setStyleSheet(selected_style)
+            set_style(main_window.right_click_button,'selected')
         else:
             logger.info('右键未连点')
-            main_window.right_click_button.setStyleSheet(default_style)
+            set_style(main_window.right_click_button, '')
 
 class ColorGetter(QObject):
     style_changed = Signal()
@@ -540,7 +539,13 @@ class ColorGetter(QObject):
         self.style = settings.get('select_style', 0)
 
         self.current_theme, self.windows_theme, self.windows_color, self.use_windows_color = self.load_theme()
-        self.current_theme = self.current_theme.replace('auto-', '')
+        try:
+            self.current_theme = self.current_theme.replace('auto-', '')
+        except AttributeError:
+            settings['select_style'] = 0
+            save_settings(settings)
+            QMessageBox.critical(None, 'Error', 'Find the index of the style settings is out of range, the default style setting has been restored, please restart ClickMouse.')
+            sys.exit(0)
         
         # 加载刷新服务
         refresh = Refresh()
@@ -617,58 +622,64 @@ class ColorGetter(QObject):
         logger.info('应用标题栏样式')
         
         hwnd = window.winId().__int__()
+        
+        if select_styles.css_data['.meta']['mode'] == 'dark':
+            is_dark_mode = 1
+        else:
+            is_dark_mode = 0
 
         # 设置深色模式
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             wintypes.HWND(hwnd),
             DWMWA_USE_IMMERSIVE,
-            ctypes.byref(wintypes.INT(1 if style_attrs.get(current_theme, {'title_is_dark': False}).get('title_is_dark', False) else 0)),
+            ctypes.byref(wintypes.INT(is_dark_mode)),
             ctypes.sizeof(wintypes.INT)
         )
 
     def apply_global_theme(self):
         '''根据当前主题，为整个应用设置全局样式表'''
-        global select_styles, default_style, big_title, selected_style, current_theme
+        global select_styles
 
         logger.info('应用全局样式表')
-        
-        theme = self.current_theme
+
         app = get_application_instance()
         self.style_changed.emit()
 
-        if theme is None:
-            select_styles = styles['light']
-            default_style = ''
-            big_title = select_styles['big_text']
-            selected_style = ''
-            current_theme = 'light'
-            app.setStyleSheet('')  # 全局应用
-        else:
-            current_theme = self.current_theme.replace('auto-', '')
-            
-            select_styles = styles[current_theme]
-            selected_style = select_styles['selected_button']
-            default_style = select_styles['main']
-            big_title = select_styles['big_text']
+        current_theme = self.current_theme.replace('auto-', '')
+        
+        select_styles = styles[current_theme]
 
-            if self.use_windows_color:
-                # 使用正则表达式匹配 background-color 属性及其值
-                pattern = r'background-color:\s*[^;]+;?'
-                
-                # 进行替换，并确保后面有分号
-                selected_style = re.sub(pattern, f'background-color: {self.windows_color};', selected_style, flags=re.IGNORECASE)
-                
-            app.setStyleSheet(default_style)  # 全局应用
-            self.refresh()
+        if self.use_windows_color:
+            select_styles = select_styles.replace(['.selected', 'background-color'], specialStyleReplaceMode.ALL, self.windows_color, output_json=False)
+            select_styles = select_styles.replace(['.selected:hover', 'background-color'], specialStyleReplaceMode.ALL, self.windows_color, output_json=False)
+            select_styles = select_styles.replace(['.selected:pressed', 'background-color'], specialStyleReplaceMode.ALL, self.windows_color, output_json=False)
+            
+        app.setStyleSheet(select_styles.css_text)  # 全局应用
+        self.refresh()
             
 def new_color_bar(obj):
     '''
-    给创建添加更多样式标题栏
+    给创建添加样式标题栏
     '''
     color_getter.style_changed.connect(lambda: QTimer.singleShot(100, lambda: color_getter.apply_titleBar(obj)))
     color_getter.style_changed.emit()
     
+def set_style(widget: QWidget, class_name: str):
+    '''
+    设置按钮的class属性并刷新样式
+    '''
+    # 1. 设置class属性
+    widget.setProperty('class', class_name)
+    
+    # 2. 强制样式刷新
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+    
+    # 3. 触发重绘
+    widget.update()
+    
 # Windows API常量
+DWMWA_USE_IMMERSIVE = 20
 DWMWA_USE_IMMERSIVE_DARK_MODE = 20
 DWM_WINDOW_CORNER_PREFERENCE = 33
 DWMWCP_ROUND = 2
@@ -678,17 +689,6 @@ data_path = Path('data')
 settings = load_settings()
 
 clicker = Click()
-
-current_theme = 'light'
-select_styles = styles[current_theme]
-default_style = select_styles['main']
-big_title = select_styles['big_text']
-selected_style = select_styles['selected_button']
-
-# Windows API常量
-DWMWA_USE_IMMERSIVE = 20
-DWMWA_WINDOW_CORNER_PREFERENCE = 33
-DWMWCP_ROUND = 2
 
 color_getter = ColorGetter()
 
@@ -766,7 +766,7 @@ class MainWindow(QMainWindow):
         title = QLabel(get_lang('0b'))
         
         # 创建标题风格
-        title.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '20px'))
+        set_style(title, 'big_text_20')
         title.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         
         # 按钮
@@ -817,7 +817,7 @@ class MainWindow(QMainWindow):
         # 总连点时长提示
         self.total_time_label = QLabel(get_lang('2c'))
         self.total_time_label.setAlignment(Qt.AlignHCenter)
-        self.total_time_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+        set_style(self.total_time_label, 'big_text_14')
         
         # 创建状态栏
         self.status_bar = QStatusBar()
@@ -1138,8 +1138,8 @@ class MainWindow(QMainWindow):
         self.is_ready = True
         
         # 重置按钮样式
-        self.left_click_button.setStyleSheet(default_style)
-        self.right_click_button.setStyleSheet(default_style)
+        set_style(self.left_click_button, '')
+        set_style(self.right_click_button, '')
         
         # 重置文本
         self.pause_button.setText(get_lang('0f'))
@@ -1149,16 +1149,16 @@ class MainWindow(QMainWindow):
         '''click按钮状态改变'''
         if left:
             # 左键点击
-            self.left_click_button.setStyleSheet(selected_style)
-            self.right_click_button.setStyleSheet(default_style)
+            set_style(self.left_click_button, 'selected')
+            set_style(self.right_click_button, '')
         elif right:
             # 右键点击
-            self.right_click_button.setStyleSheet(selected_style)
-            self.left_click_button.setStyleSheet(default_style)
+            set_style(self.right_click_button, 'selected')
+            set_style(self.left_click_button, '')
         else:
             # 未点击
-            self.left_click_button.setStyleSheet(default_style)
-            self.right_click_button.setStyleSheet(default_style)
+            set_style(self.left_click_button, '')
+            set_style(self.right_click_button, '')
 
     def check_default_var(self, value):
         '''检查默认延迟是否有效'''
@@ -1367,7 +1367,7 @@ class AboutWindow(QDialog):
         # 按钮
         logger.debug('创建按钮')
         ok_button = QPushButton(get_lang('1e'))
-        ok_button.setStyleSheet(selected_style)
+        set_style(ok_button, 'selected')
         support_author = QPushButton(get_lang('20'))
 
         # 布局
@@ -1430,7 +1430,7 @@ class UpdateLogWindow(QDialog):
         # 通过字典存储的日志信息来绘制日志内容，并动态计算日志的高度，减少代码量且更加方便管理
         for k, v in self.update_logs.items():
             title_label = QLabel(f'{k}    {v[0]}')
-            title_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+            set_style(title_label, 'big_text_14')
             log_label = QLabel(f'{v[1]}')
             layout.addWidget(title_label)
             layout.addWidget(log_label)
@@ -1447,7 +1447,7 @@ class UpdateLogWindow(QDialog):
         bottom_layout = QHBoxLayout() # 底布局
         
         ok_button = QPushButton(get_lang('1e'))
-        ok_button.setStyleSheet(selected_style)
+        set_style(ok_button, 'selected')
         more_update_log = QPushButton(get_lang('23'))
         
         bottom_layout.addStretch(1)
@@ -1497,7 +1497,7 @@ class CleanCacheWindow(QDialog):
         
         title = QLabel(get_lang('3d'))
         
-        title.setStyleSheet(big_title)
+        set_style(title, 'big_text')
 
         dest = QLabel(get_lang('3e'))
         
@@ -1581,7 +1581,7 @@ class CleanCacheWindow(QDialog):
         scan_cache = QPushButton(get_lang('38'))
         ok = QPushButton(get_lang('1f'))
         clean_cache = QPushButton(get_lang('39'))
-        clean_cache.setStyleSheet(selected_style)
+        set_style(clean_cache, 'selected')
         
         # 布局4
         logger.debug('加载布局-4')        
@@ -1798,12 +1798,12 @@ class UpdateWindow(QDialog):
         logger.debug('创建面板控件')
         title = QLabel(get_lang('24'))
         version = QLabel(get_lang('25').format(__version__, result[1]))
-        
-        title.setStyleSheet(big_title)
+
+        set_style(title, 'big_text')
 
         # 按钮
         update = QPushButton(get_lang('26')) # 更新按钮
-        update.setStyleSheet(selected_style)
+        set_style(update, 'selected')
         update_log = QPushButton(get_lang('27')) # 查看更新日志按钮
         cancel = QPushButton(get_lang('1f')) # 取消按钮
         
@@ -1870,7 +1870,7 @@ class HotkeyHelpWindow(QDialog):
         # 面板控件
         logger.debug('创建面板控件')
         title = QLabel(filter_hotkey(get_lang('5e')))
-        title.setStyleSheet(big_title)
+        set_style(title, 'big_text')
 
         layout.addWidget(title)
         
@@ -1887,7 +1887,7 @@ class HotkeyHelpWindow(QDialog):
             
         bottom_layout = QHBoxLayout()
         ok_button = QPushButton(get_lang('1e'))
-        ok_button.setStyleSheet(selected_style)
+        set_style(ok_button, 'selected')
         ok_button.clicked.connect(self.close)
         
         # 布局
@@ -1953,7 +1953,7 @@ class FastSetClickWindow(QMainWindow):
         # 总连点时长提示
         self.total_time_label = QLabel(f'{get_lang('2c')}: ')
         self.total_time_label.setAlignment(Qt.AlignHCenter)
-        self.total_time_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+        set_style(self.total_time_label, 'big_text_14')
         
         # 创建布局
         logger.debug('创建按钮布局')
@@ -2168,7 +2168,7 @@ class ClickAttrWindow(QDialog):
         # 底边栏
         bottom_layout = QHBoxLayout()
         ok_button = QPushButton(get_lang('1e'))
-        ok_button.setStyleSheet(selected_style)
+        set_style(ok_button, 'selected')
         ok_button.clicked.connect(self.close)
         
         # 布局
@@ -2188,20 +2188,20 @@ class ClickAttrWindow(QDialog):
         
     def update_attr(self):
         '''更新属性'''
-        self.left_clicked.setText(f'{get_lang("69")}: {get_lang('7b') if clicker.left_clicked else get_lang("7c")}')
-        self.right_clicked.setText(f'{get_lang("6a")}: {get_lang("7b") if clicker.right_clicked else get_lang("7c")}')
-        self.click_delay.setText(f'{get_lang("78")}: {delay_num}{get_lang("ms", source=unit_lang)}')
-        self.click_times.setText(f'{get_lang("5c")}: {get_lang("2b") if is_inf else time_num}')
-        self.paused.setText(f'{get_lang("0f")}: {get_lang('79') if clicker.paused else get_lang('7a')}')
-        self.stopped.setText(f'{get_lang("0e")}: {get_lang('79') if not clicker.running else get_lang('7a')}')
+        self.left_clicked.setText(f'{get_lang('69')}: {get_lang('7b') if clicker.left_clicked else get_lang('7c')}')
+        self.right_clicked.setText(f'{get_lang('6a')}: {get_lang('7b') if clicker.right_clicked else get_lang('7c')}')
+        self.click_delay.setText(f'{get_lang('78')}: {delay_num}{get_lang('ms', source=unit_lang)}')
+        self.click_times.setText(f'{get_lang('5c')}: {get_lang('2b') if is_inf else time_num}')
+        self.paused.setText(f'{get_lang('0f')}: {get_lang('79') if clicker.paused else get_lang('7a')}')
+        self.stopped.setText(f'{get_lang('0e')}: {get_lang('79') if not clicker.running else get_lang('7a')}')
         try:
             if is_inf:
-                self.total_run_time.setText(f'{get_lang("2c")}: {get_lang("2b")}')
+                self.total_run_time.setText(f'{get_lang('2c')}: {get_lang('2b')}')
             else:
-                self.total_run_time.setText(f'{get_lang("2c")}: {main_window.total_run_time[0]:.2f}{main_window.total_run_time[1]}')
+                self.total_run_time.setText(f'{get_lang('2c')}: {main_window.total_run_time[0]:.2f}{main_window.total_run_time[1]}')
         except TypeError:
             value = get_unit_value(main_window.total_run_time)
-            self.total_run_time.setText(f'{get_lang("2c")}: {value[0]:.2f}{value[1]}')
+            self.total_run_time.setText(f'{get_lang('2c')}: {value[0]:.2f}{value[1]}')
 
 class SettingWindow(SelectUI):
     click_setting_changed = Signal()
@@ -2229,13 +2229,12 @@ class SettingWindow(SelectUI):
         
         # 标题标签
         title_label = QLabel(title)
-        title_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '24px'))
+        set_style(title_label, 'big_text_24')
         layout.addWidget(title_label)
         
         # 内容标签
-        dest = get_style_sheet('dest', current_theme)
         content_label = QLabel(get_lang('7d'))
-        content_label.setStyleSheet(dest)
+        set_style(content_label, 'dest')
         layout.addWidget(content_label)
         
         def set_content_label(text):
@@ -2243,8 +2242,8 @@ class SettingWindow(SelectUI):
         
         restart_layout = QHBoxLayout()
         self.restart_button = QPushButton(get_lang('7e'))
-        
-        self.restart_button.setStyleSheet(selected_style)
+
+        set_style(self.restart_button, 'selected')
         self.restart_button.clicked.connect(self.restart)
 
         if settings_need_restart:
@@ -2326,7 +2325,7 @@ class SettingWindow(SelectUI):
                 unit_layout.addWidget(use_default_time)
                 
                 self.total_time_label = QLabel(f'{get_lang('2c')}: {get_lang('61')}')
-                self.total_time_label.setStyleSheet(replace_style_sheet(big_title, 'font-size', '16px', '14px'))
+                set_style(self.total_time_label, 'big_text_14')
                 self.total_time_label.setAlignment(Qt.AlignHCenter)
                 self.on_input_change()
                 
@@ -2375,7 +2374,7 @@ class SettingWindow(SelectUI):
                 
                 items = list(style_indexes[settings.get('select_lang', 0)]['lang_package'].values())
     
-                style_choice.addItems([get_lang('82')] + items + [get_lang('83')])
+                style_choice.addItems([get_lang('82')] + items)
                 style_choice.setCurrentIndex(settings.get('select_style', 0))
                 
                 # 布局
@@ -2416,7 +2415,7 @@ class SettingWindow(SelectUI):
         self.on_setting_changed(handle, key)
         settings_need_restart = True
         
-        need_restart = QMessageBox.warning(self, get_lang('15'), f'{get_lang('89')}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        need_restart = QMessageBox.warning(self, get_lang('15'), f'{get_lang('89')}: {', '.join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if need_restart == QMessageBox.Yes:
             self.restart()
         else:
@@ -2577,9 +2576,9 @@ class SettingWindow(SelectUI):
         # 更新按钮样式
         for i, button in enumerate(self.buttons):
             if i == index:
-                button.setStyleSheet(selected_style)
+                set_style(button, 'selected')
             else:
-                button.setStyleSheet(default_style)  # 恢复默认样式
+                set_style(button, '')
     
     def restart(self):
         run_software('main.py', 'main.exe')
@@ -2587,7 +2586,7 @@ class SettingWindow(SelectUI):
     
     def init_right_pages(self):
         super().init_right_pages()
-        self.buttons[0].setStyleSheet(selected_style)
+        set_style(self.buttons[0], 'selected')
         
 class SetImportExtensionModeWindow(QDialog):
     def __init__(self):
@@ -2607,7 +2606,7 @@ class SetImportExtensionModeWindow(QDialog):
         # 提示
         mode_label = QLabel('请选择扩展模式')
         mode_label.setAlignment(Qt.AlignCenter)
-        mode_label.setStyleSheet(big_title)
+        set_style(mode_label, 'big_text')
 
         # 选择框
         self.mode_combo = QComboBox()
@@ -2759,7 +2758,7 @@ class TrayApp:
         try:
             math.ceil(float(input_delay))
         except Exception as e:
-            QMessageBox.critical(None, get_lang('14'), f'{get_lang("1b")} {str(e)}')
+            QMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
             logger.critical(f'发生错误:{e}')
             return False
         return True

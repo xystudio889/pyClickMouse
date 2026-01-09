@@ -75,6 +75,10 @@ QLineEdit:disabled {
     color: #505050;
 }
 
+QListView { 
+    background-color: #353535;
+}
+
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
     background-color: #303030;
@@ -140,4 +144,55 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
 
 QStatusBar {
     background-color: #404040;
+}
+
+/* 类型提示框样式 */
+.selected {
+    background-color: dodgerblue;
+    color: white;
+}
+
+.selected:hover {
+    background-color: #30a0f0;
+    color: white;
+}
+
+.selected:pressed {
+    background-color: #2078c5;
+    color: white;
+}
+
+.dest {
+    color: gray;
+    font-size: 16px;
+}
+
+.top_widget {
+    background-color: #404040;
+}
+
+/* 大字 */
+.big_text_16 {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.big_text_20 {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.big_text_14 {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.big_text_24 {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* 元数据 */
+.meta { 
+    mode: dark;
 }

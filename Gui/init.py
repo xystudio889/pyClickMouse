@@ -119,8 +119,6 @@ def import_package(package_id, **config):
             return package
 
 class ColorGetter(QObject):
-    style_changed = Signal(str)
-    
     def __init__(self):
         super().__init__()
 
@@ -157,8 +155,6 @@ class ColorGetter(QObject):
         '''根据当前主题，为整个应用设置全局样式表'''
         global select_styles, selected_style, main_style, default_style, big_title
         
-        self.style_changed.emit(self.current_theme)
-        
         select_styles = styles[self.current_theme]
         selected_style = select_styles['selected_button']
         main_style = select_styles['main']
@@ -166,6 +162,16 @@ class ColorGetter(QObject):
         big_title = select_styles['big_text']
 
         app.setStyleSheet(default_style)  # 全局应用
+        
+    def apply_global_theme(self):
+        '''根据当前主题，为整个应用设置全局样式表'''
+        global select_styles
+        
+        self.style_changed.emit(self.current_theme)
+        
+        select_styles = styles[self.current_theme]
+                
+        app.setStyleSheet(select_styles.css_text)  # 全局应用
 
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
@@ -184,10 +190,6 @@ class InstallWindow(PagesUI):
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
         
-        # colorGetter属性
-        getter.style_changed.connect(self.on_style_changed)
-        self.on_style_changed(getter.current_theme)
-        
     def init_ui(self):
         '''初始化UI'''
         # 创建中央部件
@@ -202,6 +204,8 @@ class InstallWindow(PagesUI):
         # 创建顶部白色区域
         self.top_widget = QWidget()
         self.top_widget.setFixedHeight(50)  # 设置顶部高度
+        
+        self.top_widget.setProperty('class', 'top_widget')
         
         # 创建顶部区域的内容布局
         self.top_layout = QHBoxLayout(self.top_widget)
@@ -268,12 +272,6 @@ class InstallWindow(PagesUI):
         self.button_layout.addWidget(self.action_button_container)
         
         main_layout.addLayout(self.button_layout)
-        
-    def on_style_changed(self, current_theme):
-        if current_theme == 'dark':
-            self.top_widget.setStyleSheet('background-color: #404040;')
-        else:
-            self.top_widget.setStyleSheet('background-color: white;')
         
     def show_page(self, page_index):
         '''显示指定页面'''
