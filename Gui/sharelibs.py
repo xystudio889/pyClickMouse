@@ -11,7 +11,6 @@ import sys
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
 
-
 def _show_message(message, title, status):
     if status == 0:
         QMessageBox.information(None, title, message)
@@ -30,27 +29,6 @@ except FileNotFoundError:
 except json.JSONDecodeError:
     _show_message('Resource file damaged: langs.json format error', 'Error', 2)
     sys.exit(1)
-    
-def get_style_sheet(style_name: str, mode: str = None) -> str:
-    '''
-    获取样式表
-    '''
-    if mode is None:
-        mode = 'light' if is_dark_mode() else 'dark'
-    try:
-        with open(get_resource_path('styles', mode, f'{style_name}.qss'), 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f'Style sheet {style_name}.qss not found')
-    
-def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
-    '''
-    替换样式表
-    '''
-    old_style_tag = f'{style_tag}: {old_style}'
-    new_style_tag = f'{style_tag}: {new_style}'
-    
-    return style_sheet.replace(old_style_tag, new_style_tag)
     
 def load_settings():
     '''

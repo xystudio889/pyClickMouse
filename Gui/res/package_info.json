@@ -1,10 +1,8 @@
 [
     {
-        "package_name": "clickmouse",
+        "package_name": "xystudio.clickmouse",
         "install_location": "",
-        "package_name_lang_index": "8b",
-        "package_id": "xystudio.clickmouse",
-        "package_name_in_select_index": "01",
+        "package_name_index": "01",
         "show_in_extension_list": false
     }
 ]

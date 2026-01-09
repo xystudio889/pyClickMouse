@@ -15,6 +15,7 @@ import json # 读写json文件
 from sharelibs import (get_resource_path, run_software, get_lang, langs) # 共享库
 from uiStyles import PagesUI
 from uiStyles.WidgetStyles import (styles)
+import shutil # 删除文件夹
 
 with open(get_resource_path('langs', 'init.json'), 'r', encoding='utf-8') as f:
     init_langs = json.load(f)
@@ -35,6 +36,8 @@ def save_settings(settings):
         json.dump(settings, f)
 
 data_path = Path('data')
+
+package_id_list = []
 
 def create_shortcut(path, target, description, work_dir = None, icon_path = None):
     # 创建快捷方式
@@ -110,14 +113,12 @@ def get_dir_size_for_reg(dir):
 
 def import_package(package_id, **config):
     for i in packages_info:
-        if i['package_id'] == package_id:
+        if i['package_name'] == package_id:
             package = i
             package.update(config)
             return package
 
 class ColorGetter(QObject):
-    style_changed = Signal(str)
-    
     def __init__(self):
         super().__init__()
 
@@ -154,15 +155,23 @@ class ColorGetter(QObject):
         '''根据当前主题，为整个应用设置全局样式表'''
         global select_styles, selected_style, main_style, default_style, big_title
         
-        self.style_changed.emit(self.current_theme)
-        
         select_styles = styles[self.current_theme]
         selected_style = select_styles['selected_button']
         main_style = select_styles['main']
-        default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
+        default_style = select_styles['main']
         big_title = select_styles['big_text']
 
         app.setStyleSheet(default_style)  # 全局应用
+        
+    def apply_global_theme(self):
+        '''根据当前主题，为整个应用设置全局样式表'''
+        global select_styles
+        
+        self.style_changed.emit(self.current_theme)
+        
+        select_styles = styles[self.current_theme]
+                
+        app.setStyleSheet(select_styles.css_text)  # 全局应用
 
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
 
@@ -181,10 +190,6 @@ class InstallWindow(PagesUI):
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
         
-        # colorGetter属性
-        getter.style_changed.connect(self.on_style_changed)
-        self.on_style_changed(getter.current_theme)
-        
     def init_ui(self):
         '''初始化UI'''
         # 创建中央部件
@@ -199,6 +204,8 @@ class InstallWindow(PagesUI):
         # 创建顶部白色区域
         self.top_widget = QWidget()
         self.top_widget.setFixedHeight(50)  # 设置顶部高度
+        
+        self.top_widget.setProperty('class', 'top_widget')
         
         # 创建顶部区域的内容布局
         self.top_layout = QHBoxLayout(self.top_widget)
@@ -266,12 +273,6 @@ class InstallWindow(PagesUI):
         
         main_layout.addLayout(self.button_layout)
         
-    def on_style_changed(self, current_theme):
-        if current_theme == 'dark':
-            self.top_widget.setStyleSheet('background-color: #404040;')
-        else:
-            self.top_widget.setStyleSheet('background-color: white;')
-        
     def show_page(self, page_index):
         '''显示指定页面'''
         page_widget = QWidget()
@@ -330,7 +331,7 @@ class InstallWindow(PagesUI):
                 with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
                     init_packages = json.load(f)
                     
-                self.all_components = [get_lang(i, source=package_langs) for i in init_packages['all_components']]
+                self.all_components = [get_lang(i['package_name_index'], source=package_langs) for i in packages_info]
                 self.selected_components = [get_lang(i, source=package_langs) for i in init_packages['selected_components']]
                 self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 
@@ -568,15 +569,23 @@ class InstallWindow(PagesUI):
             install_path = Path.cwd()
             self.set_status('正在创建包管理器文件...')
             package = []
-            package.append(import_package('xystudio.clickmouse', install_location=str(install_path)))
+            
+            if not package_id_list:
+                package.append(import_package('xystudio.clickmouse'))
+            else:
+                for i in package_id_list:
+                    package.append(import_package(i))
             
             self.set_status('解压安装包...')
+            for i in package_id_list:
+                if 'xystudio.clickmouse' not in i:
+                    extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
+            
             self.set_status('正在写入包管理器文件...')
             with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
                 json.dump(package, f)
                 
             # 卸载功能
-
             self.set_status('正在创建安装信息...')
             key = winreg.CreateKey(
                 winreg.HKEY_LOCAL_MACHINE,
@@ -626,12 +635,13 @@ class InstallWindow(PagesUI):
                 '提示',
                 f'''即将安装以下组件:
 {'\n'.join(self.selected_components)}
-并创建以下快捷方式：
-{'桌面快捷方式' if self.create_desktop_shortcut else ''}
-{'开始菜单快捷方式' if self.create_start_menu_shortcut else ''},
+并创建以下快捷方式：{'\n桌面快捷方式' if self.create_desktop_shortcut else ''}{'\n开始菜单快捷方式' if self.create_start_menu_shortcut else ''},
 是否继续？''',
             QMessageBox.Yes | QMessageBox.No,
             )
+            for i in packages_info:
+                if get_lang(i['package_name_index'], source=package_langs) in self.selected_components:
+                    package_id_list.append(i['package_name'])
             if message == QMessageBox.No:
                 return
         super().on_next()
@@ -641,27 +651,30 @@ class InstallWindow(PagesUI):
             event.ignore()
             self.cancel()
         elif self.current_page == self.PAGE_finish:
+            with open(data_path / 'first_run', 'w'):pass # 标记为第一次运行
             if self.run_clickmouse.isChecked():
                 run_software('main.py', 'main.exe')
-                with open(data_path / 'first_run', 'w'):pass # 标记为第一次运行
                 event.accept()
         else:
             event.accept()
 
 if __name__ == '__main__':
-    if check_reg_key(r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'):
+    if check_reg_key(software_reg_key):
         QMessageBox.critical(None, '错误', '检测到已安装 ClickMouse，即将为你尝试修复损坏的Clickmouse文件。')
         with open(data_path / 'first_run', 'w'):pass
         if not(os.path.exists('packages.json')):
             package = []
-            package.append(import_package('xystudio.clickmouse', install_location=str(Path.cwd())))
+            package.append(import_package('xystudio.clickmouse'))
             with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
                 json.dump(package, f)
+        if os.path.exists('extensions') and os.path.isdir('extensions'):
+            shutil.rmtree('extensions')
+
         run_software('main.py', 'main.exe')
         sys.exit(1)
 
     has_package = True
-    if not get_resource_path('packages'):
+    if not(os.path.exists(get_resource_path('packages'))):
         QMessageBox.warning(None, '错误', '再编译版安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。')
         has_package = False
 
@@ -670,5 +683,5 @@ if __name__ == '__main__':
         window.show()
     else:
         QMessageBox.critical(None, '错误', '请以管理员身份运行本程序。')
-        exit(1)
+        sys.exit(1)
     sys.exit(app.exec())

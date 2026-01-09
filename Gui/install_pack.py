@@ -8,13 +8,17 @@ import json
 import os
 from pathlib import Path
 import pyperclip
-from sharelibs import (get_resource_path, get_lang)
+from sharelibs import (get_resource_path, get_lang, settings)
 import win32com.client
 import winreg
 import zipfile
 
 from uiStyles import PagesUI
-from uiStyles.WidgetStyles import (styles)
+from uiStyles.WidgetStyles import (styles, maps)
+
+# 系统api
+import ctypes
+from ctypes import wintypes
 
 with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
     package_langs = json.load(f)
@@ -58,15 +62,11 @@ with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
 
 def get_packages():
     package_index = [] # 包索引
-    package_path = [] # 包路径
-    package_map = {} # 包映射
     
     # 加载包信息
     for package in packages_source:
-        package_path.append(package.get('install_location', None))
-        package_index.append(get_lang(package.get('package_name_in_select_index', None)))
-        package_map[package['package_id']] = packages_source.index(package)
-    return (package_path, package_index, package_map)
+        package_index.append(get_lang(package.get('package_name_index', None)))
+    return (package_index)
 
 def get_list_diff(list1: list, list2: list) -> list:
     '''
@@ -93,7 +93,7 @@ def import_package(package_id, **config):
     global packages_source
     
     for index, i in enumerate(packages_info):
-        if i['package_id'] == package_id:
+        if i['package_name'] == package_id:
             packages_source.append(i)
             packages_source[index].update(config)
             break
@@ -102,9 +102,10 @@ def remove_package(package_id: int):
     '''移除包信息'''
     global packages_source
 
-    for k, v in package_map.items():
-        if k == package_id:
-            del packages_source[v]
+    for index, i in enumerate(packages_source):
+        if i['package_name'] == package_id:
+            del packages_source[index]
+            break
 
 try:
     with open('packages.json', 'r', encoding='utf-8') as f:
@@ -112,16 +113,46 @@ try:
 except FileNotFoundError:
     os.remove(Path('data', 'first_run'))
 
-install_path, packages, package_map = get_packages()
+packages = get_packages()
+
+class Refresh:
+    def __init__(self):
+        self.steps = [
+            self.refresh_title,
+        ]
+    
+    def run(self):
+        self.do_step(self.steps)
+                
+    def do_step(self, codes):
+        # 尝试执行代码
+        for code in codes:
+            try:
+                code()
+            except Exception:
+                pass
+        
+    def refresh_title(self):
+        QTimer.singleShot(100, lambda: getter.style_changed.emit(getter.current_theme))
+
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
     
     def __init__(self):
-        super().__init__()
+        global refresh
 
-        self.current_theme = self.load_theme()
-    
+        super().__init__()
+        
+        # 加载刷新服务
+        refresh = Refresh()
+        
+        # 记录当前主题
+        self.style = settings.get('select_style', 0)
+
+        self.current_theme, self.windows_theme = self.load_theme()
+        self.current_theme = self.current_theme.replace('auto-', '')
+
         # 初始化时应用一次主题
         self.apply_global_theme()
 
@@ -132,44 +163,100 @@ class ColorGetter(QObject):
     
     def load_theme(self):
         theme = None
-
-        theme = QApplication.styleHints().colorScheme()
+        
+        if self.style == 0:
+            theme = QApplication.styleHints().colorScheme()
+            if theme == Qt.ColorScheme.Dark:
+                theme = 'auto-dark'
+            elif theme == Qt.ColorScheme.Light:
+                theme = 'auto-light'
+                
+        if self.style == 0:
+            theme = QApplication.styleHints().colorScheme()
+            if theme == Qt.ColorScheme.Dark:
+                theme = 'auto-dark'
+            elif theme == Qt.ColorScheme.Light:
+                theme = 'auto-light'
+        
+        windows_theme = QApplication.styleHints().colorScheme()   
         if theme == Qt.ColorScheme.Dark:
-            theme = 'dark'
+            windows_theme = 'dark'
         elif theme == Qt.ColorScheme.Light:
-            theme = 'light'
+            windows_theme = 'light'
+        
+        for k, v in maps.items():
+            if v == settings.get('select_style', 0):
+                theme = k
     
-        return theme
+        return theme, windows_theme
 
     def check_and_apply_theme(self):
         '''检查主题是否变化，变化则重新应用'''
-        new_theme = self.load_theme()
+        self.style = settings.get('select_style', 0)
+        
+        new_theme, new_windows_theme = self.load_theme()
         
         if new_theme != self.current_theme:
             self.current_theme = new_theme
             self.apply_global_theme()
+            
+        if new_windows_theme != self.windows_theme:
+            self.windows_theme = new_windows_theme
+            refresh.run()  # 运行刷新服务
+            
+    def apply_titleBar(self, window: QMainWindow | QDialog):
+        '''应用标题栏样式'''
+        hwnd = window.winId().__int__()
+        
+        if select_styles.css_data['.meta']['mode'] == 'dark':
+            is_dark_mode = 1
+        else:
+            is_dark_mode = 0
+
+        # 设置深色模式
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            wintypes.HWND(hwnd),
+            DWMWA_USE_IMMERSIVE,
+            ctypes.byref(wintypes.INT(is_dark_mode)),
+            ctypes.sizeof(wintypes.INT)
+        )
 
     def apply_global_theme(self):
         '''根据当前主题，为整个应用设置全局样式表'''
-        global select_styles, selected_style, main_style, default_style, big_title
-        
-        self.style_changed.emit(self.current_theme)
-        
-        select_styles = styles[self.current_theme]
-        selected_style = select_styles['selected_button']
-        main_style = select_styles['main']
-        default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
-        big_title = select_styles['big_text']
+        global select_styles
 
-        app.setStyleSheet(default_style)  # 全局应用
+        self.style_changed.emit(self.current_theme)
+
+        current_theme = self.current_theme.replace('auto-', '')
+        
+        select_styles = styles[current_theme]
+            
+        app.setStyleSheet(select_styles.css_text)  # 全局应用
+        refresh.run()  # 运行刷新服务
+            
+def new_color_bar(obj):
+    '''
+    给创建添加样式标题栏
+    '''
+    getter.style_changed.connect(lambda: QTimer.singleShot(100, lambda: getter.apply_titleBar(obj)))
+    getter.style_changed.emit(getter.current_theme)
 
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+package_id_list = []
+select_package_id = []
+
+# Windows API常量
+DWMWA_USE_IMMERSIVE = 20
+DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+DWM_WINDOW_CORNER_PREFERENCE = 33
+DWMWCP_ROUND = 2
+DWMNCRP_ENABLED = 1
 
 getter = ColorGetter()
 
 class InstallWindow(PagesUI):
     def __init__(self):
-        self.all_packages_name = [get_lang(i['package_name_in_select_index'], source=package_langs) for i in packages_source]
+        self.all_packages_name = [get_lang(i['package_name_index'], source=package_langs) for i in packages_source]
         super().__init__(['hello', 'set_components', 'install', 'finish', 'cancel', 'error'])
         
         self.setWindowTitle('ClickMouse')
@@ -181,9 +268,7 @@ class InstallWindow(PagesUI):
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
         
-        # colorGetter属性
-        getter.style_changed.connect(self.on_style_changed)
-        self.on_style_changed(getter.current_theme)
+        new_color_bar(self)
         
     def init_ui(self):
         '''初始化UI'''
@@ -199,6 +284,7 @@ class InstallWindow(PagesUI):
         # 创建顶部白色区域
         self.top_widget = QWidget()
         self.top_widget.setFixedHeight(50)  # 设置顶部高度
+        self.top_widget.setProperty('class', 'top_widget')  # 设置样式类名
         
         # 创建顶部区域的内容布局
         self.top_layout = QHBoxLayout(self.top_widget)
@@ -210,7 +296,7 @@ class InstallWindow(PagesUI):
         
         # 加载文字
         title_label = QLabel('ClickMouse 安装向导')
-        title_label.setStyleSheet(big_title)
+        title_label.setProperty('class', 'big_text_16')
         
         # 布局
         self.top_layout.addWidget(image_label)
@@ -266,12 +352,6 @@ class InstallWindow(PagesUI):
         
         main_layout.addLayout(self.button_layout)
         
-    def on_style_changed(self, current_theme):
-        if current_theme == 'dark':
-            self.top_widget.setStyleSheet('background-color: black;')
-        else:
-            self.top_widget.setStyleSheet('background-color: white;')
-        
     def show_page(self, page_index):
         '''显示指定页面'''
         page_widget = QWidget()
@@ -287,7 +367,7 @@ class InstallWindow(PagesUI):
                 with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
                     init_packages = json.load(f)
                     
-                self.all_components = [get_lang(i, source=package_langs) for i in init_packages['all_components']]
+                self.all_components = [get_lang(i['package_name_index'], source=package_langs) for i in packages_info]
                 self.selected_components = self.all_packages_name.copy()
                 self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 self.templates = {
@@ -357,7 +437,7 @@ class InstallWindow(PagesUI):
                 page_layout.addWidget(QLabel('正在更改 ClickMouse...'))
             case self.PAGE_finish:
                 # 第六页：完成        
-                page_layout.addWidget(QLabel('更改完成！'))
+                page_layout.addWidget(QLabel('更改完成！\n请重启 ClickMouse 应用以生效。'))
             case self.PAGE_cancel:
                 # 第七页：取消
                 page_layout.addWidget(QLabel('安装已取消！'))
@@ -538,6 +618,15 @@ class InstallWindow(PagesUI):
 是否继续？''',
             QMessageBox.Yes | QMessageBox.No,
             )
+            
+            for i in packages_info:
+                if get_lang(i['package_name_index'], source=package_langs) in self.selected_components:
+                    package_id_list.append(i['package_name'])
+                    
+            for i in packages_source:
+                select_package_id.append(i['package_name'])
+                
+            self.changes = get_list_diff(select_package_id, package_id_list)
 
             if message == QMessageBox.No:
                 return
