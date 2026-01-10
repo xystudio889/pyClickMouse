@@ -8,16 +8,27 @@ import json
 import os
 from pathlib import Path
 import pyperclip
-from sharelibs import (get_resource_path, get_lang)
+from sharelibs import (get_resource_path, get_lang, settings, get_init_lang)
 import win32com.client
 import winreg
 import zipfile
+from shutil import rmtree
 
 from uiStyles import PagesUI
-from uiStyles.WidgetStyles import (styles)
+from uiStyles.WidgetStyles import (styles, maps)
+
+# 系统api
+import ctypes
+from ctypes import wintypes
 
 with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
     package_langs = json.load(f)
+    
+def import_package(package_id: str):
+    for i in packages_info:
+        if i['package_name'] == package_id:
+            return i
+    raise ValueError(f'包名 {package_id} 不存在')
 
 def extract_zip(file_path, extract_path):
     '''
@@ -58,15 +69,11 @@ with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
 
 def get_packages():
     package_index = [] # 包索引
-    package_path = [] # 包路径
-    package_map = {} # 包映射
     
     # 加载包信息
     for package in packages_source:
-        package_path.append(package.get('install_location', None))
-        package_index.append(get_lang(package.get('package_name_in_select_index', None)))
-        package_map[package['package_id']] = packages_source.index(package)
-    return (package_path, package_index, package_map)
+        package_index.append(get_lang(package.get('package_name_index', None)))
+    return (package_index)
 
 def get_list_diff(list1: list, list2: list) -> list:
     '''
@@ -88,91 +95,201 @@ def get_list_diff(list1: list, list2: list) -> list:
         diff_list.append(f"+{i}")
     
     return diff_list
-
-def import_package(package_id, **config):
-    global packages_source
-    
-    for index, i in enumerate(packages_info):
-        if i['package_id'] == package_id:
-            packages_source.append(i)
-            packages_source[index].update(config)
-            break
-    
-def remove_package(package_id: int):
-    '''移除包信息'''
-    global packages_source
-
-    for k, v in package_map.items():
-        if k == package_id:
-            del packages_source[v]
+        
+def new_color_bar(obj):
+    '''
+    给创建添加样式标题栏
+    '''
+    getter.style_changed.connect(lambda: QTimer.singleShot(100, lambda: getter.apply_titleBar(obj)))
+    getter.style_changed.emit(getter.current_theme)
 
 try:
+    packages_source = []
     with open('packages.json', 'r', encoding='utf-8') as f:
-        packages_source = json.load(f)
+        package_name = json.load(f)
+    
+    for i in package_name:
+        packages_source.append(import_package(i))
 except FileNotFoundError:
     os.remove(Path('data', 'first_run'))
 
-install_path, packages, package_map = get_packages()
+packages = get_packages()
+
+class Refresh:
+    def __init__(self):
+        self.steps = [
+            self.refresh_title,
+        ]
+    
+    def run(self):
+        self.do_step(self.steps)
+                
+    def do_step(self, codes):
+        # 尝试执行代码
+        for code in codes:
+            try:
+                code()
+            except Exception:
+                pass
+        
+    def refresh_title(self):
+        QTimer.singleShot(1, lambda: getter.style_changed.emit(getter.current_theme))
+        
+class MessageBox(QMessageBox):
+    @staticmethod
+    def new_msg(parent, 
+                title: str, 
+                text: str, 
+                icon: QMessageBox.Icon, 
+                buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
+                defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+        
+        # 使用位置参数
+        msg_box = QMessageBox(icon, title, text, buttons, parent)
+        
+        # 设置默认按钮
+        if defaultButton != QMessageBox.StandardButton.NoButton:
+            msg_box.setDefaultButton(defaultButton)
+            
+        # 深色模式
+        new_color_bar(msg_box)
+            
+        return msg_box
+    
+    @staticmethod
+    def warning(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
+        return msg_box.exec()
+
+    def critical(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
+        return msg_box.exec()
+    
+    def information(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
+        return msg_box.exec()
+    
+    def question(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
+        return msg_box.exec()
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
     
     def __init__(self):
-        super().__init__()
+        global refresh
 
-        self.current_theme = self.load_theme()
-    
+        super().__init__()
+        
+        # 加载刷新服务
+        refresh = Refresh()
+        
+        # 记录当前主题
+        self.style = settings.get('select_style', 0)
+
+        self.current_theme, self.windows_theme = self.load_theme()
+        self.current_theme = self.current_theme.replace('auto-', '')
+
         # 初始化时应用一次主题
         self.apply_global_theme()
 
         # 使用定时器定期检测主题变化
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_and_apply_theme)
-        self.timer.start(100)
+        self.timer.start(1)
     
     def load_theme(self):
         theme = None
-
-        theme = QApplication.styleHints().colorScheme()
+        
+        if self.style == 0:
+            theme = QApplication.styleHints().colorScheme()
+            if theme == Qt.ColorScheme.Dark:
+                theme = 'auto-dark'
+            elif theme == Qt.ColorScheme.Light:
+                theme = 'auto-light'
+                
+        if self.style == 0:
+            theme = QApplication.styleHints().colorScheme()
+            if theme == Qt.ColorScheme.Dark:
+                theme = 'auto-dark'
+            elif theme == Qt.ColorScheme.Light:
+                theme = 'auto-light'
+        
+        windows_theme = QApplication.styleHints().colorScheme()   
         if theme == Qt.ColorScheme.Dark:
-            theme = 'dark'
+            windows_theme = 'dark'
         elif theme == Qt.ColorScheme.Light:
-            theme = 'light'
+            windows_theme = 'light'
+        
+        for k, v in maps.items():
+            if v == settings.get('select_style', 0):
+                theme = k
     
-        return theme
+        return theme, windows_theme
 
     def check_and_apply_theme(self):
         '''检查主题是否变化，变化则重新应用'''
-        new_theme = self.load_theme()
+        self.style = settings.get('select_style', 0)
+        
+        new_theme, new_windows_theme = self.load_theme()
         
         if new_theme != self.current_theme:
             self.current_theme = new_theme
             self.apply_global_theme()
+            
+        if new_windows_theme != self.windows_theme:
+            self.windows_theme = new_windows_theme
+            refresh.run()  # 运行刷新服务
+            
+    def apply_titleBar(self, window: QMainWindow | QDialog):
+        '''应用标题栏样式'''
+        hwnd = window.winId().__int__()
+        
+        if select_styles.css_data['.meta']['mode'] == 'dark':
+            is_dark_mode = 1
+        else:
+            is_dark_mode = 0
+
+        # 设置深色模式
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            wintypes.HWND(hwnd),
+            DWMWA_USE_IMMERSIVE,
+            ctypes.byref(wintypes.INT(is_dark_mode)),
+            ctypes.sizeof(wintypes.INT)
+        )
 
     def apply_global_theme(self):
         '''根据当前主题，为整个应用设置全局样式表'''
-        global select_styles, selected_style, main_style, default_style, big_title
-        
-        self.style_changed.emit(self.current_theme)
-        
-        select_styles = styles[self.current_theme]
-        selected_style = select_styles['selected_button']
-        main_style = select_styles['main']
-        default_style = main_style + (selected_style.replace('QPushButton', 'QPushButton:pressed'))
-        big_title = select_styles['big_text']
+        global select_styles
 
-        app.setStyleSheet(default_style)  # 全局应用
+        self.style_changed.emit(self.current_theme)
+
+        current_theme = self.current_theme.replace('auto-', '')
+        
+        select_styles = styles[current_theme]
+            
+        app.setStyleSheet(select_styles.css_text)  # 全局应用
+        refresh.run()  # 运行刷新服务
 
 icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+package_id_list = []
+select_package_id = []
+
+# Windows API常量
+DWMWA_USE_IMMERSIVE = 20
+DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+DWM_WINDOW_CORNER_PREFERENCE = 33
+DWMWCP_ROUND = 2
+DWMNCRP_ENABLED = 1
 
 getter = ColorGetter()
 
 class InstallWindow(PagesUI):
     def __init__(self):
-        self.all_packages_name = [get_lang(i['package_name_in_select_index'], source=package_langs) for i in packages_source]
-        super().__init__(['hello', 'set_components', 'install', 'finish', 'cancel', 'error'])
+        self.all_packages_name = [get_lang(i['package_name_index'], source=package_langs) for i in packages_source]
+        super().__init__(['hello', 'set_components', 'install', 'finish', 'finish_nochanges', 'cancel', 'error'])
         
-        self.setWindowTitle('ClickMouse')
+        self.setWindowTitle(get_init_lang('01'))
         self.setWindowIcon(icon)
         self.setGeometry(100, 100, 500, 375)
         self.setWindowFlags(
@@ -181,9 +298,7 @@ class InstallWindow(PagesUI):
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
         
-        # colorGetter属性
-        getter.style_changed.connect(self.on_style_changed)
-        self.on_style_changed(getter.current_theme)
+        new_color_bar(self)
         
     def init_ui(self):
         '''初始化UI'''
@@ -199,6 +314,7 @@ class InstallWindow(PagesUI):
         # 创建顶部白色区域
         self.top_widget = QWidget()
         self.top_widget.setFixedHeight(50)  # 设置顶部高度
+        self.top_widget.setProperty('class', 'top_widget')  # 设置样式类名
         
         # 创建顶部区域的内容布局
         self.top_layout = QHBoxLayout(self.top_widget)
@@ -209,8 +325,8 @@ class InstallWindow(PagesUI):
         image_label.setPixmap(self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'), 32, 32))
         
         # 加载文字
-        title_label = QLabel('ClickMouse 安装向导')
-        title_label.setStyleSheet(big_title)
+        title_label = QLabel(get_init_lang('01'))
+        title_label.setProperty('class', 'big_text_16')
         
         # 布局
         self.top_layout.addWidget(image_label)
@@ -229,7 +345,7 @@ class InstallWindow(PagesUI):
         self.button_layout.addStretch(0)
         
         # 上一步按钮
-        self.prev_btn = QPushButton('上一步')
+        self.prev_btn = QPushButton(get_init_lang('02'))
         self.prev_btn.clicked.connect(self.on_prev)
         self.button_layout.addWidget(self.prev_btn)
         
@@ -238,12 +354,12 @@ class InstallWindow(PagesUI):
         self.next_error_layout = QHBoxLayout(self.next_error_container)
         
         # 下一步按钮
-        self.next_btn = QPushButton('下一步')
+        self.next_btn = QPushButton(get_init_lang('03'))
         self.next_btn.clicked.connect(self.on_next)
         self.next_error_layout.addWidget(self.next_btn)
         
         # 错误重叠容器
-        self.copy_error_btn = QPushButton('复制错误信息')
+        self.copy_error_btn = QPushButton(get_init_lang('04'))
         self.copy_error_btn.clicked.connect(self.copy_error)
         self.next_error_layout.addWidget(self.copy_error_btn)
         
@@ -252,12 +368,12 @@ class InstallWindow(PagesUI):
         self.action_button_layout = QHBoxLayout(self.action_button_container)
         
         # 取消按钮
-        self.cancel_btn = QPushButton('取消')
+        self.cancel_btn = QPushButton(get_init_lang('05'))
         self.cancel_btn.clicked.connect(self.cancel)
         self.action_button_layout.addWidget(self.cancel_btn)
         
         # 完成按钮
-        self.finish_btn = QPushButton('完成')
+        self.finish_btn = QPushButton(get_init_lang('06'))
         self.finish_btn.clicked.connect(self.close)
         self.action_button_layout.addWidget(self.finish_btn)
         
@@ -265,12 +381,6 @@ class InstallWindow(PagesUI):
         self.button_layout.addWidget(self.action_button_container)
         
         main_layout.addLayout(self.button_layout)
-        
-    def on_style_changed(self, current_theme):
-        if current_theme == 'dark':
-            self.top_widget.setStyleSheet('background-color: black;')
-        else:
-            self.top_widget.setStyleSheet('background-color: white;')
         
     def show_page(self, page_index):
         '''显示指定页面'''
@@ -280,21 +390,21 @@ class InstallWindow(PagesUI):
         match page_index:
             case self.PAGE_hello:
                 # 第一页：欢迎
-                page_layout.addWidget(QLabel('欢迎使用 clickMouse 安装向导!\n\n这个程序将简单的使用几分钟时间，帮助你完成安装。\n点击下一步开启安装助手。'))
+                page_layout.addWidget(QLabel(get_init_lang('07')))
             case self.PAGE_set_components:
                 # 第四页：设置组件
                 # 初始化数据
                 with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
                     init_packages = json.load(f)
                     
-                self.all_components = [get_lang(i, source=package_langs) for i in init_packages['all_components']]
+                self.all_components = [get_lang(i['package_name_index'], source=package_langs) for i in packages_info]
                 self.selected_components = self.all_packages_name.copy()
                 self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 self.templates = {
-                    '当前': self.selected_components,
-                    '默认': [get_lang(i, source=package_langs) for i in init_packages['selected_components']],
-                    '精简': self.protected_components,
-                    '全选': self.all_components,
+                    get_init_lang('21'): self.selected_components,
+                    get_init_lang('0e'): [get_lang(i, source=package_langs) for i in init_packages['selected_components']],
+                    get_init_lang('0f'): self.protected_components,
+                    get_init_lang('10'): self.all_components,
                 }
 
                 # 创建主水平布局
@@ -312,15 +422,15 @@ class InstallWindow(PagesUI):
                 template_layout = QHBoxLayout()
                 
                 self.template_combo = QComboBox()
-                self.template_combo.addItems(list(self.templates.keys()) + ['自定义'])
+                self.template_combo.addItems(list(self.templates.keys()) + [get_init_lang('11')])
                 
                 # 布局
-                template_layout.addWidget(QLabel('模板:'))
+                template_layout.addWidget(QLabel(get_init_lang('12')))
                 template_layout.addWidget(self.template_combo)
                 template_layout.addStretch()
                 
-                self.add_btn = QPushButton('>> 添加')
-                self.remove_btn = QPushButton('<< 移除')
+                self.add_btn = QPushButton(get_init_lang('13'))
+                self.remove_btn = QPushButton(get_init_lang('14'))
                 
                 control_layout.addLayout(template_layout)
                 control_layout.addStretch(1)
@@ -330,7 +440,7 @@ class InstallWindow(PagesUI):
 
                 # 已选择组件列表
                 right_layout = QVBoxLayout()
-                right_layout.addWidget(QLabel('已选择组件:'))
+                right_layout.addWidget(QLabel(get_init_lang('22')))
                 
                 self.selected_list = QListView()
                 self.selected_model = QStandardItemModel()
@@ -341,7 +451,7 @@ class InstallWindow(PagesUI):
                 main_layout.addLayout(control_layout, 1)
                 main_layout.addWidget(self.selected_list, 5)
                 
-                page_layout.addWidget(QLabel('请选择你要安装的组件：'))
+                page_layout.addWidget(QLabel(get_init_lang('15')))
                 page_layout.addLayout(main_layout)
 
                 # 初始化列表
@@ -352,19 +462,21 @@ class InstallWindow(PagesUI):
                 self.remove_btn.clicked.connect(self.remove_selected)
                 self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
-                self.install_status = ''
                 # 第五页：安装
-                page_layout.addWidget(QLabel('正在更改 ClickMouse...'))
+                self.install_status = ''
             case self.PAGE_finish:
                 # 第六页：完成        
-                page_layout.addWidget(QLabel('更改完成！'))
+                page_layout.addWidget(QLabel(get_init_lang('23')))
             case self.PAGE_cancel:
                 # 第七页：取消
-                page_layout.addWidget(QLabel('安装已取消！'))
+                page_layout.addWidget(QLabel(get_init_lang('18')))
             case self.PAGE_error:
                 # 第八页：错误
-                self.error_label = QLabel('发生错误：\n在 发生安装错误：\n请重新安装，若错误持续，请联系作者。')
+                self.error_label = QLabel(get_init_lang('19').format('', ''))
                 page_layout.addWidget(self.error_label)
+            case self.PAGE_finish_nochanges:
+                # 第九页：完成（无变化）
+                page_layout.addWidget(QLabel(get_init_lang('17')))
         
         page_layout.addStretch(1) # 居上显示
         return page_widget
@@ -372,7 +484,7 @@ class InstallWindow(PagesUI):
     def copy_error(self):
         '''复制错误信息到剪贴板'''
         pyperclip.copy(self.error_label.text())
-        QMessageBox.information(self, '提示', '错误信息已复制到剪贴板')
+        MessageBox.information(self, get_init_lang('1a'), get_init_lang('1b'))
     
     def setup_connections(self):
         '''设置信号与槽的连接'''
@@ -412,7 +524,7 @@ class InstallWindow(PagesUI):
                 self.selected_components.append(component)
         
         self.update_components_lists()
-        self.template_combo.setCurrentText('自定义')
+        self.template_combo.setCurrentText(get_init_lang('11'))
 
     @Slot()
     def remove_selected(self):
@@ -430,12 +542,12 @@ class InstallWindow(PagesUI):
             self.selected_components.remove(component)
         
         self.update_components_lists()
-        self.template_combo.setCurrentText('自定义')
+        self.template_combo.setCurrentText(get_init_lang('11'))
 
     @Slot(str)
     def apply_template(self, template_name):
         '''应用选择的模板'''
-        if template_name == '自定义':
+        if template_name == get_init_lang('11'):
             return
         
         if template_name in self.templates:
@@ -490,19 +602,18 @@ class InstallWindow(PagesUI):
             
             self.install()
             
-        if self.current_page == self.PAGE_set_components and not(has_package):
-            self.set_page(self.PAGE_install)
-            
     def set_status(self, status):
         '''设置状态栏'''
         self.install_status = status
         
     def install(self):
         '''安装'''
+        global package_name
+
         try:
             self.set_status('初始化')
             if not self.changes:
-                self.set_page(self.PAGE_finish)
+                self.set_page(self.PAGE_finish_nochanges)
                 return
 
             self.set_status('检查需要更新的文件')
@@ -514,11 +625,22 @@ class InstallWindow(PagesUI):
                 elif comp.startswith('+'):
                     add.append(comp[1:])
             
-            print(f'移除：{remove} 添加：{add}')
+            self.set_status('正在替换包管理器文件')
+            package_name = list(set(package_name) - set(remove))
+            package_name = package_name + add
+            with open('./packages.json', 'w', encoding='utf-8') as f:
+                json.dump(package_name, f)
 
-            raise Exception('更改包未完成')
+            self.set_status('正在安装包')
+            for comp in add:
+                extract_zip(get_resource_path('packages', f'{comp}.zip'), f'extensions/{comp}')
+
+            for comp in remove:
+                rmtree(f'extensions/{comp}')
+
+            self.set_page(self.PAGE_finish)
         except Exception as e:
-            self.error_label.setText(f'发生错误：\n在 {self.install_status} 发生安装错误：{e}\n请重新安装，若错误持续，请联系作者。')
+            self.error_label.setText(get_init_lang('19').format(self.install_status, str(e)))
             self.set_page(self.PAGE_error)
             
     def cancel(self):
@@ -530,14 +652,21 @@ class InstallWindow(PagesUI):
             # 第四页：提示
             self.changes = get_list_diff(self.all_packages_name, self.selected_components)
             
-            message = QMessageBox.question(
+            message = MessageBox.question(
                 self,
-                '提示',
-                f'''即将变动以下组件:
-{'\n'.join(self.changes if self.changes else ['没有包变动'])}
-是否继续？''',
+                get_init_lang('1a'),
+                get_init_lang('24').format('\n'.join(self.changes if self.changes else ['没有包变动'])),
             QMessageBox.Yes | QMessageBox.No,
             )
+            
+            for i in packages_info:
+                if get_lang(i['package_name_index'], source=package_langs) in self.selected_components:
+                    package_id_list.append(i['package_name'])
+                    
+            for i in packages_source:
+                select_package_id.append(i['package_name'])
+                
+            self.changes = get_list_diff(select_package_id, package_id_list)
 
             if message == QMessageBox.No:
                 return
@@ -551,11 +680,6 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
-    has_package = True
-    if not get_resource_path('packages'):
-        QMessageBox.warning(None, '错误', '再编译版安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。')
-        has_package = False
-
     window = InstallWindow()
     window.show()
     sys.exit(app.exec())

@@ -11,7 +11,6 @@ import sys
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
 
-
 def _show_message(message, title, status):
     if status == 0:
         QMessageBox.information(None, title, message)
@@ -19,38 +18,36 @@ def _show_message(message, title, status):
         QMessageBox.warning(None, title, message)
     elif status == 2:
         QMessageBox.critical(None, title, message)
+        
+def get_resource_path(*paths):
+    '''
+    获取资源文件路径
+    '''
+    try:
+        resource = Path('res') # 获取当前目录的资源文件夹路径
+        if not resource.exists():
+            raise FileNotFoundError('资源文件出现损坏')
+        return str(resource.joinpath(*paths))
+    except Exception as e:
+        _show_message(f'Resource file missing: {e}', 'Error', 2)
+        sys.exit(1)
 
 try:
-    lang_path = Path('res', 'langs', 'langs.json')
-    with open(lang_path, 'r', encoding='utf-8') as f:
+    lang_path = Path('res', 'langs')
+    with open(lang_path / 'langs.json', 'r', encoding='utf-8') as f:
         langs = json.load(f)
+        
+    with open(lang_path / 'control.json', 'r', encoding='utf-8') as f:
+        control_langs = json.load(f)
+    
+    with open(lang_path / 'init.json', 'r', encoding='utf-8') as f:
+        init_langs = json.load(f)
 except FileNotFoundError:
-    _show_message('Resource file missing: langs.json not found', 'Error', 2)
+    _show_message('Resource file missing: langs not found', 'Error', 2)
     sys.exit(1)
 except json.JSONDecodeError:
-    _show_message('Resource file damaged: langs.json format error', 'Error', 2)
+    _show_message('Resource file damaged: langs format error', 'Error', 2)
     sys.exit(1)
-    
-def get_style_sheet(style_name: str, mode: str = None) -> str:
-    '''
-    获取样式表
-    '''
-    if mode is None:
-        mode = 'light' if is_dark_mode() else 'dark'
-    try:
-        with open(get_resource_path('styles', mode, f'{style_name}.qss'), 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f'Style sheet {style_name}.qss not found')
-    
-def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
-    '''
-    替换样式表
-    '''
-    old_style_tag = f'{style_tag}: {old_style}'
-    new_style_tag = f'{style_tag}: {new_style}'
-    
-    return style_sheet.replace(old_style_tag, new_style_tag)
     
 def load_settings():
     '''
@@ -80,18 +77,30 @@ def get_lang(lang_package_id, lang_id = None, source = None):
     except KeyError:
         return 'Language not found'
     
-def get_resource_path(*paths):
-    '''
-    获取资源文件路径
-    '''
+def get_system_language():
+    '''通过Windows注册表获取系统语言'''
     try:
-        resource = Path('res') # 获取当前目录的资源文件夹路径
-        if not resource.exists():
-            raise FileNotFoundError('资源文件出现损坏')
-        return str(resource.joinpath(*paths))
-    except Exception as e:
-        _show_message(f'Resource file missing: {e}', 'Error', 2)
-        exit(1)
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Control Panel\International')
+        lang, _ = winreg.QueryValueEx(key, 'LocaleName')
+        return lang
+    except Exception:
+        return 'en-US'
+    
+def parse_system_language_to_lang_id():
+    '''将系统语言转换为语言ID'''
+    system_lang = get_system_language()
+    for i in langs:
+        if i.get('lang_system_name', 'en-US') == system_lang:
+            return i['lang_id']
+    return 0
+
+system_lang = parse_system_language_to_lang_id()
+
+def get_control_lang(lang_id):
+    return get_lang(lang_id, source=control_langs)
+
+def get_init_lang(lang_id):
+    return get_lang(lang_id, system_lang, source=init_langs)
 
 in_dev = os.path.exists('dev_list/in_dev') # 是否处于开发模式
 
