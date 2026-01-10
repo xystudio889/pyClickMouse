@@ -95,7 +95,6 @@ QScrollBar:vertical {
 /* 滚动条滑块样式 */
 QScrollBar::handle:vertical {
     background-color: lightgray;  /* 浅灰色滑块 */
-    border-radius: 4px;
     min-height: 30px;
 }
 

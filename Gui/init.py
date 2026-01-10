@@ -12,13 +12,10 @@ import pyperclip # 复制错误信息
 import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
-from sharelibs import (get_resource_path, run_software, get_lang, langs) # 共享库
+from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, langs) # 共享库
 from uiStyles import PagesUI
 from uiStyles.WidgetStyles import (styles)
 import shutil # 删除文件夹
-
-with open(get_resource_path('langs', 'init.json'), 'r', encoding='utf-8') as f:
-    init_langs = json.load(f)
     
 with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
     package_langs = json.load(f)
@@ -51,16 +48,13 @@ def create_shortcut(path, target, description, work_dir = None, icon_path = None
     shortcut.IconLocation = icon_path # 图标（路径,图标索引）
     shortcut.Description = description # 备注描述
     shortcut.Save()
-
+    
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
-    
-def get_install_size():
-    pass
-        
+
 def extract_zip(file_path, extract_path):
     '''
     解压zip文件
@@ -81,24 +75,6 @@ def read_reg_key(key, value):
             return winreg.QueryValueEx(k, value)[0]
     except:
         return None
-
-def get_system_language():
-    '''通过Windows注册表获取系统语言'''
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Control Panel\International')
-        lang, _ = winreg.QueryValueEx(key, 'LocaleName')
-        return lang
-    except Exception:
-        return 'en-US'
-    
-def parse_system_language_to_lang_id():
-    '''将系统语言转换为语言ID'''
-    system_lang = get_system_language()
-    for i in langs:
-        if i['is_official']:
-            if i['lang_info'].get('lang_system_name', 'en-US') == system_lang:
-                return i['lang_id']
-    return 0
     
 def get_dir_size_for_reg(dir):
     size = 0
@@ -111,14 +87,15 @@ def get_dir_size_for_reg(dir):
                 print(f'Error: {file} does not exist')
     return size // 1024
 
-def import_package(package_id, **config):
+def import_package(package_id):
     for i in packages_info:
         if i['package_name'] == package_id:
-            package = i
-            package.update(config)
-            return package
+            return i
+    raise ValueError(f'包名 {package_id} 不存在')
 
 class ColorGetter(QObject):
+    style_changed = Signal(str)
+
     def __init__(self):
         super().__init__()
 
@@ -150,18 +127,6 @@ class ColorGetter(QObject):
         if new_theme != self.current_theme:
             self.current_theme = new_theme
             self.apply_global_theme()
-
-    def apply_global_theme(self):
-        '''根据当前主题，为整个应用设置全局样式表'''
-        global select_styles, selected_style, main_style, default_style, big_title
-        
-        select_styles = styles[self.current_theme]
-        selected_style = select_styles['selected_button']
-        main_style = select_styles['main']
-        default_style = select_styles['main']
-        big_title = select_styles['big_text']
-
-        app.setStyleSheet(default_style)  # 全局应用
         
     def apply_global_theme(self):
         '''根据当前主题，为整个应用设置全局样式表'''
@@ -181,7 +146,7 @@ class InstallWindow(PagesUI):
     def __init__(self):
         super().__init__(['hello', 'read_license', 'set_path', 'set_link', 'set_components', 'install', 'finish', 'cancel', 'error'])
         
-        self.setWindowTitle('ClickMouse')
+        self.setWindowTitle(get_init_lang('01'))
         self.setWindowIcon(icon)
         self.setGeometry(100, 100, 500, 375)
         self.setWindowFlags(
@@ -216,8 +181,8 @@ class InstallWindow(PagesUI):
         image_label.setPixmap(self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'), 32, 32))
         
         # 加载文字
-        title_label = QLabel('ClickMouse 安装向导')
-        title_label.setStyleSheet(big_title)
+        title_label = QLabel(get_init_lang('01'))
+        title_label.setProperty('class', 'big_text_16')
         
         # 布局
         self.top_layout.addWidget(image_label)
@@ -236,7 +201,7 @@ class InstallWindow(PagesUI):
         self.button_layout.addStretch(0)
         
         # 上一步按钮
-        self.prev_btn = QPushButton('上一步')
+        self.prev_btn = QPushButton(get_init_lang('02'))
         self.prev_btn.clicked.connect(self.on_prev)
         self.button_layout.addWidget(self.prev_btn)
         
@@ -245,12 +210,12 @@ class InstallWindow(PagesUI):
         self.next_error_layout = QHBoxLayout(self.next_error_container)
         
         # 下一步按钮
-        self.next_btn = QPushButton('下一步')
+        self.next_btn = QPushButton(get_init_lang('03'))
         self.next_btn.clicked.connect(self.on_next)
         self.next_error_layout.addWidget(self.next_btn)
         
         # 错误重叠容器
-        self.copy_error_btn = QPushButton('复制错误信息')
+        self.copy_error_btn = QPushButton(get_init_lang('04'))
         self.copy_error_btn.clicked.connect(self.copy_error)
         self.next_error_layout.addWidget(self.copy_error_btn)
         
@@ -259,12 +224,12 @@ class InstallWindow(PagesUI):
         self.action_button_layout = QHBoxLayout(self.action_button_container)
         
         # 取消按钮
-        self.cancel_btn = QPushButton('取消')
+        self.cancel_btn = QPushButton(get_init_lang('05'))
         self.cancel_btn.clicked.connect(self.cancel)
         self.action_button_layout.addWidget(self.cancel_btn)
         
         # 完成按钮
-        self.finish_btn = QPushButton('完成')
+        self.finish_btn = QPushButton(get_init_lang('06'))
         self.finish_btn.clicked.connect(self.close)
         self.action_button_layout.addWidget(self.finish_btn)
         
@@ -281,7 +246,7 @@ class InstallWindow(PagesUI):
         match page_index:
             case self.PAGE_hello:
                 # 第一页：欢迎
-                page_layout.addWidget(QLabel('欢迎使用 clickMouse 安装向导!\n\n这个程序将简单的使用几分钟时间，帮助你完成安装。\n点击下一步开启安装助手。'))
+                page_layout.addWidget(QLabel(get_init_lang('07')))
             case self.PAGE_read_license:
                 # 第二页：阅读许可协议
                 with open(get_resource_path('license.txt'), 'r', encoding='utf-8') as f:
@@ -291,10 +256,10 @@ class InstallWindow(PagesUI):
                 edit.setReadOnly(True)
                 edit.setText(license_text)
                 
-                self.emua_checkbox = QCheckBox('我已阅读并同意许可协议')
+                self.emua_checkbox = QCheckBox(get_init_lang('08'))
 
                 # 页面布局
-                page_layout.addWidget(QLabel('请先阅读下方的许可协议，同意后，点击下一步。'))
+                page_layout.addWidget(QLabel(get_init_lang('09')))
                 page_layout.addWidget(edit)
                 page_layout.addWidget(self.emua_checkbox)
                 
@@ -305,20 +270,20 @@ class InstallWindow(PagesUI):
                 path_edit = QLineEdit(str(Path.cwd()))
                 path_edit.setReadOnly(True)
 
-                page_layout.addWidget(QLabel('这是软件安装路径：'))
+                page_layout.addWidget(QLabel(get_init_lang('0a')))
                 page_layout.addWidget(path_edit)
             case self.PAGE_set_link:
                 self.create_desktop_shortcut = True
                 self.create_start_menu_shortcut = True
 
                 # 第四页：设置快捷方式
-                desktop_checkbox = QCheckBox('创建桌面快捷方式')
+                desktop_checkbox = QCheckBox(get_init_lang('0b'))
                 desktop_checkbox.setChecked(self.create_desktop_shortcut)
                 
-                start_menu_checkbox = QCheckBox('创建开始菜单快捷方式')
+                start_menu_checkbox = QCheckBox(get_init_lang('0c'))
                 start_menu_checkbox.setChecked(self.create_start_menu_shortcut)
                 
-                page_layout.addWidget(QLabel('请选择你要创建的快捷方式：'))
+                page_layout.addWidget(QLabel(get_init_lang('0d')))
                 page_layout.addWidget(desktop_checkbox)
                 page_layout.addWidget(start_menu_checkbox)
                 
@@ -336,9 +301,9 @@ class InstallWindow(PagesUI):
                 self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 
                 self.templates = {
-                    '默认': self.selected_components,
-                    '精简': self.protected_components,
-                    '全选': self.all_components,
+                    get_init_lang('0e'): self.selected_components,
+                    get_init_lang('0f'): self.protected_components,
+                    get_init_lang('10'): self.all_components,
                 }
 
                 # 创建主水平布局
@@ -356,15 +321,15 @@ class InstallWindow(PagesUI):
                 template_layout = QHBoxLayout()
                 
                 self.template_combo = QComboBox()
-                self.template_combo.addItems(list(self.templates.keys()) + ['自定义'])
+                self.template_combo.addItems(list(self.templates.keys()) + [get_init_lang('11')])
                 
                 # 布局
-                template_layout.addWidget(QLabel('模板:'))
+                template_layout.addWidget(QLabel(get_init_lang('12')))
                 template_layout.addWidget(self.template_combo)
                 template_layout.addStretch()
                 
-                self.add_btn = QPushButton('>> 添加')
-                self.remove_btn = QPushButton('<< 移除')
+                self.add_btn = QPushButton(get_init_lang('13'))
+                self.remove_btn = QPushButton(get_init_lang('14'))
                 
                 control_layout.addLayout(template_layout)
                 control_layout.addStretch(1)
@@ -374,7 +339,7 @@ class InstallWindow(PagesUI):
 
                 # 已选择组件列表
                 right_layout = QVBoxLayout()
-                right_layout.addWidget(QLabel('已选择组件:'))
+                right_layout.addWidget(QLabel(get_init_lang('22')))
                 
                 self.selected_list = QListView()
                 self.selected_model = QStandardItemModel()
@@ -385,7 +350,7 @@ class InstallWindow(PagesUI):
                 main_layout.addLayout(control_layout, 1)
                 main_layout.addWidget(self.selected_list, 5)
                 
-                page_layout.addWidget(QLabel('请选择你要安装的组件：'))
+                page_layout.addWidget(QLabel(get_init_lang('15')))
                 page_layout.addLayout(main_layout)
 
                 # 初始化列表
@@ -396,22 +361,21 @@ class InstallWindow(PagesUI):
                 self.remove_btn.clicked.connect(self.remove_selected)
                 self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
-                self.install_status = ''
                 # 第五页：安装
-                page_layout.addWidget(QLabel('正在安装 ClickMouse...'))
+                self.install_status = ''
             case self.PAGE_finish:
                 # 第六页：完成        
-                self.run_clickmouse = QCheckBox('运行 ClickMouse 主程序')
+                self.run_clickmouse = QCheckBox(get_init_lang('16'))
                 self.run_clickmouse.setChecked(True)
                 
-                page_layout.addWidget(QLabel('安装完成！'))
+                page_layout.addWidget(QLabel(get_init_lang('17')))
                 page_layout.addWidget(self.run_clickmouse)
             case self.PAGE_cancel:
                 # 第七页：取消
-                page_layout.addWidget(QLabel('安装已取消！'))
+                page_layout.addWidget(QLabel(get_init_lang('18')))
             case self.PAGE_error:
                 # 第八页：错误
-                self.error_label = QLabel('发生错误：\n在 发生安装错误：\n请重新安装，若错误持续，请联系作者。')
+                self.error_label = QLabel(get_init_lang('19').format('',''))
                 page_layout.addWidget(self.error_label)
         
         page_layout.addStretch(1) # 居上显示
@@ -420,7 +384,7 @@ class InstallWindow(PagesUI):
     def copy_error(self):
         '''复制错误信息到剪贴板'''
         pyperclip.copy(self.error_label.text())
-        QMessageBox.information(self, '提示', '错误信息已复制到剪贴板')
+        QMessageBox.information(self, get_init_lang('1a') , get_init_lang('1b'))
     
     def setup_connections(self):
         '''设置信号与槽的连接'''
@@ -468,7 +432,7 @@ class InstallWindow(PagesUI):
                 self.selected_components.append(component)
         
         self.update_components_lists()
-        self.template_combo.setCurrentText('自定义')
+        self.template_combo.setCurrentText(get_init_lang('11'))
 
     @Slot()
     def remove_selected(self):
@@ -486,12 +450,12 @@ class InstallWindow(PagesUI):
             self.selected_components.remove(component)
         
         self.update_components_lists()
-        self.template_combo.setCurrentText('自定义')
+        self.template_combo.setCurrentText(get_init_lang('11'))
 
     @Slot(str)
     def apply_template(self, template_name):
         '''应用选择的模板'''
-        if template_name == '自定义':
+        if template_name == get_init_lang('11'):
             return
         
         if template_name in self.templates:
@@ -567,23 +531,16 @@ class InstallWindow(PagesUI):
         try:
             self.set_status('初始化...')
             install_path = Path.cwd()
-            self.set_status('正在创建包管理器文件...')
-            package = []
-            
-            if not package_id_list:
-                package.append(import_package('xystudio.clickmouse'))
-            else:
-                for i in package_id_list:
-                    package.append(import_package(i))
-            
-            self.set_status('解压安装包...')
-            for i in package_id_list:
-                if 'xystudio.clickmouse' not in i:
-                    extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
             
             self.set_status('正在写入包管理器文件...')
             with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
-                json.dump(package, f)
+                json.dump(package_id_list, f)
+            
+            self.set_status('解压安装包...')
+            for i in package_id_list:
+                if i == 'xystudio.clickmouse':
+                    continue
+                extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
                 
             # 卸载功能
             self.set_status('正在创建安装信息...')
@@ -620,7 +577,7 @@ class InstallWindow(PagesUI):
                 create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\main.exe', '鼠标连点器')
             self.set_page(self.PAGE_finish)
         except Exception as e:
-            self.error_label.setText(f'发生错误：\n在 {self.install_status} 发生安装错误：{e}\n请重新安装，若错误持续，请联系作者。')
+            self.error_label.setText(get_init_lang('19').format(self.install_status, str(e)))
             self.set_page(self.PAGE_error)
             
     def cancel(self):
@@ -632,11 +589,8 @@ class InstallWindow(PagesUI):
             # 第四页：提示
             message =QMessageBox.question(
                 self,
-                '提示',
-                f'''即将安装以下组件:
-{'\n'.join(self.selected_components)}
-并创建以下快捷方式：{'\n桌面快捷方式' if self.create_desktop_shortcut else ''}{'\n开始菜单快捷方式' if self.create_start_menu_shortcut else ''},
-是否继续？''',
+                get_init_lang('1a'),
+                get_init_lang('1c').format('\n'.join(self.selected_components), '\n桌面快捷方式' if self.create_desktop_shortcut else '', '\n开始菜单快捷方式' if self.create_start_menu_shortcut else ''),
             QMessageBox.Yes | QMessageBox.No,
             )
             for i in packages_info:
@@ -660,11 +614,10 @@ class InstallWindow(PagesUI):
 
 if __name__ == '__main__':
     if check_reg_key(software_reg_key):
-        QMessageBox.critical(None, '错误', '检测到已安装 ClickMouse，即将为你尝试修复损坏的Clickmouse文件。')
+        QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('1e'))
         with open(data_path / 'first_run', 'w'):pass
         if not(os.path.exists('packages.json')):
-            package = []
-            package.append(import_package('xystudio.clickmouse'))
+            package = ['xystudio.clickmouse']
             with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
                 json.dump(package, f)
         if os.path.exists('extensions') and os.path.isdir('extensions'):
@@ -673,15 +626,15 @@ if __name__ == '__main__':
         run_software('main.py', 'main.exe')
         sys.exit(1)
 
-    has_package = True
-    if not(os.path.exists(get_resource_path('packages'))):
-        QMessageBox.warning(None, '错误', '再编译版安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。')
-        has_package = False
+    has_package = os.path.exists(get_resource_path('packages'))
+    if not has_package:
+        QMessageBox.warning(None, get_init_lang('1d'), get_init_lang('1f'))
 
     if is_admin():  # 管理员权限
         window = InstallWindow()
         window.show()
     else:
-        QMessageBox.critical(None, '错误', '请以管理员身份运行本程序。')
+        QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('20'))
         sys.exit(1)
+
     sys.exit(app.exec())
