@@ -3,6 +3,7 @@ import psutil
 from shutil import rmtree
 import os
 import winreg
+from sharelibs import get_control_lang
 
 def is_process_running(process_name):
    for proc in psutil.process_iter(['name']):
@@ -53,13 +54,13 @@ def remove_reg_key(sub_key):
 if __name__ == '__main__':
     app = QApplication()
     if is_process_running('main.exe'):
-        QMessageBox.warning(None, '提示', 'Clickmouse正在运行，请关闭后再尝试修复')
+        QMessageBox.warning(None, get_control_lang('04'), get_control_lang('08'))
     else:
-        message = QMessageBox.information(None, '提示', '修复Clickmouse将会清空所有设置，是否继续？', QMessageBox.Yes | QMessageBox.No)
+        message = QMessageBox.information(None, get_control_lang('04'), get_control_lang('09'), QMessageBox.Yes | QMessageBox.No)
         if message == QMessageBox.Yes:
             remove_folder('data')
             remove_folder('cache')
             remove_folder('extensions')
             remove_file('packages.json')
             remove_reg_key(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse")
-            QMessageBox.information(None, '提示', '修复成功。')
+            QMessageBox.information(None, get_control_lang('04'), get_control_lang('0a'))

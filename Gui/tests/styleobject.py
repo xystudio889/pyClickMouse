@@ -1,17 +1,5 @@
-'''
-组件样式
-'''
-from sharelibs import get_resource_path
-import os
-import json
 import re
-from enum import Enum
-
-class specialStyleReplaceMode(Enum):
-    '''
-    特殊样式替换模式
-    '''
-    ALL = 'all'  # 全部替换
+import json
 
 class StyleSheet:
     '''CSS序列化工具类，支持CSS与JSON互相转换'''
@@ -241,7 +229,7 @@ class StyleSheet:
         self.css_text = css_text
         self.css_data = self.serialize(css_text)
         
-    def replace(self, index, old_value: str | specialStyleReplaceMode, new_value: str, output_json: bool = True) -> dict:
+    def replace(self, index, old_value: str, new_value: str) -> dict:
         '''
         替换CSS数据中的值
         
@@ -257,34 +245,7 @@ class StyleSheet:
         data = self.css_data.copy()
         value = self._get_value_by_indices(index, data)
         
-        if isinstance(value, str) or isinstance(value, specialStyleReplaceMode):
-            if old_value == specialStyleReplaceMode.ALL:
-                if output_json:
-                    return self._update_nested_dict(index, data, new_value)
-                else:
-                    return StyleSheet(self.deserialize(self._update_nested_dict(index, data, new_value)))
-            else:
-                if output_json:
-                    return self._update_nested_dict(index, data, value.replace(old_value, new_value))
-                else:
-                    return StyleSheet(self.deserialize(self._update_nested_dict(index, self.serialize_to_jsonstr(value.replace(old_value, new_value)), value.replace(old_value, new_value))))
+        if isinstance(value, str):
+            return self._update_nested_dict(index, data, value.replace(old_value, new_value))
         else:
             raise ValueError(f'索引{index}处的值不是字符串')
-
-styles: dict[str, StyleSheet] = {}
-style_path = 'styles/'
-
-for root, dirs, files in os.walk(get_resource_path(style_path)):
-    for dir in dirs:
-        styles[dir] = {}
-    
-    for file in files:
-        if file.endswith('.qss'):
-            with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                styles[os.path.splitext(file)[0]] = StyleSheet(f.read())
-
-with open(get_resource_path(style_path, 'indexes.json'), 'r', encoding='utf-8') as f:
-    indexes = json.load(f)
-    
-with open(get_resource_path(style_path, 'maps.json'), 'r', encoding='utf-8') as f:
-    maps = json.load(f)
