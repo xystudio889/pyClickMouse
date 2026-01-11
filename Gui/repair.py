@@ -62,5 +62,4 @@ if __name__ == '__main__':
             remove_folder('cache')
             remove_folder('extensions')
             remove_file('packages.json')
-            remove_reg_key(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse")
             QMessageBox.information(None, get_control_lang('04'), get_control_lang('0a'))

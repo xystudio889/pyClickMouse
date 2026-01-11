@@ -13,6 +13,7 @@ import win32com.client
 import winreg
 import zipfile
 from shutil import rmtree
+import traceback
 
 from uiStyles import PagesUI
 from uiStyles.WidgetStyles import (styles, maps)
@@ -639,8 +640,9 @@ class InstallWindow(PagesUI):
                 rmtree(f'extensions/{comp}')
 
             self.set_page(self.PAGE_finish)
-        except Exception as e:
-            self.error_label.setText(get_init_lang('19').format(self.install_status, str(e)))
+        except Exception:
+            error_stack = traceback.format_exc()
+            self.error_label.setText(get_init_lang('19').format(self.install_status, error_stack))
             self.set_page(self.PAGE_error)
             
     def cancel(self):

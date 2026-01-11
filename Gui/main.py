@@ -21,14 +21,14 @@ import shutil # 用于删除文件夹
 from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
 from uiStyles.WidgetStyles import (styles, maps, specialStyleReplaceMode) # 界面组件样式
 from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (is_dark_mode, run_software, parse_system_language_to_lang_id) # 共享库
-import zipfile # 压缩库
+from sharelibs import (run_software, parse_system_language_to_lang_id) # 共享库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
 from typing import Callable # 类型提示库
 import math # 数学库
 import subprocess # 子进程库
+import traceback # 异常处理库
 
 # 系统api
 import ctypes
@@ -55,20 +55,6 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         MessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
         sys.exit(1)
-
-def get_style_sheet(style_name: str, mode) -> str:
-    '''
-    获取样式表
-    '''
-    if mode is None:
-        mode = 'light' if is_dark_mode() else 'dark'
-    try:
-        logger.info(f'获取样式表: {style_name}')
-        with open(get_resource_path('styles', mode, f'{style_name}.qss'), 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        logger.error(f'样式表{style_name}.qss不存在')
-        MessageBox.critical(None, get_lang('14'), get_lang('88'.format(style_name)))
     
 def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
     '''
@@ -188,13 +174,6 @@ def get_packages():
         package_id.append(package.get('package_name', None))
         show.append(package.get('show_in_extension_list', True))
     return (lang_index, show, package_id)
-
-def extract_zip(file_path, extract_path):
-    '''
-    解压zip文件
-    '''
-    with zipfile.ZipFile(file_path, 'r') as f:
-        f.extractall(extract_path)
 
 def get_application_instance():
     '''获取或创建 QApplication 实例'''
@@ -466,7 +445,7 @@ class Click(QObject):
         def click_loop():
             self.pause.emit(False)
             i = 0
-            while i < times and self.running:
+            while i <= times and self.running:
                 if not self.paused:
                     try:
                         pyautogui.click(button=button)
@@ -477,7 +456,7 @@ class Click(QObject):
                         else:
                             self.click_conuter.emit(str(times), str(i), str(delay))
                     except Exception as e:
-                        MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
+                        MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')}\n{traceback.format_exc()}')
                         logger.critical(f'发生错误:{e}')
 
                         self.stopped.emit()
