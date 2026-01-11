@@ -1,3 +1,4 @@
+
 from PySide6.QtWidgets import QApplication, QMessageBox
 import os
 import sys
@@ -7,6 +8,7 @@ import subprocess
 import shutil
 import winreg
 from sharelibs import get_control_lang
+from pathlib import Path
 
 def is_admin():
     try:
@@ -66,14 +68,10 @@ def read_reg_key(key, value):
         return None
 
 def main():
-    script_path = read_reg_key(r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse', 'UninstallString')
+    script_path = Path.cwd()
     if not script_path:
         QMessageBox.critical(None, get_control_lang('01'), get_control_lang('02'))
     script_dir = os.path.dirname(script_path)
-    
-    if not os.path.exists(script_path):
-        QMessageBox.critical(None, get_control_lang('01'), get_control_lang('03').format(script_path))
-        sys.exit(1)
 
     bat_path = create_bat_cleaner(script_path)
     
@@ -91,8 +89,9 @@ def main():
         os.remove(os.path.join(os.path.expanduser('~'), 'Desktop', 'clickmouse.lnk'))
     except:
         pass
+
     try:
-        os.remove(os.path.join(fr'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\clickmouse.lnk'))
+        shutil.rmtree(os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start menu', 'Programs', 'Clickmouse'), ignore_errors=True)
     except:
         pass
     
