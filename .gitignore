@@ -414,7 +414,7 @@ default_key
 gui/dev_list/*
 !gui/dev_list/in_dev
 res/packages/
-packages.json
+Gui/packages.json
 extensions/
 is_author
 dev.dat

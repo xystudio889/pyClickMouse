@@ -1,0 +1,34 @@
+[
+    {
+        "lang_name": "English",
+        "lang_id": 0,
+        "lang_package": {
+            "01": "Error",
+            "02": "Cannot locate the uninstallation script of clickmouse",
+            "03": "Cannot find the uninstallation script of clickmouse: {0}",
+            "04": "Infomation",
+            "05": "The program has successfully uninstalled, but some contents may remain, please restart and delete this folder: {0}",
+            "06": "Do you want to uninstall clickmouse and its related components?",
+            "07": "Please run this program as an administrator.",
+            "08": "Clickmouse is running, please close it before trying to fix it",
+            "09": "Fixing Clickmouse will clear all settings, do you want to continue?",
+            "0a": "Fix successful."
+        }
+    },
+    {
+        "lang_name": "简体中文",
+        "lang_id": 1,
+        "lang_package": {
+            "01": "错误",
+            "02": "无法定位clickmouse的卸载脚本",
+            "03": "无法找到clickmouse的卸载脚本：{0}",
+            "04": "提示",
+            "05": "程序已成功卸载，但是部分内容可能有残留，请尽快重启并删除这个文件夹：{0}",
+            "06": "是否卸载clickmouse和其相关组件？",
+            "07": "请以管理员身份运行本程序。",
+            "08": "Clickmouse正在运行，请关闭后再尝试修复",
+            "09": "修复Clickmouse将会清空所有设置，是否继续？",
+            "0a": "修复成功。"
+        }
+    }
+]

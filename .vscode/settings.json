@@ -3,5 +3,26 @@
 
     ],
     "liveServer.settings.port": 5500,
-    "liveServer.settings.multiRootWorkspaceName": "ClickMouse"
+    "liveServer.settings.multiRootWorkspaceName": "ClickMouse",
+    "workbench.startupEditor": "none",
+    "editor.accessibilitySupport": "off",
+    "git.autofetch": true,
+    "python.createEnvironment.trigger": "off",
+    "git.confirmSync": false,
+    "editor.unicodeHighlight.includeStrings": false,
+    "editor.unicodeHighlight.nonBasicASCII": false,
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "git.openRepositoryInParentFolders": "never",
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
+    "markdown-preview-enhanced.revealjsTheme": "black.css",
+    "markdown-preview-enhanced.previewTheme": "atom-dark.css",
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "[html]": {
+        "editor.defaultFormatter": "vscode.html-language-features"
+    },
+    "files.associations": {
+        "*.qss": "css"
+    }
 }

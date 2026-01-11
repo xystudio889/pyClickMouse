@@ -1,4 +1,9 @@
-import wx
+from PySide6.QtCore import *
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+import sys
+app = QApplication(sys.argv)
+
 import os
 from pathlib import Path
 import winreg # 注册表编辑
@@ -7,29 +12,18 @@ import pyperclip # 复制错误信息
 import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
-import sys # 运行权限
-from sharelibs import (get_resource_path, settings, run_software) # 共享库
-from uiStyles.old import PagesUI
-
-with open(get_resource_path('langs', 'init_langs.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
+from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, langs) # 共享库
+from uiStyles import PagesUI
+from uiStyles.WidgetStyles import (styles)
+import shutil # 删除文件夹
+    
+with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+    package_langs = json.load(f)
     
 with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
     packages_info = json.load(f)
     
 software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
-
-def get_lang(lang_package_id, lang_id = None):
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
-    for i in langs:
-        if i['lang_id'] == 0: # 设置默认语言包
-            lang_text = i['lang_package']
-        if i['lang_id'] == lang_id: # 设置目前语言包
-            lang_text = i['lang_package']
-    try:
-        return lang_text[lang_package_id]
-    except KeyError:
-        return 'Language not found'
 
 def save_settings(settings):
     '''
@@ -39,6 +33,8 @@ def save_settings(settings):
         json.dump(settings, f)
 
 data_path = Path('data')
+
+package_id_list = []
 
 def create_shortcut(path, target, description, work_dir = None, icon_path = None):
     # 创建快捷方式
@@ -52,24 +48,13 @@ def create_shortcut(path, target, description, work_dir = None, icon_path = None
     shortcut.IconLocation = icon_path # 图标（路径,图标索引）
     shortcut.Description = description # 备注描述
     shortcut.Save()
-
+    
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
 
-def run_as_admin():
-    ctypes.windll.shell32.ShellExecuteW(
-        None, 'runas', sys.executable, ' '.join(sys.argv), None, 1
-    )
-    with open('run_as_admin.json', 'w') as f:
-        json.dump({'is_not_admin': 0}, f)
-    sys.exit(0)
-    
-def get_install_size():
-    pass
-        
 def extract_zip(file_path, extract_path):
     '''
     解压zip文件
@@ -90,518 +75,566 @@ def read_reg_key(key, value):
             return winreg.QueryValueEx(k, value)[0]
     except:
         return None
-
-def get_system_language():
-    '''通过Windows注册表获取系统语言'''
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International")
-        lang, _ = winreg.QueryValueEx(key, "LocaleName")
-        return lang
-    except Exception:
-        return 'en-US'
-    
-def parse_system_language_to_lang_id():
-    '''将系统语言转换为语言ID'''
-    system_lang = get_system_language()
-    for i in langs:
-        if i['is_official']:
-            if i['lang_info'].get('lang_system_name', 'en-US') == system_lang:
-                return i['lang_id']
-    return 0
     
 def get_dir_size_for_reg(dir):
     size = 0
     
     for root, dirs, files in os.walk(dir):
         for file in files:
-            size += os.path.getsize(file)
+            try:
+                size += os.path.getsize(os.path.join(root, file))
+            except:
+                print(f'Error: {file} does not exist')
     return size // 1024
 
-def import_package(package_id, **config):
-    package = packages_info[package_id]
-    package.update(config)
-    return package
-    
-class InstallFrame(PagesUI):
+def import_package(package_id):
+    for i in packages_info:
+        if i['package_name'] == package_id:
+            return i
+    raise ValueError(f'包名 {package_id} 不存在')
+
+class ColorGetter(QObject):
+    style_changed = Signal(str)
+
     def __init__(self):
-        super().__init__(parent=None, title='clickMouse 安装向导', size=(400, 300), style = wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
-        # 初始化
-        self.pages = []
-        self.current_page = 0
-        self.total_pages = 11
-        self.status = ''
-        self.error = ''
-        self.not_create_in_start_menu = False
-        self.create_desktop_shortcut = False
+        super().__init__()
 
-        # 创建按钮
-        self.btn_copy_err = wx.Button(self.btn_panel, label='复制错误信息', pos = (100, 5))
-        self.btn_show_sol = wx.Button(self.btn_panel, label='显示解决方案', pos = (0, 5))
-        
-        # 定义页面id
-        self.init_pages(['PAGE_START', 'PAGE_READ_LICENSE', 'PAGE_SET_INSTALL_PATH', 'PAGE_SELECT_LINK', 'PAGE_SET_COMPONENT', 'PAGE_CHECK_COMPONENT', 'PAGE_INSTALL', 'PAGE_FINISH', 'PAGE_CANCEL', 'PAGE_ERROR', 'PAGE_IS_INSTALLED'])
-        
-        # 创建页面内容
-        self.create_pages()
-        
-        # 创建标题面板
-        self.title_panel = wx.Panel(self.main_panel)
-        self.title_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
-        self.title_panel.SetWindowStyle(wx.BORDER_SIMPLE)
-        title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.title_panel.SetSizer(title_sizer)
-        
-        # 创建标题
-        wx.StaticText(self.title_panel, label='clickMouse 安装向导', pos=(0, 0)).SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        self.SetIcon(wx.Icon(get_resource_path('icons', 'clickmouse', 'init.ico')))
-        # 绘制icon在标题栏
-        title_icon = wx.Bitmap(get_resource_path('icons', 'clickmouse', 'icon.png'), wx.BITMAP_TYPE_PNG).ConvertToImage().Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
-        wx.StaticBitmap(self.title_panel, -1, wx.Bitmap(title_icon), pos=(340, 0))
-        
-        self.init_show()
-
-        self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_cancel)
-        self.btn_copy_err.Bind(wx.EVT_BUTTON, self.on_copy_err)
-        self.btn_show_sol.Bind(wx.EVT_BUTTON, lambda e: os.startfile(get_resource_path('errnote.txt')))
-        
-        self.update_buttons()
-        self.update_page(self.PAGE_START)
-        
-        if check_reg_key(software_reg_key):
-            self.update_page(self.PAGE_IS_INSTALLED)
-
-        
-    def init_show(self):
-        self.main_sizer.Add(self.title_panel, 1, wx.EXPAND | wx.TOP | wx.Center, 5)
-        self.content = self.main_sizer.Add(self.content_panel, 5, wx.EXPAND)
-        self.btn = self.main_sizer.Add(self.btn_panel, 1, wx.ALIGN_RIGHT | wx.BOTTOM, 10)
+        self.current_theme = self.load_theme()
     
-    def draw_page(self, index):
-        match index:
-            case self.PAGE_START:
-                wx.StaticText(self.panel, label='欢迎使用 clickMouse 安装向导!\n\n这个程序将简单的使用几分钟时间，帮助你完成安装。\n点击下一步开启安装助手。', pos=(5, 0))
-            case self.PAGE_READ_LICENSE:
-                wx.StaticText(self.panel, label='请先阅读下方的说明，确认无误后，点击下一步。', pos=(5, 0))
-                # 滚动的文本框
+        # 初始化时应用一次主题
+        self.apply_global_theme()
+
+        # 使用定时器定期检测主题变化
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.check_and_apply_theme)
+        self.timer.start(100)
+    
+    def load_theme(self):
+        theme = None
+
+        theme = QApplication.styleHints().colorScheme()
+        if theme == Qt.ColorScheme.Dark:
+            theme = 'dark'
+        elif theme == Qt.ColorScheme.Light:
+            theme = 'light'
+    
+        return theme
+
+    def check_and_apply_theme(self):
+        '''检查主题是否变化，变化则重新应用'''
+        new_theme = self.load_theme()
+        
+        if new_theme != self.current_theme:
+            self.current_theme = new_theme
+            self.apply_global_theme()
+        
+    def apply_global_theme(self):
+        '''根据当前主题，为整个应用设置全局样式表'''
+        global select_styles
+        
+        self.style_changed.emit(self.current_theme)
+        
+        select_styles = styles[self.current_theme]
+                
+        app.setStyleSheet(select_styles.css_text)  # 全局应用
+
+icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+
+getter = ColorGetter()
+
+class InstallWindow(PagesUI):
+    def __init__(self):
+        super().__init__(['hello', 'read_license', 'set_path', 'set_link', 'set_components', 'install', 'finish', 'cancel', 'error'])
+        
+        self.setWindowTitle(get_init_lang('01'))
+        self.setWindowIcon(icon)
+        self.setGeometry(100, 100, 500, 375)
+        self.setWindowFlags(
+            Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
+        ) # 设置窗口属性
+        
+        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
+        
+    def init_ui(self):
+        '''初始化UI'''
+        # 创建中央部件
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        
+        # 创建主布局
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)  # 移除边距
+        main_layout.setSpacing(0)  # 移除间距
+        
+        # 创建顶部白色区域
+        self.top_widget = QWidget()
+        self.top_widget.setFixedHeight(50)  # 设置顶部高度
+        
+        self.top_widget.setProperty('class', 'top_widget')
+        
+        # 创建顶部区域的内容布局
+        self.top_layout = QHBoxLayout(self.top_widget)
+        
+        image_label = QLabel()
+
+        # 加载图片
+        image_label.setPixmap(self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'), 32, 32))
+        
+        # 加载文字
+        title_label = QLabel(get_init_lang('01'))
+        title_label.setProperty('class', 'big_text_16')
+        
+        # 布局
+        self.top_layout.addWidget(image_label)
+        self.top_layout.addWidget(title_label)
+        self.top_layout.addStretch(1) # 居左显示
+
+        # 将顶部和内容区域添加到主布局
+        main_layout.addWidget(self.top_widget)
+        
+        # 页面堆叠控件
+        self.stacked_widget = QStackedWidget()
+        main_layout.addWidget(self.stacked_widget)
+        
+        # 按钮布局
+        self.button_layout = QHBoxLayout()
+        self.button_layout.addStretch(0)
+        
+        # 上一步按钮
+        self.prev_btn = QPushButton(get_init_lang('02'))
+        self.prev_btn.clicked.connect(self.on_prev)
+        self.button_layout.addWidget(self.prev_btn)
+        
+        # 下一步/错误重叠容器
+        self.next_error_container = QWidget()
+        self.next_error_layout = QHBoxLayout(self.next_error_container)
+        
+        # 下一步按钮
+        self.next_btn = QPushButton(get_init_lang('03'))
+        self.next_btn.clicked.connect(self.on_next)
+        self.next_error_layout.addWidget(self.next_btn)
+        
+        # 错误重叠容器
+        self.copy_error_btn = QPushButton(get_init_lang('04'))
+        self.copy_error_btn.clicked.connect(self.copy_error)
+        self.next_error_layout.addWidget(self.copy_error_btn)
+        
+        # 取消/完成按钮容器（重叠放置）
+        self.action_button_container = QWidget()
+        self.action_button_layout = QHBoxLayout(self.action_button_container)
+        
+        # 取消按钮
+        self.cancel_btn = QPushButton(get_init_lang('05'))
+        self.cancel_btn.clicked.connect(self.cancel)
+        self.action_button_layout.addWidget(self.cancel_btn)
+        
+        # 完成按钮
+        self.finish_btn = QPushButton(get_init_lang('06'))
+        self.finish_btn.clicked.connect(self.close)
+        self.action_button_layout.addWidget(self.finish_btn)
+        
+        self.button_layout.addWidget(self.next_error_container)
+        self.button_layout.addWidget(self.action_button_container)
+        
+        main_layout.addLayout(self.button_layout)
+        
+    def show_page(self, page_index):
+        '''显示指定页面'''
+        page_widget = QWidget()
+        page_layout = QVBoxLayout(page_widget)
+        
+        match page_index:
+            case self.PAGE_hello:
+                # 第一页：欢迎
+                page_layout.addWidget(QLabel(get_init_lang('07')))
+            case self.PAGE_read_license:
+                # 第二页：阅读许可协议
                 with open(get_resource_path('license.txt'), 'r', encoding='utf-8') as f:
-                    wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2, size = (350, 125), pos=(5, 30)).SetValue(f.read()) # 显示协议内容
+                    license_text = f.read()
+
+                edit = QTextEdit()
+                edit.setReadOnly(True)
+                edit.setText(license_text)
                 
-                self.allow_checkbox = wx.CheckBox(self.panel, label='我已阅读并同意上述说明', pos=(5, 160))
-                # 绑定事件
-                self.allow_checkbox.Bind(wx.EVT_CHECKBOX, self.on_checkbox_toggle) 
-            case self.PAGE_SET_INSTALL_PATH:
-                wx.StaticText(self.panel, label='这是本软件的安装路径', pos=(5, 0))
-                wx.StaticText(self.panel, label='当前无法选择路径，若要移动安装位置，请将clickmouse文件夹移动\n到新的位置', pos=(5, 60))
-                # 选择路径
-                self.path_picker = wx.DirPickerCtrl(self.panel, message='请选择安装路径', pos=(5, 30), size=(350, -1))
-                self.path_picker.SetPath(str(Path.cwd()))
-                self.path_picker.Enable(False)
+                self.emua_checkbox = QCheckBox(get_init_lang('08'))
+
+                # 页面布局
+                page_layout.addWidget(QLabel(get_init_lang('09')))
+                page_layout.addWidget(edit)
+                page_layout.addWidget(self.emua_checkbox)
                 
-                # 绑定事件
-                self.path_picker.Bind(wx.EVT_DIRPICKER_CHANGED, self.on_update_button) # 路径选择器改变
-            case self.PAGE_SELECT_LINK:
-                wx.StaticText(self.panel, label='请选择你的文件快捷方式设置，然后点击下一步：', pos=(5, 0))
-                wx.StaticText(self.panel, label='开始菜单的快捷方式名称：', pos=(5, 30))
-                self.set_start_menu_textctrl = wx.TextCtrl(self.panel, pos=(5, 50), size=(350, -1))
-                self.set_start_menu_checkbox = wx.CheckBox(self.panel, label='不要在开始菜单中显示', pos=(5, 80))
-                self.desktop_shortcut = wx.CheckBox(self.panel, label='创建桌面快捷方式', pos=(5, 110))
+                # 信号连接
+                self.emua_checkbox.stateChanged.connect(self.set_emua_checkbox)
+            case self.PAGE_set_path:
+                # 第三页：设置安装路径
+                path_edit = QLineEdit(str(Path.cwd()))
+                path_edit.setReadOnly(True)
+
+                page_layout.addWidget(QLabel(get_init_lang('0a')))
+                page_layout.addWidget(path_edit)
+            case self.PAGE_set_link:
+                self.create_desktop_shortcut = True
+                self.create_start_menu_shortcut = True
+
+                # 第四页：设置快捷方式
+                desktop_checkbox = QCheckBox(get_init_lang('0b'))
+                desktop_checkbox.setChecked(self.create_desktop_shortcut)
                 
-                # 绑定事件
-                self.set_start_menu_checkbox.Bind(wx.EVT_CHECKBOX, self.on_update_button) # 选择不在开始菜单中显示
-                self.set_start_menu_textctrl.Bind(wx.EVT_TEXT, self.on_update_button) # 快捷方式名称改变
-            case self.PAGE_SET_COMPONENT:
-                self.selected_components = ['clickmouse 主程序']
-                self.protected_item = None
-                self.current_mode = '完整'
+                start_menu_checkbox = QCheckBox(get_init_lang('0c'))
+                start_menu_checkbox.setChecked(self.create_start_menu_shortcut)
                 
-                sizer = wx.BoxSizer(wx.VERTICAL)
-                select_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                page_layout.addWidget(QLabel(get_init_lang('0d')))
+                page_layout.addWidget(desktop_checkbox)
+                page_layout.addWidget(start_menu_checkbox)
                 
-                # 左侧未选择树形控件
-                self.unselected_tree = self.create_tree(self.panel, '未安装组件')
-                select_sizer.Add(self.unselected_tree, 3, wx.EXPAND | wx.ALL, 5)
+                # 信号连接
+                desktop_checkbox.stateChanged.connect(self.set_desktop_checkbox)
+                start_menu_checkbox.stateChanged.connect(self.set_start_menu_checkbox)
+            case self.PAGE_set_components:
+                # 第四页：设置组件
+                # 初始化数据
+                with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
+                    init_packages = json.load(f)
+                    
+                self.all_components = [get_lang(i['package_name_index'], source=package_langs) for i in packages_info]
+                self.selected_components = [get_lang(i, source=package_langs) for i in init_packages['selected_components']]
+                self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 
-                # 中间按钮区域
-                btn_panel = wx.Panel(self.panel)
-                btn_sizer = wx.BoxSizer(wx.VERTICAL)
+                self.templates = {
+                    get_init_lang('0e'): self.selected_components,
+                    get_init_lang('0f'): self.protected_components,
+                    get_init_lang('10'): self.all_components,
+                }
+
+                # 创建主水平布局
+                main_layout = QHBoxLayout()
                 
-                # 添加模板选择器
-                choises = ['完整', '默认', '精简', '自定义']
-                self.template_choice = wx.Choice(btn_panel, choices=choises)
-                self.template_choice.SetSelection(choises.index(self.current_mode))  # 默认选中'默认'模板
-                self.template_choice.Bind(wx.EVT_CHOICE, self.on_template_change)
-                btn_sizer.Add(self.template_choice, 0, wx.ALL | wx.EXPAND, 5)
+                self.unselected_list = QListView()
+                self.unselected_model = QStandardItemModel()
+                self.unselected_list.setModel(self.unselected_model)
+
+                # 中间：控制按钮
+                control_layout = QVBoxLayout()
+                control_layout.addStretch()
                 
-                btn_sizer.AddStretchSpacer()
-                self.add_btn = wx.Button(btn_panel, label='添加 >>', size=(120, -1))
-                self.remove_btn = wx.Button(btn_panel, label='<< 移除', size=(120, -1))
-                btn_sizer.Add(self.add_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
-                btn_sizer.Add(self.remove_btn, 0, wx.ALL | wx.ALIGN_CENTER, 5)
-                btn_sizer.AddStretchSpacer()
-                btn_panel.SetSizer(btn_sizer)
-                select_sizer.Add(btn_panel, 1, wx.EXPAND)
+                # 模板选择区域
+                template_layout = QHBoxLayout()
                 
-                # 右侧已选择树形控件
-                self.selected_tree = self.create_tree(self.panel, '已安装组件')
-                select_sizer.Add(self.selected_tree, 3, wx.EXPAND | wx.ALL, 5)
+                self.template_combo = QComboBox()
+                self.template_combo.addItems(list(self.templates.keys()) + [get_init_lang('11')])
                 
-                sizer.Add(wx.StaticText(self.panel, label='请选择你要安装的组件，然后点击确认选择。', pos=(5, 0)), 1, wx.EXPAND | wx.ALL, 1)
-                sizer.Add(select_sizer, 15, wx.EXPAND | wx.ALL, 1)
-                self.panel.SetSizer(sizer)
+                # 布局
+                template_layout.addWidget(QLabel(get_init_lang('12')))
+                template_layout.addWidget(self.template_combo)
+                template_layout.addStretch()
                 
-                # 绑定事件
-                self.add_btn.Bind(wx.EVT_BUTTON, self.on_add)
-                self.remove_btn.Bind(wx.EVT_BUTTON, self.on_remove)
+                self.add_btn = QPushButton(get_init_lang('13'))
+                self.remove_btn = QPushButton(get_init_lang('14'))
                 
-                # 初始化树数据
-                self.init_tree_data()
-                self.apply_template('完整')
-            case self.PAGE_CHECK_COMPONENT:
-                sizer = wx.BoxSizer(wx.VERTICAL)
+                control_layout.addLayout(template_layout)
+                control_layout.addStretch(1)
+                control_layout.addWidget(self.add_btn)
+                control_layout.addWidget(self.remove_btn)
+                control_layout.addStretch(1)
+
+                # 已选择组件列表
+                right_layout = QVBoxLayout()
+                right_layout.addWidget(QLabel(get_init_lang('22')))
                 
-                title = wx.StaticText(self.panel, label='您已选择的组件：')
-                sizer.Add(title, 1, wx.ALL | wx.EXPAND, 10)
+                self.selected_list = QListView()
+                self.selected_model = QStandardItemModel()
+                self.selected_list.setModel(self.selected_model)
+
+                # 添加到主布局
+                main_layout.addWidget(self.unselected_list, 5)
+                main_layout.addLayout(control_layout, 1)
+                main_layout.addWidget(self.selected_list, 5)
                 
-                self.text = wx.StaticText(self.panel, label='正在加载组件列表...', pos=(5, 30))
-                sizer.Add(self.text, 15, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
+                page_layout.addWidget(QLabel(get_init_lang('15')))
+                page_layout.addLayout(main_layout)
+
+                # 初始化列表
+                self.update_components_lists()
                 
-                self.panel.SetSizer(sizer)
-            case self.PAGE_INSTALL:
-                wx.StaticText(self.panel, label='正在安装clickmouse, 请稍候...', pos=(5, 0))
-                self.status_text = wx.StaticText(self.panel, label='安装进度', pos=(5, 30))
-            case self.PAGE_FINISH:
-                wx.StaticText(self.panel, label='安装完成！点击确定退出安装向导。', pos=(5, 0))
-                self.launch_checkbox = wx.CheckBox(self.panel, label='启动clickmouse', pos=(5, 30))
-                self.launch_checkbox.SetValue(True)
-            case self.PAGE_CANCEL:
-                wx.StaticText(self.panel, label='安装已取消！点击确定退出安装向导。', pos=(5, 0))
-            case self.PAGE_ERROR:
-                wx.StaticText(self.panel, label='安装失败！点击确定退出安装向导。', pos=(5, 0))
-                self.error_text = wx.StaticText(self.panel, label=f'错误信息：\n在{self.status}时候错误\n错误信息：{self.error}', pos=(5, 30))
-            case self.PAGE_IS_INSTALLED:
-                location = read_reg_key(software_reg_key, 'InstallLocation')
-                wx.StaticText(self.panel, label=f'clickMouse 已经安装，位于{location if location else '未知路径'}', pos=(5, 0))
-                self.launch_installed_checkbox = wx.CheckBox(self.panel, label='启动clickmouse', pos=(5, 30))
-                self.launch_installed_checkbox.SetValue(True)
-                cannot_select_note = wx.StaticText(self.panel, label='无法确认clickmouse的位置，请手动启动。', pos=(120, 30))
-                cannot_select_note.Hide()
-                if not location:
-                    cannot_select_note.Show()
-                    self.launch_installed_checkbox.Enable(False) # 未知路径无法选择
-                    self.launch_installed_checkbox.SetValue(False) # 未知路径无法启动
+                # 信号连接
+                self.add_btn.clicked.connect(self.add_selected)
+                self.remove_btn.clicked.connect(self.remove_selected)
+                self.template_combo.currentTextChanged.connect(self.apply_template)
+            case self.PAGE_install:
+                # 第五页：安装
+                self.install_status = ''
+            case self.PAGE_finish:
+                # 第六页：完成        
+                self.run_clickmouse = QCheckBox(get_init_lang('16'))
+                self.run_clickmouse.setChecked(True)
+                
+                page_layout.addWidget(QLabel(get_init_lang('17')))
+                page_layout.addWidget(self.run_clickmouse)
+            case self.PAGE_cancel:
+                # 第七页：取消
+                page_layout.addWidget(QLabel(get_init_lang('18')))
+            case self.PAGE_error:
+                # 第八页：错误
+                self.error_label = QLabel(get_init_lang('19').format('',''))
+                page_layout.addWidget(self.error_label)
         
-    def create_tree(self, parent, root_label):
-        '''创建树形控件'''
-        tree = wx.TreeCtrl(parent, style=wx.TR_DEFAULT_STYLE)
-        img_list = wx.ImageList(16, 16)
-        img_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, size=(16,16)))
-        img_list.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, size=(16,16)))
-        tree.AssignImageList(img_list)
-        tree.AddRoot(root_label, image=0)
-        return tree
+        page_layout.addStretch(1) # 居上显示
+        return page_widget
     
-    def init_tree_data(self):
-        '''初始化树形控件数据'''
-        self.components = ['clickmouse 扩展测试']
-        root = self.unselected_tree.GetRootItem()
-        for comp in self.components:
-            self.unselected_tree.AppendItem(root, comp, 1)
-        self.unselected_tree.Expand(root)
+    def copy_error(self):
+        '''复制错误信息到剪贴板'''
+        pyperclip.copy(self.error_label.text())
+        QMessageBox.information(self, get_init_lang('1a') , get_init_lang('1b'))
+    
+    def setup_connections(self):
+        '''设置信号与槽的连接'''
+        self.add_btn.clicked.connect(self.add_selected)
+        self.remove_btn.clicked.connect(self.remove_selected)
+        self.template_combo.currentTextChanged.connect(self.apply_template)
         
-        installed_root = self.selected_tree.GetRootItem()
-        self.protected_item = self.selected_tree.AppendItem(installed_root, 'clickmouse 主程序', 1)
-        # self.cmd_tool_item = self.selected_tree.AppendItem(installed_root, 'clickmouse命令行', 1) # 暂时禁用
-        self.selected_tree.Expand(installed_root)
+    def set_desktop_checkbox(self, checked):
+        '''设置桌面快捷方式'''
+        self.create_desktop_shortcut = checked
     
+    def set_start_menu_checkbox(self, checked):
+        '''设置开始菜单快捷方式'''
+        self.create_start_menu_shortcut = checked
+
+    def update_components_lists(self):
+        '''更新左右两个列表的显示'''
+        # 更新未选择列表
+        self.unselected_model.clear()
+        unselected = [comp for comp in self.all_components 
+                     if comp not in self.selected_components]
+        
+        for component in unselected:
+            item = QStandardItem(component)
+            if component in self.protected_components:
+                item.setForeground(Qt.gray)
+            self.unselected_model.appendRow(item)
+
+        # 更新已选择列表
+        self.selected_model.clear()
+        for component in self.selected_components:
+            item = QStandardItem(component)
+            if component in self.protected_components:
+                item.setForeground(Qt.gray)
+                item.setEditable(False)  # 保护项不可编辑
+            self.selected_model.appendRow(item)
+
+    @Slot()
+    def add_selected(self):
+        '''添加选中的组件'''
+        indexes = self.unselected_list.selectedIndexes()
+        for index in indexes:
+            component = self.unselected_model.itemFromIndex(index).text()
+            if component not in self.selected_components:
+                self.selected_components.append(component)
+        
+        self.update_components_lists()
+        self.template_combo.setCurrentText(get_init_lang('11'))
+
+    @Slot()
+    def remove_selected(self):
+        '''移除选中的组件（排除保护组件）'''
+        indexes = self.selected_list.selectedIndexes()
+        components_to_remove = []
+        
+        for index in indexes:
+            component = self.selected_model.itemFromIndex(index).text()
+            # 检查是否是保护组件
+            if component not in self.protected_components:
+                components_to_remove.append(component)
+        
+        for component in components_to_remove:
+            self.selected_components.remove(component)
+        
+        self.update_components_lists()
+        self.template_combo.setCurrentText(get_init_lang('11'))
+
+    @Slot(str)
     def apply_template(self, template_name):
-        '''使用内置的模板'''
-        self.current_mode = template_name
-        root = self.selected_tree.GetRootItem()
-        
-        # 清除所有非保护项
-        item, cookie = self.selected_tree.GetFirstChild(root)
-        while item.IsOk():
-            if item not in {self.protected_item}:
-                next_item, cookie = self.selected_tree.GetNextChild(root, cookie)
-                comp_name = self.selected_tree.GetItemText(item)
-                self.unselected_tree.AppendItem(self.unselected_tree.GetRootItem(), comp_name, 1)
-                self.selected_tree.Delete(item)
-                item = next_item
-            else:
-                item, cookie = self.selected_tree.GetNextChild(root, cookie)
-        
-        # 根据模板添加组件
-        if template_name == '完整':
-            for comp in self.components:
-                self.add_component(comp)
-            self.set_component(self.components)
-        elif template_name == '默认':
-            self.set_component([])
-        elif template_name == '精简':
-            self.set_component([])
-    
-    def get_component_list(self, index):
-        return self.selected_components[index]
-    
-    def add_component(self, comp_name):
-        '''
-        配置模板选项
-        '''
-        root = self.unselected_tree.GetRootItem()
-        item, cookie = self.unselected_tree.GetFirstChild(root)
-        while item.IsOk():
-            if self.unselected_tree.GetItemText(item) == comp_name:
-                self.unselected_tree.Delete(item)
-                self.selected_tree.AppendItem(self.selected_tree.GetRootItem(), comp_name, 1)
-                break
-            item, cookie = self.unselected_tree.GetNextChild(root, cookie)
-
-    def set_component(self, components: list):
-        '''设置加载组件'''
-        self.selected_components = ['clickmouse 主程序'] + components
-        
-    def on_template_change(self, event):
-        selected = self.template_choice.GetStringSelection()
-        if selected != '自定义':
-            self.apply_template(selected)
-    
-    def on_add(self, event):
-        if self.current_mode != '自定义':
-            self.template_choice.SetSelection(3)  # 切换到自定义模式
-            self.current_mode = '自定义'
-        
-        item = self.unselected_tree.GetSelection()
-        if not item or item == self.unselected_tree.GetRootItem():
-            wx.MessageBox('请先选择要添加的未安装组件', '提示', wx.OK|wx.ICON_INFORMATION)
+        '''应用选择的模板'''
+        if template_name == get_init_lang('11'):
             return
         
-        comp_name = self.unselected_tree.GetItemText(item)
-        root = self.selected_tree.GetRootItem()
-        self.selected_tree.AppendItem(root, comp_name, 1)
-        self.unselected_tree.Delete(item)
-    
-    def on_remove(self, event):
-        if self.current_mode != '自定义':
-            self.template_choice.SetSelection(3)  # 切换到自定义模式
-            self.current_mode = '自定义'
-        
-        item = self.selected_tree.GetSelection()
-        if not item or item == self.selected_tree.GetRootItem():
-            wx.MessageBox('请先选择要移除的已安装组件', '提示', wx.OK|wx.ICON_INFORMATION)
-            return
-        
-        if item == self.protected_item:
-            wx.MessageBox('基础模块是系统默认组件，不可移除！', '警告', wx.OK|wx.ICON_WARNING)
-            return
-        
-        comp_name = self.selected_tree.GetItemText(item)
-        root = self.unselected_tree.GetRootItem()
-        self.unselected_tree.AppendItem(root, comp_name, 1)
-        self.selected_tree.Delete(item)
-        
-    def setStatus(self, text):
-        self.status = text
-        self.status_text.SetLabel(text)
-    
-    def on_copy_err(self, event):
-        ''' 复制错误信息'''
-        pyperclip.copy(f'在{self.status}出现错误，错误信息：\n{self.error}')
-        wx.MessageBox('错误信息已复制到剪贴板', '提示', wx.OK | wx.ICON_INFORMATION)
-        
-    def on_update_button(self, event):
-        '''更新按钮状态'''
-        self.update_buttons()
-        
-    def on_checkbox_toggle(self, event):
-        '''同意协议'''
-        self.not_create_in_start_menu = self.set_start_menu_checkbox.GetValue()
-        self.update_buttons()
-
-    def update_buttons(self):
-        '''更新按钮状态'''
-        self.btn_prev.Show(self.current_page > 0)
-        
-        if self.current_page >= self.PAGE_FINISH:
-            self.btn_next.Hide()
-            self.btn_prev.Hide()
-            self.btn_cancel.Hide()
-            self.btn_exit.Show()
-        else:
-            self.btn_next.Show()
-            self.btn_prev.Show()
-            self.btn_cancel.Show()
-            self.btn_exit.Hide()
-        
-        if self.current_page == self.PAGE_START:  # 开始页面
-            self.btn_prev.Hide()
-        if self.current_page == self.PAGE_READ_LICENSE:  # 说明页面
-            self.btn_next.Enable(self.allow_checkbox.GetValue())
-        elif self.current_page == self.PAGE_SET_INSTALL_PATH:  # 路径页面
-            if os.path.exists('\\'.join(self.path_picker.GetPath().split('\\')[:-1])):
-                self.btn_next.Enable(True)
-            else:
-                self.btn_next.Enable(False)
-        elif self.current_page == self.PAGE_SELECT_LINK:  # 快捷方式页面
-            self.btn_next.Enable(False)
-            if self.set_start_menu_checkbox.GetValue():
-                self.btn_next.Enable(True)
-            else:
-                self.btn_next.Enable(bool(self.set_start_menu_textctrl.GetValue()))
-    
-            self.set_start_menu_textctrl.Enable(not self.set_start_menu_checkbox.GetValue())
-        elif self.current_page == self.PAGE_CHECK_COMPONENT:  # 组件页面
-            self.text.SetLabel('\n'.join(self.selected_components))
-        elif self.current_page == self.PAGE_INSTALL:  # 进度页面
-            self.btn_next.Hide()
-            self.btn_prev.Hide()
-            self.btn_cancel.Hide()
-
-            self.install()
-        elif self.current_page == self.PAGE_ERROR: # 错误页面
-            self.error_text.SetLabel(f'错误信息：\n在{self.status}\n错误：{self.error}')
-            self.btn_copy_err.Show()
-            self.btn_show_sol.Show()
-        else:
-            self.btn_next.Enable(True)  # 其他页面保持可用
-            self.btn_copy_err.Hide()
-            self.btn_show_sol.Hide()
-        
-        self.content_panel.Layout()
-        self.Layout()
-    
-    def run_clickmouse(self, checkbox: wx.CheckBox):
-        if checkbox.GetValue():
-            try:
-                run_software(fr'{self.path_picker.GetPath()}\main.py', fr'{self.path_picker.GetPath()}\main.exe')
-                with open(data_path / 'first_run', 'w', encoding='utf-8'):pass
-                self.Destroy()
-            except Exception as e:
-                wx.MessageBox(f'启动失败：{e}，将会关闭此窗口', '提示', wx.OK | wx.ICON_ERROR)
-        else:
-            exit(0)
-        
-    def on_close(self, event):
-        if self.current_page == self.PAGE_INSTALL:
-            wx.MessageBox('正在安装，请等待完成后再退出', '提示', wx.OK | wx.ICON_INFORMATION)
-            return
-        if self.current_page == self.PAGE_FINISH:
-            self.run_clickmouse(self.launch_checkbox)
-        if self.current_page == self.PAGE_IS_INSTALLED:
-            self.run_clickmouse(self.launch_installed_checkbox)
-        if self.current_page >= self.PAGE_CANCEL and self.current_page < self.PAGE_IS_INSTALLED:
-            self.Destroy()
-            exit(0)
-        if self.current_page >= self.PAGE_FINISH:
-            self.Destroy()
-        else:
-            self.update_page(self.PAGE_CANCEL)
-
-    def install(self):
-        '''安装程序'''
-        # 创建文件夹
-        try:
-            self.setStatus('初始化...')
-            install_path = self.path_picker.GetPath()
-            self.setStatus('正在创建包管理器文件...')
-            package = []
-            package.append(import_package(0, install_location=install_path, create_in_start_menu=not self.set_start_menu_checkbox.GetValue(), create_desktop_shortcut=self.desktop_shortcut.GetValue(), start_menu_name=self.set_start_menu_textctrl.GetValue() if not self.set_start_menu_checkbox.GetValue() else None))
+        if template_name in self.templates:
+            # 应用模板，但要保留保护组件
+            template_components = self.templates[template_name]
+            # 确保保护组件被包含
+            for protected_comp in self.protected_components:
+                if protected_comp not in template_components:
+                    template_components.append(protected_comp)
             
-            self.setStatus('解压安装包...')
-            if 'clickmouse 扩展测试' in self.selected_components:
-                package.append(import_package(1, install_location=f'{install_path}/extensions/offical/clickmouse_cli'))
-                extract_zip(get_resource_path('packages', 'clickmouse_cli.zip'), f'{install_path}/extensions/offical/clickmouse_cli')
+            self.selected_components = template_components.copy()
+            self.update_components_lists()
+    
+    def loadImage(self, image_path, width, height):
+        '''加载并显示图片'''
+        # 创建QPixmap对象
+        pixmap = QPixmap(image_path)
+        
+        # 按比例缩放图片以适应标签大小
+        scaled_pixmap = pixmap.scaled(
+            width, 
+            height,
+            Qt.KeepAspectRatio, 
+            Qt.SmoothTransformation
+        )
+        return scaled_pixmap
+    
+    def set_emua_checkbox(self, checked):
+        self.next_btn.setEnabled(checked)
+    
+    def update_buttons(self):
+        if (self.current_page >= self.PAGE_finish):
+            # 完成页：只显示完成按钮
+            self.prev_btn.setVisible(False)
+            self.next_btn.setVisible(False)
+            self.cancel_btn.setVisible(False)
+            self.finish_btn.setVisible(True)
+        else:
+            # 正常页面：显示上一步、下一步、取消
+            self.prev_btn.setVisible(self.current_page != 0)
+            self.next_btn.setVisible(True)
+            self.cancel_btn.setVisible(True)
+            self.finish_btn.setVisible(False)
 
-            self.setStatus('正在写入包管理器文件...')
+        # 禁用状态
+        if self.current_page == self.PAGE_read_license:
+            self.next_btn.setEnabled(self.emua_checkbox.isChecked())
+        else: 
+            self.next_btn.setEnabled(True)
+            
+        # 复制错误
+        if self.current_page == self.PAGE_error:
+            self.copy_error_btn.setVisible(True)
+        else:
+            self.copy_error_btn.setVisible(False)
+            
+        if self.current_page == self.PAGE_install:
+            self.next_btn.setVisible(False)
+            self.prev_btn.setVisible(False)
+            self.cancel_btn.setVisible(False)
+            
+            self.install()
+            
+        if self.current_page == self.PAGE_set_components and not(has_package):
+            self.set_page(self.PAGE_install)
+            
+    def set_status(self, status):
+        '''设置状态栏'''
+        self.install_status = status
+        
+    def install(self):
+        '''安装'''
+        try:
+            self.set_status('初始化...')
+            install_path = Path.cwd()
+            
+            self.set_status('正在写入包管理器文件...')
             with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
-                json.dump(package, f)
+                json.dump(package_id_list, f)
+            
+            self.set_status('解压安装包...')
+            for i in package_id_list:
+                if i == 'xystudio.clickmouse':
+                    continue
+                extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
                 
-            # 卸载功能敬请期待
+            # 卸载功能
+            self.set_status('正在创建安装信息...')
+            key = winreg.CreateKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
+            )
+            winreg.SetValue(key, '', winreg.REG_SZ, fr'{install_path}\main.exe')
+            winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
+            winreg.CloseKey(key)
 
-            # self.setStatus('正在创建安装信息...')
-            # key = winreg.CreateKey(
-            #     winreg.HKEY_LOCAL_MACHINE,
-            #     r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
-            # )
-            # winreg.SetValue(key, '', winreg.REG_SZ, fr'{install_path}\clickmouse.exe')
-            # winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
-            # winreg.CloseKey(key)
+            self.set_status('正在创建卸载信息...')
+            uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
+            winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
+            winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
+            winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
+            winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, f'{install_path}/uninstall.exe')
+            winreg.SetValueEx(uninstall_key, 'ModifyString', 0, winreg.REG_SZ, f'{install_path}/install_pks.exe')
+            winreg.SetValueEx(uninstall_key, 'RepairString', 0, winreg.REG_SZ, f'{install_path}/repair.exe')
+            with open(get_resource_path('versions.json'), 'r', encoding='utf-8') as f:
+                version = json.load(f)['clickmouse']
+            winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
 
-            # self.setStatus('正在创建卸载信息...')
-            # uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
-            # winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
-            # winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
-            # winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
-            # winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, f'cmd /k echo 卸载功能敬请期待，请前往删除clickmouse安装路径：{install_path}。')
-            # winreg.SetValueEx(uninstall_key, 'ModifyString', 0, winreg.REG_SZ, f'cmd /k echo 修改功能敬请期待，请启动clickmouse，找到扩展--官方扩展--修改(未完成)中修改。')
-            # winreg.SetValueEx(uninstall_key, 'InstallDate', 0, winreg.REG_SZ, str(datetime.now()))
-            # with open(get_resource_path('versions.json'), 'r', encoding='utf-8') as f:
-            #     version = json.load(f)['clickmouse']
-            # winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
-            # try:
-            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
-            # except:
-            #     winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(0))
-            # winreg.SetValueEx(uninstall_key, 'NoRepair', 0, winreg.REG_DWORD, 1)
-            # winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
-            # winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
+            winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
+            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
+            winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
 
-            # winreg.CloseKey(uninstall_key)
+            winreg.CloseKey(uninstall_key)
 
-            self.setStatus('正在创建快捷方式...')
-            if package[0]['create_in_start_menu']:
-                create_shortcut(fr'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\{package[0]['start_menu_name']}.lnk', fr'{install_path}\clickmouse.exe', '鼠标连点器')
-            if package[0]['create_desktop_shortcut']:
-                create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\clickmouse.exe', '鼠标连点器')
-            self.update_page(self.PAGE_FINISH)
+            self.set_status('正在创建快捷方式...')
+            if self.create_start_menu_shortcut:
+                create_shortcut(fr'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\clickmouse.lnk', fr'{install_path}\main.exe', '鼠标连点器')
+            if self.create_desktop_shortcut:
+                create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\main.exe', '鼠标连点器')
+            self.set_page(self.PAGE_finish)
         except Exception as e:
-            self.error = e
-            wx.MessageBox(f'安装失败: {e}', '错误', wx.OK | wx.ICON_ERROR)
-            self.update_page(self.PAGE_ERROR)
-    
-    def on_confirm(self, event):
-        '''确认按钮'''
-        self.selected_components = [] # 清空已选组件
-        root = self.selected_tree.GetRootItem() # 遍历已选组件
-        item, cookie = self.selected_tree.GetFirstChild(root) # 遍历已选组件
-        while item.IsOk():
-            self.selected_components.append(self.selected_tree.GetItemText(item)) # 添加组件名称到列表
-            item, cookie = self.selected_tree.GetNextChild(root, cookie) # 遍历已选组件
-
-    def on_next(self, event):
-        '''下一步按钮'''
-        if self.current_page == self.PAGE_SET_COMPONENT:
-            self.on_confirm(None)
-        if self.current_page < self.total_pages - 1:
-            self.update_page(self.current_page + 1)
-    
-    def on_cancel(self, event):
-        '''取消按钮'''
-        self.update_page(self.PAGE_CANCEL)
-
-# 显示窗口
-def main(app_name):
-    frame = app_name()
-    frame.Show()
-    app.MainLoop() 
+            self.error_label.setText(get_init_lang('19').format(self.install_status, str(e)))
+            self.set_page(self.PAGE_error)
+            
+    def cancel(self):
+        '''取消安装'''
+        self.set_page(self.PAGE_cancel)
+        
+    def on_next(self):
+        if self.current_page == self.PAGE_set_components:
+            # 第四页：提示
+            message =QMessageBox.question(
+                self,
+                get_init_lang('1a'),
+                get_init_lang('1c').format('\n'.join(self.selected_components), '\n桌面快捷方式' if self.create_desktop_shortcut else '', '\n开始菜单快捷方式' if self.create_start_menu_shortcut else ''),
+            QMessageBox.Yes | QMessageBox.No,
+            )
+            for i in packages_info:
+                if get_lang(i['package_name_index'], source=package_langs) in self.selected_components:
+                    package_id_list.append(i['package_name'])
+            if message == QMessageBox.No:
+                return
+        super().on_next()
+        
+    def closeEvent(self, event):
+        if self.current_page < self.PAGE_finish:
+            event.ignore()
+            self.cancel()
+        elif self.current_page == self.PAGE_finish:
+            with open(data_path / 'first_run', 'w'):pass # 标记为第一次运行
+            if self.run_clickmouse.isChecked():
+                run_software('main.py', 'main.exe')
+                event.accept()
+        else:
+            event.accept()
 
 if __name__ == '__main__':
-    app = wx.App()
-    # 调用GUI工具
-    if not get_resource_path('packages'):
-        wx.MessageBox('由于每个版本都会更新安装包，未防止git文件夹过大，安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。', '错误', wx.OK | wx.ICON_ERROR)
+    if check_reg_key(software_reg_key):
+        QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('1e'))
+        with open(data_path / 'first_run', 'w'):pass
+        if not(os.path.exists('packages.json')):
+            package = ['xystudio.clickmouse']
+            with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
+                json.dump(package, f)
+        if os.path.exists('extensions') and os.path.isdir('extensions'):
+            shutil.rmtree('extensions')
+
+        run_software('main.py', 'main.exe')
+        sys.exit(1)
+
+    has_package = os.path.exists(get_resource_path('packages'))
+    if not has_package:
+        QMessageBox.warning(None, get_init_lang('1d'), get_init_lang('1f'))
+
     if is_admin():  # 管理员权限
-        if os.path.exists('run_as_admin.json'):
-            os.remove('run_as_admin.json')
-        main(InstallFrame)
+        window = InstallWindow()
+        window.show()
     else:
-        try:
-            with open('run_as_admin.json', 'r') as f:
-                data = json.load(f).get('is_not_admin', 0)
-        except:
-            data = 0
-        if data == 0:
-            run_as_admin() # 请求管理员权限
-        elif data == 1:
-            wx.MessageBox('错误', '程序已请求提升权限，但是仍然以非管理员权限运行，请联系系统管理员', wx.OK | wx.ICON_ERROR)
-            os.remove('run_as_admin.json')
-    app.MainLoop()
+        QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('20'))
+        sys.exit(1)
+
+    sys.exit(app.exec())
