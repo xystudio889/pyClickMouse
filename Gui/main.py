@@ -2895,12 +2895,12 @@ if __name__ == '__main__':
         
         # has_packages = os.path.exists(get_resource_path('packages'))
         # package_names, show_list, package_ids = get_packages()
-        has_plural = get_has_plural()
+    has_plural = get_has_plural()
 
-        main_window = MainWindow()
-        hotkey_help_window = HotkeyHelpWindow()
-        
-        app = TrayApp()
-        app.run()
-        
-        logger.info('主程序退出')
+    main_window = MainWindow()
+    hotkey_help_window = HotkeyHelpWindow()
+    
+    app = TrayApp()
+    app.run()
+    
+    logger.info('主程序退出')
