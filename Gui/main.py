@@ -22,7 +22,6 @@ from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
 from uiStyles.WidgetStyles import (styles, maps, specialStyleReplaceMode) # 界面组件样式
 from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
 from sharelibs import (is_dark_mode, run_software, parse_system_language_to_lang_id) # 共享库
-import zipfile # 压缩库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
@@ -55,28 +54,6 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         MessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
         sys.exit(1)
-
-def get_style_sheet(style_name: str, mode) -> str:
-    '''
-    获取样式表
-    '''
-    if mode is None:
-        mode = 'light' if is_dark_mode() else 'dark'
-    try:
-        logger.info(f'获取样式表: {style_name}')
-        with open(get_resource_path('styles', mode, f'{style_name}.qss'), 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        logger.error(f'样式表{style_name}.qss不存在')
-        MessageBox.critical(None, get_lang('14'), get_lang('88'.format(style_name)))
-    
-def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
-    '''
-    替换样式表
-    '''
-    old_style_tag = f'{style_tag}: {old_style}'
-    new_style_tag = f'{style_tag}: {new_style}'
-    return style_sheet.replace(old_style_tag, new_style_tag)
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
@@ -177,24 +154,17 @@ def save_settings(settings):
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
         
-def get_packages():
-    lang_index = [] # 语言包索引
-    show = []
-    package_id = []
+# def get_packages():
+#     lang_index = [] # 语言包索引
+#     show = []
+#     package_id = []
     
-    # 加载包信息
-    for package in packages:
-        lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
-        package_id.append(package.get('package_name', None))
-        show.append(package.get('show_in_extension_list', True))
-    return (lang_index, show, package_id)
-
-def extract_zip(file_path, extract_path):
-    '''
-    解压zip文件
-    '''
-    with zipfile.ZipFile(file_path, 'r') as f:
-        f.extractall(extract_path)
+#     # 加载包信息
+#     for package in packages:
+#         lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
+#         package_id.append(package.get('package_name', None))
+#         show.append(package.get('show_in_extension_list', True))
+#     return (lang_index, show, package_id)
 
 def get_application_instance():
     '''获取或创建 QApplication 实例'''
@@ -466,7 +436,7 @@ class Click(QObject):
         def click_loop():
             self.pause.emit(False)
             i = 0
-            while i < times and self.running:
+            while i <= times and self.running:
                 if not self.paused:
                     try:
                         pyautogui.click(button=button)
@@ -914,44 +884,44 @@ class MainWindow(QMainWindow):
         # 热键帮助
         hotkey_help = help_menu.addAction(get_lang('5e'))
         
-        # 文档菜单
-        doc = help_menu.addAction(get_lang('5f'))
+        # # 文档菜单
+        # doc = help_menu.addAction(get_lang('5f'))
 
-        # 扩展菜单
-        extension_menu = menu_bar.addMenu(get_lang('8e'))
-        official_extension_menu = extension_menu.addMenu(get_lang('90'))
-        if not any(show_list):
-            # 无官方扩展提示
-            official_extension_menu.addAction(get_lang('91')).setDisabled(True)
-        else:
-            # 加载官方扩展菜单
-            for name, show, package_id in zip(package_names, show_list, package_ids):
-                if show:
-                    official_extension_menu.addAction(name).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
-        official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_extension) # 管理扩展菜单
+        # # 扩展菜单
+        # extension_menu = menu_bar.addMenu(get_lang('8e'))
+        # official_extension_menu = extension_menu.addMenu(get_lang('90'))
+        # if not any(show_list):
+        #     # 无官方扩展提示
+        #     official_extension_menu.addAction(get_lang('91')).setDisabled(True)
+        # else:
+        #     # 加载官方扩展菜单
+        #     for name, show, package_id in zip(package_names, show_list, package_ids):
+        #         if show:
+        #             official_extension_menu.addAction(name).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
+        # official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_extension) # 管理扩展菜单
         
-        not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
+        # not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
         
-        cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
-        cge_menu.addAction(get_lang('95')).setDisabled(True)
+        # cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
+        # cge_menu.addAction(get_lang('95')).setDisabled(True)
         
-        cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
-        cmm_menu.addAction(get_lang('97')).setDisabled(True)
+        # cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
+        # cmm_menu.addAction(get_lang('97')).setDisabled(True)
 
-        not_official_extension_menu.addSeparator()
+        # not_official_extension_menu.addSeparator()
 
-        not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
-        not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
+        # not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
+        # not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
         
-        # 宏菜单
-        macro_menu = menu_bar.addMenu(get_lang('99'))
+        # # 宏菜单
+        # macro_menu = menu_bar.addMenu(get_lang('99'))
         
-        run_marco_menu = macro_menu.addMenu(get_lang('9d'))
-        for action in cmm_menu.actions():
-            run_marco_menu.addAction(action)
+        # run_marco_menu = macro_menu.addMenu(get_lang('9d'))
+        # for action in cmm_menu.actions():
+        #     run_marco_menu.addAction(action)
             
-        macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
-        macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
+        # macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
+        # macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
@@ -2693,8 +2663,8 @@ class TrayApp:
         main_window.show()
         
         # 加载警告
-        if not has_packages:
-            MessageBox.warning(None, get_lang('15'), get_lang('ae'))
+        # if not has_packages:
+        #     MessageBox.warning(None, get_lang('15'), get_lang('ae'))
         
         # 创建设置延迟窗口
         self.set_dalay_window = FastSetClickWindow()
@@ -2909,22 +2879,22 @@ if __name__ == '__main__':
         settings['select_lang'] = parse_system_language_to_lang_id()
         select_lang = settings.get('select_lang', 0)
         save_settings(settings)
-        run_software('init.py', 'init.exe')
-    else:
-        try:
-            packages = []
-            with open('packages.json', 'r', encoding='utf-8') as f:
-                packages_name = json.load(f)
-            for i in packages_name:
-                packages.append(import_package(i))
-        except FileNotFoundError:
-            os.remove(data_path / 'first_run')
-            run_software('init.py', 'init.exe')
-            exit(2)
-            pass
+        with open(data_path / 'first_run', 'w', encoding='utf-8'):pass
+        # run_software('init.py', 'init.exe')
+    # else:
+        # try:
+        #     packages = []
+        #     with open('packages.json', 'r', encoding='utf-8') as f:
+        #         packages_name = json.load(f)
+        #     for i in packages_name:
+        #         packages.append(import_package(i))
+        # except FileNotFoundError:
+        #     os.remove(data_path / 'first_run')
+        #     run_software('init.py', 'init.exe')
+        #     sys.exit(2)
         
-        has_packages = os.path.exists(get_resource_path('packages'))
-        package_names, show_list, package_ids = get_packages()
+        # has_packages = os.path.exists(get_resource_path('packages'))
+        # package_names, show_list, package_ids = get_packages()
         has_plural = get_has_plural()
 
         main_window = MainWindow()
