@@ -156,6 +156,8 @@ class InstallWindow(PagesUI):
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
         
+        self.install_status = ''
+        
     def init_ui(self):
         '''初始化UI'''
         # 创建中央部件
@@ -362,8 +364,7 @@ class InstallWindow(PagesUI):
                 self.remove_btn.clicked.connect(self.remove_selected)
                 self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
-                # 第五页：安装
-                self.install_status = ''
+                pass     
             case self.PAGE_finish:
                 # 第六页：完成        
                 self.run_clickmouse = QCheckBox(get_init_lang('16'))

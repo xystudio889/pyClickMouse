@@ -152,7 +152,6 @@ class MessageBox(QMessageBox):
         if defaultButton != QMessageBox.StandardButton.NoButton:
             msg_box.setDefaultButton(defaultButton)
             
-        # 深色模式
         new_color_bar(msg_box)
             
         return msg_box
@@ -162,14 +161,17 @@ class MessageBox(QMessageBox):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
         return msg_box.exec()
 
+    @staticmethod
     def critical(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
         return msg_box.exec()
     
+    @staticmethod
     def information(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
         return msg_box.exec()
-    
+
+    @staticmethod
     def question(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
         return msg_box.exec()

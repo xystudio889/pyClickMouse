@@ -18,14 +18,13 @@ from datetime import datetime # 用于检查缓存的时间和现在相差的时
 import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
-from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
+from uiStyles import (SelectUI, UnitInputLayout, UCheckBox)# 软件界面样式
 from uiStyles.WidgetStyles import (styles, maps, specialStyleReplaceMode) # 界面组件样式
 from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
 from sharelibs import (run_software, parse_system_language_to_lang_id) # 共享库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
-from typing import Callable # 类型提示库
 import math # 数学库
 import subprocess # 子进程库
 import traceback # 异常处理库
@@ -280,7 +279,6 @@ class MessageBox(QMessageBox):
         if defaultButton != QMessageBox.StandardButton.NoButton:
             msg_box.setDefaultButton(defaultButton)
             
-        # 深色模式
         new_color_bar(msg_box)
             
         return msg_box
@@ -290,14 +288,17 @@ class MessageBox(QMessageBox):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
         return msg_box.exec()
 
+    @staticmethod
     def critical(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
         return msg_box.exec()
     
+    @staticmethod
     def information(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
         return msg_box.exec()
-    
+
+    @staticmethod
     def question(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
         return msg_box.exec()
@@ -1549,8 +1550,8 @@ class CleanCacheWindow(QDialog):
         self.cache_dir_list = {'logs'} # 缓存文件路径的列表
         self.cache_file_list = {'update.json'} # 缓存文件列表
 
-        self.all_checkbox = QCheckBox('')
-        self.all_checkbox.setTristate(True) # 三状态复选框
+        self.all_checkbox = UCheckBox('')
+        self.all_checkbox.setTristate(True)
         self.locked_checkbox = True # 临时切换
         self.all_checkbox.setCheckState(Qt.PartiallyChecked) # 初始状态为部分选中
         self.locked_checkbox = False # 锁定选择框模式
@@ -1562,7 +1563,7 @@ class CleanCacheWindow(QDialog):
         layout.addWidget(self.all_size_text, 3, 3)
 
         size_index = 2 # 自定义字符大小的索引
-        self.checkbox_list: list[QCheckBox] = [] # 缓存文件选择框的列表
+        self.checkbox_list: list[UCheckBox] = [] # 缓存文件选择框的列表
         self.cache_path_list: list[QLabel] = [] # 文件路径字符的列表
         self.cache_size_list: list[QLabel] = [] # 缓存文件大小字符的列表
         logger.debug('加载动态内容')
@@ -1570,7 +1571,8 @@ class CleanCacheWindow(QDialog):
             k = d[0]
             v = d[1]
             len_v = len(v)
-            box = QCheckBox(k)
+            box = UCheckBox(k)
+            box.palette().text().setColor(QColor(0, 0, 0))
             box.setChecked(v[size_index + 1] if len_v > size_index + 1 else True)
             self.checkbox_list.append(box)
             path = QLabel(v[0])
@@ -2255,6 +2257,12 @@ class SettingWindow(SelectUI):
         
         def set_content_label(text):
             content_label.setText(text)
+            
+        def create_horizontal_line():
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)  # 水平线
+            line.setFrameShadow(QFrame.Shadow.Sunken)  # 凹陷效果
+            return line
         
         restart_layout = QHBoxLayout()
         self.restart_button = QPushButton(get_lang('7e'))
@@ -2294,7 +2302,7 @@ class SettingWindow(SelectUI):
                 
                 # 显示托盘图标
                 tray_layout = QHBoxLayout() # 窗口风格布局
-                tray = QCheckBox(get_lang('80'))
+                tray = UCheckBox(get_lang('80'))
                 tray.setChecked(settings.get('show_tray_icon', True))
     
                 tray_layout.addWidget(tray)
@@ -2320,14 +2328,18 @@ class SettingWindow(SelectUI):
                 unit_layout.addUnitRow(get_lang('46'), self.default_delay, self.delay_combo)
                 
                 # 连点出错时使用默认值
-                use_default_delay = QCheckBox(get_lang('47'))
+                use_default_delay = UCheckBox(get_lang('47'))
                 use_default_delay.setChecked(settings.get('failed_use_default', False))
                 if not self.default_delay.text():
                     use_default_delay.setEnabled(False)
+                    
+                line1 = create_horizontal_line()
 
                 # 布局
                 unit_layout.newRow()
                 unit_layout.addWidget(use_default_delay)
+                unit_layout.newRow()
+                unit_layout.addSpacer(10)
                 
                 self.default_time = QLineEdit()
                 self.default_time.setText(str(settings.get('click_times', '')))
@@ -2337,12 +2349,14 @@ class SettingWindow(SelectUI):
                 unit_layout.addUnitRow(get_lang('85'), self.default_time, self.times_combo)
                 
                 # 连点出错时使用默认值
-                use_default_time = QCheckBox(get_lang('86'))
+                use_default_time = UCheckBox(get_lang('86'))
                 use_default_time.setChecked(settings.get('times_failed_use_default', False))
                 if not self.default_time.text():
                     use_default_time.setEnabled(False)
                 unit_layout.newRow()
                 unit_layout.addWidget(use_default_time)
+                
+                line2 = create_horizontal_line()
                 
                 self.total_time_label = QLabel(f'{get_lang('2c')}: {get_lang('61')}')
                 set_style(self.total_time_label, 'big_text_14')
@@ -2351,6 +2365,7 @@ class SettingWindow(SelectUI):
                 
                 # 布局
                 layout.addLayout(unit_layout)
+                layout.addWidget(line2)
                 layout.addWidget(self.total_time_label)
                 
                 # 连接信号
@@ -2403,7 +2418,7 @@ class SettingWindow(SelectUI):
                 style_layout.addStretch(1)
                 
                 style_use_windows_layout = QHBoxLayout() # 颜色使用windows按钮布局
-                style_choice_use_windows = QCheckBox(get_lang('a8'))
+                style_choice_use_windows = UCheckBox(get_lang('a8'))
                 
                 style_choice_use_windows.setChecked(settings.get('use_windows_color', True))
                 
@@ -2428,7 +2443,7 @@ class SettingWindow(SelectUI):
         
         return page
         
-    def on_need_restart_setting_changed(self, handle: Callable, key: str, restart_place: list[str] = [get_lang('a9')], *args):
+    def on_need_restart_setting_changed(self, handle , key: str, restart_place: list[str] = [get_lang('a9')], *args):
         '''托盘图标选择事件'''
         global settings_need_restart
         
@@ -2450,7 +2465,7 @@ class SettingWindow(SelectUI):
         settings[key] = handle(*args)
         save_settings(settings)
         
-    def on_default_input_changed(self, default: QLineEdit, key: str, use_default: QCheckBox):
+    def on_default_input_changed(self, default: QLineEdit, key: str, use_default: UCheckBox):
         '''默认延迟输入框内容变化事件'''
         if not default.text():
             use_default.setEnabled(False)

@@ -72,9 +72,9 @@ QListView {
     background-color: white;
 }
 
-/* 选中且悬停 */
+/* 选择框 */
 QCheckBox {
-    color: black;
+    color: white;
 }
 
 /* 滚动区域容器样式：白底黑边 */

@@ -1,7 +1,37 @@
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
-import sys
+
+class UCheckBox(QWidget):
+    stateChanged = Signal(bool)
+
+    def __init__(self, text='', parent=None):
+        super().__init__(parent)
+        
+        self.checkbox = QCheckBox()
+        self.checkbox.stateChanged.connect(lambda: self.stateChanged.emit(self.checkbox.isChecked()))
+        self.label = QLabel(text)
+        
+        # 连接信号
+        self.checkbox.toggled.connect(self.label.setEnabled)
+        
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.checkbox)
+        layout.addWidget(self.label)
+        layout.addStretch()
+    
+    def setChecked(self, checked):
+        return self.checkbox.setChecked(checked)
+    
+    def setTristate(self, tristate):
+        return self.checkbox.setTristate(tristate)
+    
+    def setCheckState(self, state):
+        return self.checkbox.setCheckState(state)
+
+    def isChecked(self):
+        return self.checkbox.isChecked()
 
 class SelectUI(QMainWindow):
     def __init__(self, parent=None):
@@ -25,11 +55,11 @@ class SelectUI(QMainWindow):
         main_layout.setSpacing(15)
         
         # 创建左侧滚动区域
-        self.left_scroll = self.create_scroll_area()
+        self.left_scroll = VScrollArea()
         main_layout.addWidget(self.left_scroll, 1)  # 拉伸系数为1
         
         # 创建右侧滚动区域
-        self.right_scroll = self.create_scroll_area()
+        self.right_scroll = VScrollArea()
         main_layout.addWidget(self.right_scroll, 5)  # 拉伸系数为5
         
     def init_ui(self):
@@ -99,36 +129,27 @@ class SelectUI(QMainWindow):
         # layout.addStretch()
         # return page
         pass
-    
-    def create_scroll_area(self):
-        '''创建滚动区域'''
-        # 创建滚动区域
-        scroll_area = QScrollArea()
-        
-        # 限制滚动方向（只能上下滚动）
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # 始终禁用水平滚动条
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)     # 按需显示垂直滚动条
-        
-        return scroll_area
 
 class VScrollArea(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         # 隐藏横向滚动条
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # 始终禁用水平滚动条
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)     # 按需显示垂直滚动条
 
 class HScrollArea(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         # 隐藏纵向滚动条
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
 class UnitInputLayout(QLayout):
-    def __init__(self, parent=None, spacing=10):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self._item_list = []      # 存储所有子项
         self._row_breaks = []     # 记录每行结束的索引位置（记录上一行最后一个项的索引）
-        self.setSpacing(spacing)  # 设置间距
+        self.setContentsMargins(0, 0, 0, 0)
 
     def addItem(self, item: QLayoutItem):
         '''添加子项到列表末尾'''
@@ -274,8 +295,8 @@ class UnitInputLayout(QLayout):
                     item.setGeometry(QRect(row_x, item_y, item_width, item_height))
                     row_x += item_width + spacing
             else:
-                # 正常排列，保持原大小，可以水平居中
-                row_x = x + (available_width - (total_items_width + total_spacing)) // 2
+                # 正常排列，保持原大小
+                row_x = x
                 for item in row_items:
                     hint = item.sizeHint()
                     # 垂直居中
@@ -292,6 +313,10 @@ class UnitInputLayout(QLayout):
         self.addWidget(QLabel(text + ': '))
         self.addWidget(input)
         self.addWidget(unit)
+        
+    def addSpacer(self, size: int):
+        '''添加间距'''
+        self.addItem(QSpacerItem(size, 0))
         
 class PagesUI(QMainWindow):
     '''分页窗口类'''
