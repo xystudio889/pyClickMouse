@@ -103,7 +103,7 @@ def main():
                 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    if not(is_process_running('main.exe')):
+    if is_process_running('main.exe'):
         QMessageBox.warning(None, get_control_lang('04'), get_control_lang('08'))
     else:
         if is_admin():
