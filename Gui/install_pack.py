@@ -1,8 +1,8 @@
-from PySide6.QtCore import *
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
+# 加载框架
+from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
+from uiStyles.QUI import *
 
 import json
 import os
@@ -15,8 +15,7 @@ import zipfile
 from shutil import rmtree
 import traceback
 
-from uiStyles import PagesUI
-from uiStyles.WidgetStyles import (styles, maps)
+from uiStyles import PagesUI, UMessageBox, styles, maps
 
 # 系统api
 import ctypes
@@ -136,7 +135,7 @@ class Refresh:
     def refresh_title(self):
         QTimer.singleShot(1, lambda: getter.style_changed.emit(getter.current_theme))
         
-class MessageBox(QMessageBox):
+class MessageBox(UMessageBox):
     @staticmethod
     def new_msg(parent, 
                 title: str, 
@@ -145,34 +144,11 @@ class MessageBox(QMessageBox):
                 buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
                 defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         
-        # 使用位置参数
-        msg_box = QMessageBox(icon, title, text, buttons, parent)
+        msg_box = UMessageBox.new_msg(parent, title, text, icon, buttons, defaultButton)
         
-        # 设置默认按钮
-        if defaultButton != QMessageBox.StandardButton.NoButton:
-            msg_box.setDefaultButton(defaultButton)
-            
-        # 深色模式
         new_color_bar(msg_box)
-            
+        
         return msg_box
-    
-    @staticmethod
-    def warning(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
-        return msg_box.exec()
-
-    def critical(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
-        return msg_box.exec()
-    
-    def information(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
-        return msg_box.exec()
-    
-    def question(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
-        return msg_box.exec()
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
@@ -208,14 +184,7 @@ class ColorGetter(QObject):
                 theme = 'auto-dark'
             elif theme == Qt.ColorScheme.Light:
                 theme = 'auto-light'
-                
-        if self.style == 0:
-            theme = QApplication.styleHints().colorScheme()
-            if theme == Qt.ColorScheme.Dark:
-                theme = 'auto-dark'
-            elif theme == Qt.ColorScheme.Light:
-                theme = 'auto-light'
-        
+
         windows_theme = QApplication.styleHints().colorScheme()   
         if theme == Qt.ColorScheme.Dark:
             windows_theme = 'dark'
