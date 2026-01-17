@@ -52,14 +52,6 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         MessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
         sys.exit(1)
-    
-def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
-    '''
-    替换样式表
-    '''
-    old_style_tag = f'{style_tag}: {old_style}'
-    new_style_tag = f'{style_tag}: {new_style}'
-    return style_sheet.replace(old_style_tag, new_style_tag)
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
@@ -160,10 +152,10 @@ def save_settings(settings):
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
         
-# def get_packages():
-#     lang_index = [] # 语言包索引
-#     show = []
-#     package_id = []
+def get_packages():
+    lang_index = [] # 语言包索引
+    show = []
+    package_id = []
     
     # 加载包信息
     for package in packages:
@@ -916,8 +908,8 @@ class MainWindow(QMainWindow):
         # 热键帮助
         hotkey_help = help_menu.addAction(get_lang('5e'))
         
-        # # 文档菜单
-        # doc = help_menu.addAction(get_lang('5f'))
+        # 文档菜单
+        doc = help_menu.addAction(get_lang('5f'))
 
         # 扩展菜单
         extension_menu = menu_bar.addMenu(get_lang('8e'))
@@ -934,28 +926,28 @@ class MainWindow(QMainWindow):
         manage_extension_menu.triggered.connect(self.show_manage_extension) # 管理扩展菜单
         manage_extension_menu.setEnabled(has_packages)
         
-        # not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
+        not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
         
-        # cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
-        # cge_menu.addAction(get_lang('95')).setDisabled(True)
+        cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
+        cge_menu.addAction(get_lang('95')).setDisabled(True)
         
-        # cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
-        # cmm_menu.addAction(get_lang('97')).setDisabled(True)
+        cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
+        cmm_menu.addAction(get_lang('97')).setDisabled(True)
 
-        # not_official_extension_menu.addSeparator()
+        not_official_extension_menu.addSeparator()
 
-        # not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
-        # not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
+        not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
+        not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
         
-        # # 宏菜单
-        # macro_menu = menu_bar.addMenu(get_lang('99'))
+        # 宏菜单
+        macro_menu = menu_bar.addMenu(get_lang('99'))
         
-        # run_marco_menu = macro_menu.addMenu(get_lang('9d'))
-        # for action in cmm_menu.actions():
-        #     run_marco_menu.addAction(action)
+        run_marco_menu = macro_menu.addMenu(get_lang('9d'))
+        for action in cmm_menu.actions():
+            run_marco_menu.addAction(action)
             
-        # macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
-        # macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
+        macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
+        macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
@@ -2567,8 +2559,8 @@ class TrayApp:
         main_window.show()
         
         # 加载警告
-        # if not has_packages:
-        #     MessageBox.warning(None, get_lang('15'), get_lang('ae'))
+        if not has_packages:
+            MessageBox.warning(None, get_lang('15'), get_lang('ae'))
         
         # 创建设置延迟窗口
         self.set_dalay_window = FastSetClickWindow()
