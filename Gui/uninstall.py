@@ -7,7 +7,7 @@ import tempfile
 import subprocess
 import shutil
 import winreg
-from sharelibs import get_control_lang
+from sharelibs import get_control_lang, is_process_running
 from pathlib import Path
 
 def is_admin():
@@ -103,9 +103,12 @@ def main():
                 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    if is_admin():
-        if QMessageBox.question(None, get_control_lang('04'), get_control_lang('06'), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-            main()
+    if not(is_process_running('main.exe')):
+        QMessageBox.warning(None, get_control_lang('04'), get_control_lang('08'))
     else:
-        QMessageBox.critical(None, get_control_lang('01'), get_control_lang('07'))
-    sys.exit(app.exec())
+        if is_admin():
+            if QMessageBox.question(None, get_control_lang('04'), get_control_lang('06'), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                main()
+        else:
+            QMessageBox.critical(None, get_control_lang('01'), get_control_lang('07'))
+        sys.exit(app.exec())

@@ -1,8 +1,8 @@
-from PySide6.QtCore import *
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
+# 加载框架
+from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
+from uiStyles.QUI import *
 
 import os
 from pathlib import Path
@@ -12,9 +12,8 @@ import pyperclip # 复制错误信息
 import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
-from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, langs) # 共享库
-from uiStyles import PagesUI
-from uiStyles.WidgetStyles import (styles)
+from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang) # 共享库
+from uiStyles import PagesUI, styles, UCheckBox
 import shutil # 删除文件夹
 import traceback # 异常捕获
     
@@ -259,7 +258,7 @@ class InstallWindow(PagesUI):
                 edit.setReadOnly(True)
                 edit.setText(license_text)
                 
-                self.emua_checkbox = QCheckBox(get_init_lang('08'))
+                self.emua_checkbox = UCheckBox(get_init_lang('08'))
 
                 # 页面布局
                 page_layout.addWidget(QLabel(get_init_lang('09')))
@@ -280,10 +279,10 @@ class InstallWindow(PagesUI):
                 self.create_start_menu_shortcut = True
 
                 # 第四页：设置快捷方式
-                desktop_checkbox = QCheckBox(get_init_lang('0b'))
+                desktop_checkbox = UCheckBox(get_init_lang('0b'))
                 desktop_checkbox.setChecked(self.create_desktop_shortcut)
                 
-                start_menu_checkbox = QCheckBox(get_init_lang('0c'))
+                start_menu_checkbox = UCheckBox(get_init_lang('0c'))
                 start_menu_checkbox.setChecked(self.create_start_menu_shortcut)
                 
                 page_layout.addWidget(QLabel(get_init_lang('0d')))
@@ -367,7 +366,7 @@ class InstallWindow(PagesUI):
                 pass     
             case self.PAGE_finish:
                 # 第六页：完成        
-                self.run_clickmouse = QCheckBox(get_init_lang('16'))
+                self.run_clickmouse = UCheckBox(get_init_lang('16'))
                 self.run_clickmouse.setChecked(True)
                 
                 page_layout.addWidget(QLabel(get_init_lang('17')))
@@ -534,7 +533,7 @@ class InstallWindow(PagesUI):
             self.set_status('初始化...')
             install_path = Path.cwd()
             
-            if not has_package:
+            if has_package:
                 self.set_status('正在写入包管理器文件...')
                 with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
                     json.dump(package_id_list, f)
@@ -544,6 +543,10 @@ class InstallWindow(PagesUI):
                     if i == 'xystudio.clickmouse':
                         continue
                     extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
+            else:
+                self.set_status('正在写入包管理器文件...')
+                with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
+                    json.dump(["xystudio.clickmouse"], f)
                     
             # 卸载功能
             self.set_status('正在创建安装信息...')

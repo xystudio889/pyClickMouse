@@ -166,9 +166,14 @@ QStatusBar {
     background-color: white;
 }
 
+/* 描述栏样式 */
 .dest {
     color: gray;
     font-size: 16px;
+}
+
+.dest_small { 
+    color: gray;
 }
 
 /* 大字 */

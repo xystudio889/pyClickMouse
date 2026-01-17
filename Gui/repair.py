@@ -58,8 +58,9 @@ if __name__ == '__main__':
     else:
         message = QMessageBox.information(None, get_control_lang('04'), get_control_lang('09'), QMessageBox.Yes | QMessageBox.No)
         if message == QMessageBox.Yes:
-            remove_folder('data')
-            remove_folder('cache')
-            remove_folder('extensions')
-            remove_file('packages.json')
-            QMessageBox.information(None, get_control_lang('04'), get_control_lang('0a'))
+            # remove_folder('data')
+            # remove_folder('cache')
+            # remove_folder('extensions')
+            # remove_file('packages.json')
+            # QMessageBox.information(None, get_control_lang('04'), get_control_lang('0a'))
+            pass

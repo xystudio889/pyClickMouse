@@ -7,7 +7,9 @@ import json
 import re
 from enum import Enum
 
-class specialStyleReplaceMode(Enum):
+__all__ = ['StyleReplaceMode', 'StyleSheet', 'styles', 'indexes', 'maps', 'style_path']
+
+class StyleReplaceMode(Enum):
     '''
     特殊样式替换模式
     '''
@@ -241,7 +243,7 @@ class StyleSheet:
         self.css_text = css_text
         self.css_data = self.serialize(css_text)
         
-    def replace(self, index, old_value: str | specialStyleReplaceMode, new_value: str, output_json: bool = True) -> dict:
+    def replace(self, index, old_value: str | StyleReplaceMode, new_value: str, output_json: bool = True) -> dict:
         '''
         替换CSS数据中的值
         
@@ -257,8 +259,8 @@ class StyleSheet:
         data = self.css_data.copy()
         value = self._get_value_by_indices(index, data)
         
-        if isinstance(value, str) or isinstance(value, specialStyleReplaceMode):
-            if old_value == specialStyleReplaceMode.ALL:
+        if isinstance(value, str) or isinstance(value, StyleReplaceMode):
+            if old_value == StyleReplaceMode.ALL:
                 if output_json:
                     return self._update_nested_dict(index, data, new_value)
                 else:
