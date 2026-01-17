@@ -1,10 +1,8 @@
-# 加载库
-import sys # 系统库
-from PySide6.QtWidgets import * # 界面库
-from PySide6.QtGui import * # 图标库
-from PySide6.QtCore import * # 核心库
-
-app = QApplication(sys.argv) # 创建应用程序实例
+# 加载框架
+from PySide6.QtWidgets import QApplication
+import sys
+app = QApplication(sys.argv)
+from uiStyles.QUI import *
 
 from pathlib import Path # 文件管理库
 import pyautogui # 鼠标操作库
@@ -18,16 +16,16 @@ from datetime import datetime # 用于检查缓存的时间和现在相差的时
 import json # 用于读取配置文件
 import os # 系统库
 import shutil # 用于删除文件夹
-from uiStyles import SelectUI, UnitInputLayout # 软件界面样式
-from uiStyles.WidgetStyles import (styles, maps, specialStyleReplaceMode) # 界面组件样式
-from uiStyles.WidgetStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (is_dark_mode, run_software, parse_system_language_to_lang_id) # 共享库
+from uiStyles import (SelectUI, UnitInputLayout, UCheckBox, styles, maps, StyleReplaceMode, UMessageBox, ULabel) # 软件界面样式
+from uiStyles import indexes as style_indexes # 界面组件样式索引
+from sharelibs import (run_software, parse_system_language_to_lang_id, is_process_running) # 共享库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
-from typing import Callable # 类型提示库
 import math # 数学库
 import subprocess # 子进程库
+import traceback # 异常处理库
+import colorsys # 颜色库
 
 # 系统api
 import ctypes
@@ -54,6 +52,14 @@ def get_resource_path(*paths):
         logger.error(f'获取资源文件路径失败: {e}')
         MessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
         sys.exit(1)
+    
+def replace_style_sheet(style_sheet: str, style_tag: str, old_style: str, new_style: str) -> str:
+    '''
+    替换样式表
+    '''
+    old_style_tag = f'{style_tag}: {old_style}'
+    new_style_tag = f'{style_tag}: {new_style}'
+    return style_sheet.replace(old_style_tag, new_style_tag)
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
@@ -159,12 +165,12 @@ def save_settings(settings):
 #     show = []
 #     package_id = []
     
-#     # 加载包信息
-#     for package in packages:
-#         lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
-#         package_id.append(package.get('package_name', None))
-#         show.append(package.get('show_in_extension_list', True))
-#     return (lang_index, show, package_id)
+    # 加载包信息
+    for package in packages:
+        lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
+        package_id.append(package.get('package_name', None))
+        show.append(package.get('show_in_extension_list', True))
+    return (lang_index, show, package_id)
 
 def get_application_instance():
     '''获取或创建 QApplication 实例'''
@@ -254,8 +260,50 @@ def new_color_bar(obj):
     '''
     color_getter.style_changed.connect(lambda: color_getter.apply_titleBar(obj))
     color_getter.style_changed.emit()
+    
+def lighten_color_hex(hex_color, factor):
+    '''
+    使用HSL色彩空间提亮颜色
+    hex_color: 十六进制颜色字符串，如 "#808080"
+    factor: 提亮因子 (-1-1之间)，0为不变，1为最亮，-1为最暗
+    '''
+    
+    if not hex_color.startswith('#') or len(hex_color) != 7:
+        raise ValueError('Please enter a valid hex color string, such as #FF0000.')
+    
+    if not -1 <= factor <= 1:
+        raise ValueError('The lightening factor must be between -1 and 1.')
+    
+    # 移除#号并转换为RGB
+    hex_color = hex_color.lstrip('#')
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+    
+    # 转换为HSL
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    
+    if factor >= 0:
+        # 提亮：向白色(1.0)移动
+        l = l + (1.0 - l) * factor
+    else:
+        # 变暗：向黑色(0.0)移动
+        factor_abs = abs(factor)  # 取绝对值
+        l = l * (1.0 - factor_abs)
+    
+    # 转回RGB
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    
+    # 转换回十六进制
+    hex_result = '#{:02x}{:02x}{:02x}'.format(
+        int(r * 255), 
+        int(g * 255), 
+        int(b * 255)
+    )
+    
+    return hex_result
 
-class MessageBox(QMessageBox):
+class MessageBox(UMessageBox):
     @staticmethod
     def new_msg(parent, 
                 title: str, 
@@ -264,34 +312,11 @@ class MessageBox(QMessageBox):
                 buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
                 defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
         
-        # 使用位置参数
-        msg_box = QMessageBox(icon, title, text, buttons, parent)
+        msg_box = UMessageBox.new_msg(parent, title, text, icon, buttons, defaultButton)
         
-        # 设置默认按钮
-        if defaultButton != QMessageBox.StandardButton.NoButton:
-            msg_box.setDefaultButton(defaultButton)
-            
-        # 深色模式
         new_color_bar(msg_box)
-            
+        
         return msg_box
-    
-    @staticmethod
-    def warning(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
-        return msg_box.exec()
-
-    def critical(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
-        return msg_box.exec()
-    
-    def information(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
-        return msg_box.exec()
-    
-    def question(parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
-        msg_box = MessageBox.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
-        return msg_box.exec()
 
 class QtThread(QThread):
     '''检查更新工作线程'''
@@ -447,7 +472,7 @@ class Click(QObject):
                         else:
                             self.click_conuter.emit(str(times), str(i), str(delay))
                     except Exception as e:
-                        MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')} {str(e)}')
+                        MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')}\n{traceback.format_exc()}')
                         logger.critical(f'发生错误:{e}')
 
                         self.stopped.emit()
@@ -634,9 +659,16 @@ class ColorGetter(QObject):
         select_styles = styles[current_theme]
 
         if self.use_windows_color:
-            select_styles = select_styles.replace(['.selected', 'background-color'], specialStyleReplaceMode.ALL, self.windows_color, output_json=False)
-            select_styles = select_styles.replace(['.selected:hover', 'background-color'], specialStyleReplaceMode.ALL, self.windows_color, output_json=False)
-            select_styles = select_styles.replace(['.selected:pressed', 'background-color'], specialStyleReplaceMode.ALL, self.windows_color, output_json=False)
+            if select_styles.css_data['.meta']['mode'] == 'dark':
+                select_styles = select_styles.replace(['.selected', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.4), output_json=False)
+                select_styles = select_styles.replace(['.selected:hover', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.45), output_json=False)
+                select_styles = select_styles.replace(['.selected', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
+                select_styles = select_styles.replace(['.selected:hover', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
+                select_styles = select_styles.replace(['QCheckBox', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
+            else:
+                select_styles = select_styles.replace(['.selected', 'background-color'], StyleReplaceMode.ALL, self.windows_color, output_json=False)
+                select_styles = select_styles.replace(['.selected:hover', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.4), output_json=False)
+            select_styles = select_styles.replace(['.selected:pressed', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, -0.165), output_json=False)
             
         app.setStyleSheet(select_styles.css_text)  # 全局应用
         self.refresh()
@@ -797,7 +829,7 @@ class MainWindow(QMainWindow):
         unit_layout.addUnitRow(get_lang('5c'), self.input_times, self.times_combo)
         
         # 总连点时长提示
-        self.total_time_label = QLabel(get_lang('2c'))
+        self.total_time_label = ULabel(get_lang('2c'))
         self.total_time_label.setAlignment(Qt.AlignHCenter)
         set_style(self.total_time_label, 'big_text_14')
         
@@ -887,18 +919,20 @@ class MainWindow(QMainWindow):
         # # 文档菜单
         # doc = help_menu.addAction(get_lang('5f'))
 
-        # # 扩展菜单
-        # extension_menu = menu_bar.addMenu(get_lang('8e'))
-        # official_extension_menu = extension_menu.addMenu(get_lang('90'))
-        # if not any(show_list):
-        #     # 无官方扩展提示
-        #     official_extension_menu.addAction(get_lang('91')).setDisabled(True)
-        # else:
-        #     # 加载官方扩展菜单
-        #     for name, show, package_id in zip(package_names, show_list, package_ids):
-        #         if show:
-        #             official_extension_menu.addAction(name).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
-        # official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_extension) # 管理扩展菜单
+        # 扩展菜单
+        extension_menu = menu_bar.addMenu(get_lang('8e'))
+        official_extension_menu = extension_menu.addMenu(get_lang('90'))
+        if not any(show_list):
+            # 无官方扩展提示
+            official_extension_menu.addAction(get_lang('91')).setDisabled(True)
+        else:
+            # 加载官方扩展菜单
+            for name, show, package_id in zip(package_names, show_list, package_ids):
+                if show:
+                    official_extension_menu.addAction(name).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
+        manage_extension_menu = official_extension_menu.addAction(get_lang('92'))
+        manage_extension_menu.triggered.connect(self.show_manage_extension) # 管理扩展菜单
+        manage_extension_menu.setEnabled(has_packages)
         
         # not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
         
@@ -1540,8 +1574,8 @@ class CleanCacheWindow(QDialog):
         self.cache_dir_list = {'logs'} # 缓存文件路径的列表
         self.cache_file_list = {'update.json'} # 缓存文件列表
 
-        self.all_checkbox = QCheckBox('')
-        self.all_checkbox.setTristate(True) # 三状态复选框
+        self.all_checkbox = UCheckBox('')
+        self.all_checkbox.setTristate(True)
         self.locked_checkbox = True # 临时切换
         self.all_checkbox.setCheckState(Qt.PartiallyChecked) # 初始状态为部分选中
         self.locked_checkbox = False # 锁定选择框模式
@@ -1553,7 +1587,7 @@ class CleanCacheWindow(QDialog):
         layout.addWidget(self.all_size_text, 3, 3)
 
         size_index = 2 # 自定义字符大小的索引
-        self.checkbox_list: list[QCheckBox] = [] # 缓存文件选择框的列表
+        self.checkbox_list: list[UCheckBox] = [] # 缓存文件选择框的列表
         self.cache_path_list: list[QLabel] = [] # 文件路径字符的列表
         self.cache_size_list: list[QLabel] = [] # 缓存文件大小字符的列表
         logger.debug('加载动态内容')
@@ -1561,7 +1595,8 @@ class CleanCacheWindow(QDialog):
             k = d[0]
             v = d[1]
             len_v = len(v)
-            box = QCheckBox(k)
+            box = UCheckBox(k)
+            box.palette().text().setColor(QColor(0, 0, 0))
             box.setChecked(v[size_index + 1] if len_v > size_index + 1 else True)
             self.checkbox_list.append(box)
             path = QLabel(v[0])
@@ -1964,12 +1999,6 @@ class FastSetClickWindow(QMainWindow):
         
         # 按钮信号连接
         logger.debug('信号连接')
-        
-        # 常规
-        self.input_delay.textChanged.connect(self.on_input_change)
-        self.input_times.textChanged.connect(self.on_input_change)
-        self.delay_combo.currentIndexChanged.connect(self.on_input_change)
-        self.times_combo.currentIndexChanged.connect(self.on_input_change)
 
         # 双向同步
         # 主窗口同步
@@ -1977,164 +2006,19 @@ class FastSetClickWindow(QMainWindow):
         main_window.input_times.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, main_window.input_times, self.input_times))
         main_window.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, main_window.delay_combo, self.delay_combo))
         main_window.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, main_window.times_combo, self.times_combo))
+        main_window.total_time_label.textChanged.connect(lambda: self.sync_input(QLabel.text, QLabel.setText, main_window.total_time_label, self.total_time_label))
         
         # 本窗口同步
         self.input_delay.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.input_delay, main_window.input_delay))
         self.input_times.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.input_times, main_window.input_times))
         self.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.delay_combo, main_window.delay_combo))
         self.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.times_combo, main_window.times_combo))
-
-        # 刷新按钮状态
-        logger.debug('刷新按钮状态')
-        self.on_input_change()
         
         logger.info('初始化完成')
         
     def sync_input(self, get_handle, set_handle, source, dest):
         '''同步输入框'''
         set_handle(dest, get_handle(source))
-
-    def check_default_var(self, value):
-        '''检查默认延迟是否有效'''
-        try:
-            var = int(settings.get(f'click_{value}', ''))
-            if not var:
-                return True
-            if var < 1:
-                raise ValueError
-            return True
-        except ValueError:
-            self.on_delay_error(get_lang('60'))
-            return False
-        
-    def on_delay_error(self, error_text=get_lang('14')):
-        '''输入延迟错误'''
-        global is_error
-        
-        is_error = True
-        self.total_time_label.setText(f'{get_lang('2c')}: {error_text}')
-    
-    def on_input_change(self, var=None):
-        '''输入延迟改变'''
-        global is_inf, is_error, delay_num, time_num
-
-        # 判断参数有效性
-        input_delay = self.input_delay.text().strip()
-        input_times = self.input_times.text().strip()
-        is_inf = False
-        is_error = False
-        delay_num = settings.get('click_delay', '')
-        time_num = settings.get('click_times', '')
-        delay = 0
-
-        self.input_times.setEnabled(not (self.times_combo.currentIndex() == latest_index or settings.get('times_unit', 0) == latest_index))
-
-        if self.times_combo.currentIndex() == latest_index or input_times == '0' or settings.get('times_unit', 0) == latest_index:
-            is_inf = True
-        
-        try:
-            delay = math.ceil(float(input_delay))
-            if delay < 1:
-                raise ValueError
-        except ValueError:
-            if not settings.get('click_delay', '') == '':
-                if input_delay == '':
-                    if self.check_default_var('delay'):
-                        delay = int(settings.get('click_delay', ''))
-                    else:
-                        return
-                elif settings.get('failed_use_default', False):
-                    if self.check_default_var('delay'):
-                        delay = int(settings.get('click_delay', ''))
-                    else:
-                        return
-                else:
-                    self.on_delay_error()
-                    return
-        except Exception:
-            self.on_delay_error()
-            return
-
-        if not is_inf:
-            try:
-                times = math.ceil(float(input_times))
-                if times < 1:
-                    raise ValueError
-            except ValueError:
-                if settings.get('click_times', '') == '' and settings.get('click_delay', '') == '':
-                    self.on_delay_error(get_lang('61'))
-                    return
-                else:
-                    if input_times == '':
-                        if self.check_default_var('times'):
-                            times = int(settings.get('click_times', ''))
-                        else:
-                            return
-                    elif settings.get('times_failed_use_default', False):
-                        if self.check_default_var('times'):
-                            times = int(settings.get('click_times', ''))
-                        else:
-                            return
-                    else:
-                        self.on_delay_error()
-                        return
-            except Exception:
-                self.on_delay_error()
-                return
-        
-        is_error = False
-        
-        if settings.get('click_delay', '') != '' and input_delay == '':
-            match settings.get('delay_unit', 0):
-                case 0:
-                    delay_num = delay
-                case 1:
-                    delay_num = delay * 1000
-        else:
-            match self.delay_combo.currentIndex():
-                case 0:
-                    delay_num = delay
-                case 1:
-                    delay_num = delay * 1000
-                case 2:
-                    delay_num = delay * 60 * 1000
-                case _:
-                    delay_num = delay
-
-        if is_inf:
-            self.total_time_label.setText(f'{get_lang('2c')}: {get_lang('2b')}')
-            if delay_num == 0:
-                self.on_delay_error()
-        else:
-            if settings.get('click_times', '') != '' and input_times == '':
-                match settings.get('times_unit', 0):
-                    case 0:
-                        time_num = times
-                    case 1:
-                        time_num = times * 10000
-            else:
-                match self.times_combo.currentIndex():
-                    case 0:
-                        time_num = times
-                    case 1:
-                        time_num = times * 10000
-                    case 2:
-                        time_num = times * 100_0000
-                    case _:
-                        time_num = times
-            
-            if (delay_num == 0 and time_num != 0) or (delay_num != 0 and time_num == 0):
-                self.on_delay_error()
-                return
-                                        
-            self.total_run_time = delay_num * time_num
-            self.total_time_label.setText(f'{get_lang('2c')}: {self.total_run_time}{get_lang('ms', source=unit_lang)}')
-            self.total_run_time = get_unit_value(self.total_run_time)
-            self.total_time_label.setText(f'{get_lang('2c')}: {self.get_full_unit(self.total_run_time)}')
-            
-    def get_full_unit(self, unit_text: tuple) -> str:
-        '''获取完整单位'''
-        return f'{unit_text[0]:.2f}{unit_text[1]}'
 
 class ClickAttrWindow(QDialog):
     def __init__(self):
@@ -2246,6 +2130,12 @@ class SettingWindow(SelectUI):
         
         def set_content_label(text):
             content_label.setText(text)
+            
+        def create_horizontal_line():
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)  # 水平线
+            line.setFrameShadow(QFrame.Shadow.Sunken)  # 凹陷效果
+            return line
         
         restart_layout = QHBoxLayout()
         self.restart_button = QPushButton(get_lang('7e'))
@@ -2285,7 +2175,7 @@ class SettingWindow(SelectUI):
                 
                 # 显示托盘图标
                 tray_layout = QHBoxLayout() # 窗口风格布局
-                tray = QCheckBox(get_lang('80'))
+                tray = UCheckBox(get_lang('80'))
                 tray.setChecked(settings.get('show_tray_icon', True))
     
                 tray_layout.addWidget(tray)
@@ -2311,14 +2201,18 @@ class SettingWindow(SelectUI):
                 unit_layout.addUnitRow(get_lang('46'), self.default_delay, self.delay_combo)
                 
                 # 连点出错时使用默认值
-                use_default_delay = QCheckBox(get_lang('47'))
+                use_default_delay = UCheckBox(get_lang('47'))
                 use_default_delay.setChecked(settings.get('failed_use_default', False))
                 if not self.default_delay.text():
                     use_default_delay.setEnabled(False)
+                    
+                line1 = create_horizontal_line()
 
                 # 布局
                 unit_layout.newRow()
                 unit_layout.addWidget(use_default_delay)
+                unit_layout.newRow()
+                unit_layout.addSpacer(10)
                 
                 self.default_time = QLineEdit()
                 self.default_time.setText(str(settings.get('click_times', '')))
@@ -2328,12 +2222,14 @@ class SettingWindow(SelectUI):
                 unit_layout.addUnitRow(get_lang('85'), self.default_time, self.times_combo)
                 
                 # 连点出错时使用默认值
-                use_default_time = QCheckBox(get_lang('86'))
+                use_default_time = UCheckBox(get_lang('86'))
                 use_default_time.setChecked(settings.get('times_failed_use_default', False))
                 if not self.default_time.text():
                     use_default_time.setEnabled(False)
                 unit_layout.newRow()
                 unit_layout.addWidget(use_default_time)
+                
+                line2 = create_horizontal_line()
                 
                 self.total_time_label = QLabel(f'{get_lang('2c')}: {get_lang('61')}')
                 set_style(self.total_time_label, 'big_text_14')
@@ -2342,6 +2238,7 @@ class SettingWindow(SelectUI):
                 
                 # 布局
                 layout.addLayout(unit_layout)
+                layout.addWidget(line2)
                 layout.addWidget(self.total_time_label)
                 
                 # 连接信号
@@ -2394,12 +2291,15 @@ class SettingWindow(SelectUI):
                 style_layout.addStretch(1)
                 
                 style_use_windows_layout = QHBoxLayout() # 颜色使用windows按钮布局
-                style_choice_use_windows = QCheckBox(get_lang('a8'))
+                style_choice_use_windows = UCheckBox(get_lang('a8'))
+                tip_label = QLabel('注意：这个操作不会完全改变组件风格，选择框等组件仍会使用系统强调色。')
+                set_style(tip_label, 'dest_small')
                 
                 style_choice_use_windows.setChecked(settings.get('use_windows_color', True))
                 
                 # 布局
                 style_use_windows_layout.addWidget(style_choice_use_windows)
+                style_use_windows_layout.addWidget(tip_label)
                 style_use_windows_layout.addStretch(1)
                 
                 # 布局
@@ -2419,14 +2319,18 @@ class SettingWindow(SelectUI):
         
         return page
         
-    def on_need_restart_setting_changed(self, handle: Callable, key: str, restart_place: list[str] = [get_lang('a9')], *args):
+    def on_need_restart_setting_changed(self, handle , key: str, restart_place: list[str] = ['a9'], *args):
         '''托盘图标选择事件'''
         global settings_need_restart
         
         self.on_setting_changed(handle, key, *args)
         settings_need_restart = True
         
-        need_restart = MessageBox.warning(self, get_lang('15'), f'{get_lang("89")}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        lang = self.lang_choice.currentIndex()
+        
+        restart_place =list(map(lambda x: get_lang(x, lang_id=lang), restart_place))
+        
+        need_restart = MessageBox.warning(self, get_lang('15', lang_id=lang), f'{get_lang("89", lang_id=lang)}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if need_restart == QMessageBox.Yes:
             self.restart()
         else:
@@ -2441,7 +2345,7 @@ class SettingWindow(SelectUI):
         settings[key] = handle(*args)
         save_settings(settings)
         
-    def on_default_input_changed(self, default: QLineEdit, key: str, use_default: QCheckBox):
+    def on_default_input_changed(self, default: QLineEdit, key: str, use_default: UCheckBox):
         '''默认延迟输入框内容变化事件'''
         if not default.text():
             use_default.setEnabled(False)
@@ -2875,32 +2779,35 @@ class TrayApp:
             self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
 
 if __name__ == '__main__':
-    if not(data_path / 'first_run').exists():
-        settings['select_lang'] = parse_system_language_to_lang_id()
-        select_lang = settings.get('select_lang', 0)
-        save_settings(settings)
-        with open(data_path / 'first_run', 'w', encoding='utf-8'):pass
-        # run_software('init.py', 'init.exe')
-    # else:
-        # try:
-        #     packages = []
-        #     with open('packages.json', 'r', encoding='utf-8') as f:
-        #         packages_name = json.load(f)
-        #     for i in packages_name:
-        #         packages.append(import_package(i))
-        # except FileNotFoundError:
-        #     os.remove(data_path / 'first_run')
-        #     run_software('init.py', 'init.exe')
-        #     sys.exit(2)
-        
-        # has_packages = os.path.exists(get_resource_path('packages'))
-        # package_names, show_list, package_ids = get_packages()
-    has_plural = get_has_plural()
+    if not(is_process_running('init.exe')):
+        if not(data_path / 'first_run').exists():
+            settings['select_lang'] = parse_system_language_to_lang_id()
+            select_lang = settings.get('select_lang', 0)
+            save_settings(settings)
+            run_software('init.py', 'init.exe')
+        else:
+            try:
+                packages = []
+                with open('packages.json', 'r', encoding='utf-8') as f:
+                    packages_name = json.load(f)
+                for i in packages_name:
+                    packages.append(import_package(i))
+            except FileNotFoundError:
+                os.remove(data_path / 'first_run')
+                run_software('init.py', 'init.exe')
+                exit(2)
+                pass
+            
+            has_packages = os.path.exists(get_resource_path('packages'))
+            package_names, show_list, package_ids = get_packages()
+            has_plural = get_has_plural()
 
-    main_window = MainWindow()
-    hotkey_help_window = HotkeyHelpWindow()
-    
-    app = TrayApp()
-    app.run()
-    
-    logger.info('主程序退出')
+            main_window = MainWindow()
+            hotkey_help_window = HotkeyHelpWindow()
+            
+            app = TrayApp()
+            app.run()
+            
+            logger.info('主程序退出')
+    else:
+        QMessageBox.critical(None, get_lang('14'), '请关闭初始化程序运行')

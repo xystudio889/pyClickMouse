@@ -79,6 +79,10 @@ QListView {
     background-color: #353535;
 }
 
+QCheckBox {
+    color: black;
+}
+
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
     background-color: #303030;
@@ -162,13 +166,18 @@ QStatusBar {
     color: white;
 }
 
+.top_widget {
+    background-color: #404040;
+}
+
+/* 描述栏样式 */
 .dest {
     color: gray;
     font-size: 16px;
 }
 
-.top_widget {
-    background-color: #404040;
+.dest_small { 
+    color: gray;
 }
 
 /* 大字 */

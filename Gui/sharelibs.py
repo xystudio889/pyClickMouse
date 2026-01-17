@@ -7,6 +7,7 @@ import os
 import subprocess
 import winreg
 import sys
+import psutil
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -125,3 +126,9 @@ def is_dark_mode():
         return value == 0
     except FileNotFoundError:
         return False  # 注册表项不存在时默认浅色模式
+    
+def is_process_running(process_name):
+   for proc in psutil.process_iter(['name']):
+       if proc.info['name'] == process_name:
+           return True
+   return False
