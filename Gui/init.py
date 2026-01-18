@@ -1,21 +1,20 @@
-from PySide6.QtCore import *
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
+# 加载框架
+from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
+from uiStyles.QUI import *
 
 import os
 from pathlib import Path
 import winreg # 注册表编辑
-import ctypes # 管理员运行
 import pyperclip # 复制错误信息
 import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
-from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, langs) # 共享库
-from uiStyles import PagesUI
-from uiStyles.WidgetStyles import (styles)
+from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, system_lang, is_admin, settings, parse_system_language_to_lang_id) # 共享库
+from uiStyles import PagesUI, styles, UCheckBox
 import shutil # 删除文件夹
+import traceback # 异常捕获
     
 with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
     package_langs = json.load(f)
@@ -38,22 +37,19 @@ package_id_list = []
 
 def create_shortcut(path, target, description, work_dir = None, icon_path = None):
     # 创建快捷方式
-    icon_path = target if icon_path is None else icon_path
-    work_dir = os.path.dirname(target) if work_dir is None else work_dir
-    
-    shell = win32com.client.Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortCut(path)
-    shortcut.TargetPath = target # 目标程序
-    shortcut.WorkingDirectory = work_dir # 工作目录
-    shortcut.IconLocation = icon_path # 图标（路径,图标索引）
-    shortcut.Description = description # 备注描述
-    shortcut.Save()
-    
-def is_admin():
     try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
+        icon_path = target if icon_path is None else icon_path
+        work_dir = os.path.dirname(target) if work_dir is None else work_dir
+        
+        shell = win32com.client.Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(path)
+        shortcut.TargetPath = target # 目标程序
+        shortcut.WorkingDirectory = work_dir # 工作目录
+        shortcut.IconLocation = icon_path # 图标（路径,图标索引）
+        shortcut.Description = description # 备注描述
+        shortcut.Save()
     except:
-        return False
+        pass
 
 def extract_zip(file_path, extract_path):
     '''
@@ -91,7 +87,7 @@ def import_package(package_id):
     for i in packages_info:
         if i['package_name'] == package_id:
             return i
-    raise ValueError(f'包名 {package_id} 不存在')
+    raise ValueError(get_init_lang('25').format(package_id))
 
 class ColorGetter(QObject):
     style_changed = Signal(str)
@@ -154,6 +150,8 @@ class InstallWindow(PagesUI):
         ) # 设置窗口属性
         
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
+        
+        self.install_status = ''
         
     def init_ui(self):
         '''初始化UI'''
@@ -256,7 +254,7 @@ class InstallWindow(PagesUI):
                 edit.setReadOnly(True)
                 edit.setText(license_text)
                 
-                self.emua_checkbox = QCheckBox(get_init_lang('08'))
+                self.emua_checkbox = UCheckBox(get_init_lang('08'))
 
                 # 页面布局
                 page_layout.addWidget(QLabel(get_init_lang('09')))
@@ -277,10 +275,10 @@ class InstallWindow(PagesUI):
                 self.create_start_menu_shortcut = True
 
                 # 第四页：设置快捷方式
-                desktop_checkbox = QCheckBox(get_init_lang('0b'))
+                desktop_checkbox = UCheckBox(get_init_lang('0b'))
                 desktop_checkbox.setChecked(self.create_desktop_shortcut)
                 
-                start_menu_checkbox = QCheckBox(get_init_lang('0c'))
+                start_menu_checkbox = UCheckBox(get_init_lang('0c'))
                 start_menu_checkbox.setChecked(self.create_start_menu_shortcut)
                 
                 page_layout.addWidget(QLabel(get_init_lang('0d')))
@@ -296,9 +294,9 @@ class InstallWindow(PagesUI):
                 with open(get_resource_path('vars', 'init_packages.json'), 'r', encoding='utf-8') as f:
                     init_packages = json.load(f)
                     
-                self.all_components = [get_lang(i['package_name_index'], source=package_langs) for i in packages_info]
-                self.selected_components = [get_lang(i, source=package_langs) for i in init_packages['selected_components']]
-                self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
+                self.all_components = [get_lang(i['package_name_index'], source=package_langs, lang_id=system_lang) for i in packages_info]
+                self.selected_components = [get_lang(i, source=package_langs, lang_id=system_lang) for i in init_packages['selected_components']]
+                self.protected_components = [get_lang(i, source=package_langs, lang_id=system_lang) for i in init_packages['protected_components']]
                 
                 self.templates = {
                     get_init_lang('0e'): self.selected_components,
@@ -361,11 +359,10 @@ class InstallWindow(PagesUI):
                 self.remove_btn.clicked.connect(self.remove_selected)
                 self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
-                # 第五页：安装
-                self.install_status = ''
+                pass     
             case self.PAGE_finish:
                 # 第六页：完成        
-                self.run_clickmouse = QCheckBox(get_init_lang('16'))
+                self.run_clickmouse = UCheckBox(get_init_lang('16'))
                 self.run_clickmouse.setChecked(True)
                 
                 page_layout.addWidget(QLabel(get_init_lang('17')))
@@ -529,21 +526,26 @@ class InstallWindow(PagesUI):
     def install(self):
         '''安装'''
         try:
-            self.set_status('初始化...')
+            self.set_status(get_init_lang('2b'))
             install_path = Path.cwd()
             
-            self.set_status('正在写入包管理器文件...')
-            with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
-                json.dump(package_id_list, f)
-            
-            self.set_status('解压安装包...')
-            for i in package_id_list:
-                if i == 'xystudio.clickmouse':
-                    continue
-                extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
+            if has_package:
+                self.set_status(get_init_lang('26'))
+                with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
+                    json.dump(package_id_list, f)
                 
+                self.set_status(get_init_lang('27'))
+                for i in package_id_list:
+                    if i == 'xystudio.clickmouse':
+                        continue
+                    extract_zip(get_resource_path('packages', f'{i}.zip'), f'extensions/{i}/')
+            else:
+                self.set_status(get_init_lang('27'))
+                with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
+                    json.dump(["xystudio.clickmouse"], f)
+                    
             # 卸载功能
-            self.set_status('正在创建安装信息...')
+            self.set_status(get_init_lang('28'))
             key = winreg.CreateKey(
                 winreg.HKEY_LOCAL_MACHINE,
                 r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse'
@@ -552,14 +554,14 @@ class InstallWindow(PagesUI):
             winreg.SetValueEx(key, 'Path', 0, winreg.REG_SZ, f'{install_path}')
             winreg.CloseKey(key)
 
-            self.set_status('正在创建卸载信息...')
+            self.set_status(get_init_lang('29'))
             uninstall_key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
             winreg.SetValueEx(uninstall_key, 'DisplayName', 0, winreg.REG_SZ, 'clickmouse')
             winreg.SetValueEx(uninstall_key, 'Publisher', 0, winreg.REG_SZ, f'xystudio')
             winreg.SetValueEx(uninstall_key, 'InstallLocation', 0, winreg.REG_SZ, f'{install_path}')
-            winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, f'{install_path}/uninstall.exe')
-            winreg.SetValueEx(uninstall_key, 'ModifyString', 0, winreg.REG_SZ, f'{install_path}/install_pks.exe')
-            winreg.SetValueEx(uninstall_key, 'RepairString', 0, winreg.REG_SZ, f'{install_path}/repair.exe')
+            winreg.SetValueEx(uninstall_key, 'UninstallString', 0, winreg.REG_SZ, fr'cmd /k echo 前往{install_path}\uninstall.exe以进行操作')
+            winreg.SetValueEx(uninstall_key, 'ModifyPath', 0, winreg.REG_SZ, fr'cmd /k echo 前往{install_path}\install_pack.exe以进行操作')
+            winreg.SetValueEx(uninstall_key, 'RepairPath', 0, winreg.REG_SZ, fr'cmd /k echo 前往{install_path}\repair.exe以进行操作')
             with open(get_resource_path('versions.json'), 'r', encoding='utf-8') as f:
                 version = json.load(f)['clickmouse']
             winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
@@ -567,17 +569,30 @@ class InstallWindow(PagesUI):
             winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
             winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
             winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
+            
+            winreg.SetValueEx(uninstall_key, 'RegOwner', 0, winreg.REG_SZ, 'xystudio')
+            winreg.SetValueEx(uninstall_key, 'RegCompany', 0, winreg.REG_SZ, 'xystudio')
+            winreg.SetValueEx(uninstall_key, 'ProductID', 0, winreg.REG_SZ, '40')
+            winreg.SetValueEx(uninstall_key, 'Comments', 0, winreg.REG_SZ, 'Clickmouse')
 
             winreg.CloseKey(uninstall_key)
 
-            self.set_status('正在创建快捷方式...')
+            self.set_status(get_init_lang('2a'))
+            start_menu_path = os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start menu', 'Programs', 'Clickmouse')
             if self.create_start_menu_shortcut:
-                create_shortcut(fr'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\clickmouse.lnk', fr'{install_path}\main.exe', '鼠标连点器')
+                try:
+                    os.mkdir(start_menu_path)
+                except:
+                    pass
+                create_shortcut(os.path.join(start_menu_path, 'ClickMouse.lnk'), fr'{install_path}\main.exe', 'Clickmouse')
+                create_shortcut(os.path.join(start_menu_path, 'Uninstall clickmouse.lnk'), fr'{install_path}\uninstall.exe', 'Uninstall clickmouse')
+                create_shortcut(os.path.join(start_menu_path, 'Repair clickmouse.lnk'), fr'{install_path}\repair.exe', 'Repair clickmouse')
             if self.create_desktop_shortcut:
-                create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\main.exe', '鼠标连点器')
+                create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\main.exe', 'clickmouse')
             self.set_page(self.PAGE_finish)
-        except Exception as e:
-            self.error_label.setText(get_init_lang('19').format(self.install_status, str(e)))
+        except Exception:
+            error_stack = traceback.format_exc()
+            self.error_label.setText(get_init_lang('19').format(self.install_status, error_stack))
             self.set_page(self.PAGE_error)
             
     def cancel(self):
@@ -590,11 +605,11 @@ class InstallWindow(PagesUI):
             message =QMessageBox.question(
                 self,
                 get_init_lang('1a'),
-                get_init_lang('1c').format('\n'.join(self.selected_components), '\n桌面快捷方式' if self.create_desktop_shortcut else '', '\n开始菜单快捷方式' if self.create_start_menu_shortcut else ''),
+                get_init_lang('1c').format('\n'.join(self.selected_components), get_init_lang('2c') if self.create_desktop_shortcut else '', get_init_lang('2d') if self.create_start_menu_shortcut else ''),
             QMessageBox.Yes | QMessageBox.No,
             )
             for i in packages_info:
-                if get_lang(i['package_name_index'], source=package_langs) in self.selected_components:
+                if get_lang(i['package_name_index'], source=package_langs, lang_id=system_lang) in self.selected_components:
                     package_id_list.append(i['package_name'])
             if message == QMessageBox.No:
                 return
@@ -606,6 +621,9 @@ class InstallWindow(PagesUI):
             self.cancel()
         elif self.current_page == self.PAGE_finish:
             with open(data_path / 'first_run', 'w'):pass # 标记为第一次运行
+            settings['select_lang'] = parse_system_language_to_lang_id()
+            select_lang = settings.get('select_lang', 0)
+            save_settings(settings)
             if self.run_clickmouse.isChecked():
                 run_software('main.py', 'main.exe')
                 event.accept()
@@ -615,14 +633,6 @@ class InstallWindow(PagesUI):
 if __name__ == '__main__':
     if check_reg_key(software_reg_key):
         QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('1e'))
-        with open(data_path / 'first_run', 'w'):pass
-        if not(os.path.exists('packages.json')):
-            package = ['xystudio.clickmouse']
-            with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
-                json.dump(package, f)
-        if os.path.exists('extensions') and os.path.isdir('extensions'):
-            shutil.rmtree('extensions')
-
         run_software('main.py', 'main.exe')
         sys.exit(1)
 

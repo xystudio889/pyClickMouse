@@ -72,9 +72,9 @@ QListView {
     background-color: white;
 }
 
-/* 选中且悬停 */
+/* 选择框 */
 QCheckBox {
-    color: black;
+    color: white;
 }
 
 /* 滚动区域容器样式：白底黑边 */
@@ -166,9 +166,14 @@ QStatusBar {
     background-color: white;
 }
 
+/* 描述栏样式 */
 .dest {
     color: gray;
     font-size: 16px;
+}
+
+.dest_small { 
+    color: gray;
 }
 
 /* 大字 */
@@ -189,6 +194,10 @@ QStatusBar {
 
 .big_text_24 {
     font-size: 24px;
+    font-weight: bold;
+}
+
+.bold {
     font-weight: bold;
 }
 

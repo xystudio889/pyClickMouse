@@ -2,12 +2,9 @@
     "json.schemas": [
 
     ],
-    "liveServer.settings.port": 5500,
-    "liveServer.settings.multiRootWorkspaceName": "ClickMouse",
     "workbench.startupEditor": "none",
     "editor.accessibilitySupport": "off",
     "git.autofetch": true,
-    "python.createEnvironment.trigger": "off",
     "git.confirmSync": false,
     "editor.unicodeHighlight.includeStrings": false,
     "editor.unicodeHighlight.nonBasicASCII": false,
@@ -15,14 +12,29 @@
         "editor.defaultFormatter": "vscode.json-language-features"
     },
     "git.openRepositoryInParentFolders": "never",
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    },
     "workbench.secondarySideBar.defaultVisibility": "hidden",
     "markdown-preview-enhanced.revealjsTheme": "black.css",
     "markdown-preview-enhanced.previewTheme": "atom-dark.css",
+    "python.createEnvironment.trigger": "off",
     "editor.unicodeHighlight.ambiguousCharacters": false,
     "[html]": {
         "editor.defaultFormatter": "vscode.html-language-features"
     },
+    "files.autoSave": "afterDelay",
     "files.associations": {
         "*.qss": "css"
-    }
+    },
+    "liveServer.settings.donotShowInfoMsg": false,
+    "liveServer.settings.port": 5500,
+    "terminal.integrated.initialHint": true,
+    "terminal.integrated.suggest.suggestOnTriggerCharacters": true,
+    "terminal.integrated.suggest.enabled": true,
+    "terminal.integrated.shellIntegration.environmentReporting": true,
+    "terminal.integrated.suggest.insertTrailingSpace": true
 }

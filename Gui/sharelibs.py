@@ -7,6 +7,8 @@ import os
 import subprocess
 import winreg
 import sys
+import psutil
+import ctypes
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -99,8 +101,11 @@ system_lang = parse_system_language_to_lang_id()
 def get_control_lang(lang_id):
     return get_lang(lang_id, source=control_langs)
 
-def get_init_lang(lang_id):
-    return get_lang(lang_id, system_lang, source=init_langs)
+def get_init_lang(lang_id, lang_pack_id=system_lang):
+    return get_lang(lang_id, lang_pack_id, source=init_langs)
+
+def get_inst_lang(lang_id):
+    return get_init_lang(lang_id, settings.get('select_lang', 0))
 
 in_dev = os.path.exists('dev_list/in_dev') # 是否处于开发模式
 
@@ -125,3 +130,15 @@ def is_dark_mode():
         return value == 0
     except FileNotFoundError:
         return False  # 注册表项不存在时默认浅色模式
+    
+def is_process_running(process_name):
+   for proc in psutil.process_iter(['name']):
+       if proc.info['name'] == process_name:
+           return True
+   return False
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
