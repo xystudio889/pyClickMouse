@@ -254,14 +254,10 @@ class UnitInputLayout(QLayout):
         self.addWidget(QLabel(text + ': '))
         self.addWidget(input)
         self.addWidget(unit)
-        
-    def addSpacer(self, size: int):
-        '''添加间距'''
-        self.addItem(QSpacerItem(size, 0))
 
 class ULabel(QLabel):
     '''自定义 QLabel，在 setText 时发送信号'''
-    textChanged = Signal(str)  # 定义信号，参数是新的文本
+    textChanged = Signal()  # 定义信号，参数是新的文本
     
     def __init__(self, text='', parent=None):
         super().__init__(text, parent)
@@ -270,4 +266,4 @@ class ULabel(QLabel):
         '''重写 setText 方法'''
         if self.text() != text:  # 只有在文本确实变化时发射信号
             super().setText(text)
-            self.textChanged.emit(text)  # 发射信号
+            self.textChanged.emit()  # 发射信号

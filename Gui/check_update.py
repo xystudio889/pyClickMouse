@@ -4,6 +4,7 @@ from version import __version__
 import requests
 import xQklN2n
 from pathlib import Path
+from sharelibs import get_lang
 
 folder = Path(__file__).parent.resolve() # 获取资源文件夹
 
@@ -13,8 +14,8 @@ try:
     GITHUB_API_KEY = keys.get('github_api_key', None)
     GITEE_API_KEY = keys.get('gitee_api_key', None)
 except FileNotFoundError:
-    GITEE_API_KEY = None
-    GITHUB_API_KEY = None
+    GITEE_API_KEY = -1
+    GITHUB_API_KEY = -1
 
 # 检察更新的函数
 def get_version(website: str="github", include_prerelease: bool=False, header: None | dict=None, condition: callable = lambda x: x.get("prerelease", False), release_tag_condition:tuple[int, str] = (-1, "tag_name", "body")) -> str | None:
@@ -22,7 +23,9 @@ def get_version(website: str="github", include_prerelease: bool=False, header: N
     if website == "github":
         # 检查是否设置GITHUB_API_KEY
         if GITHUB_API_KEY is None:
-            return "未设置GITEE_API_KEY，请配置res/key.json后再次编译", -1
+            return get_lang('b0'), -1
+        if GITHUB_API_KEY == -1:
+            return get_lang('b2'), -1
         # 获取github的版本号
         web = "https://api.github.com/repos/xystudio889/pyclickmouse/releases"
         headers = {"Authorization": f"token {GITHUB_API_KEY}"}
@@ -32,9 +35,9 @@ def get_version(website: str="github", include_prerelease: bool=False, header: N
     elif website == "gitee":
         # 检查是否设置GITEE_API_KEY
         if GITEE_API_KEY is None:
-            return "未设置GITEE_API_KEY，请配置res/key.json后再次编译", -1
+            return get_lang('b1'), -1
         if GITEE_API_KEY == -1:
-            return "未找到res/key.json文件，请配置res/key.json后再次编译", -1
+            return get_lang('b2'), -1
         # 获取gitee的版本号
         web = "https://gitee.com/api/v5/repos/xystudio889/pyclickmouse/releases/"
         headers = {"Authorization": f"Bearer {GITEE_API_KEY}"}
