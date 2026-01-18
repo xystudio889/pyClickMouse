@@ -419,6 +419,7 @@ extensions/
 is_author
 dev.dat
 *.zip
+*.7z
 
 # nuitka build file
 *.build/
