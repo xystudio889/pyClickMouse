@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 import pyperclip
-from sharelibs import (get_resource_path, get_lang, settings, get_init_lang)
+from sharelibs import (get_resource_path, get_lang, settings, get_inst_lang)
 import win32com.client
 import winreg
 import zipfile
@@ -259,7 +259,7 @@ class InstallWindow(PagesUI):
         self.all_packages_name = [get_lang(i['package_name_index'], source=package_langs) for i in packages_source]
         super().__init__(['hello', 'set_components', 'install', 'finish', 'finish_nochanges', 'cancel', 'error'])
         
-        self.setWindowTitle(get_init_lang('01'))
+        self.setWindowTitle(get_inst_lang('01'))
         self.setWindowIcon(icon)
         self.setGeometry(100, 100, 500, 375)
         self.setWindowFlags(
@@ -295,7 +295,7 @@ class InstallWindow(PagesUI):
         image_label.setPixmap(self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'), 32, 32))
         
         # 加载文字
-        title_label = QLabel(get_init_lang('01'))
+        title_label = QLabel(get_inst_lang('01'))
         title_label.setProperty('class', 'big_text_16')
         
         # 布局
@@ -315,7 +315,7 @@ class InstallWindow(PagesUI):
         self.button_layout.addStretch(0)
         
         # 上一步按钮
-        self.prev_btn = QPushButton(get_init_lang('02'))
+        self.prev_btn = QPushButton(get_inst_lang('02'))
         self.prev_btn.clicked.connect(self.on_prev)
         self.button_layout.addWidget(self.prev_btn)
         
@@ -324,12 +324,12 @@ class InstallWindow(PagesUI):
         self.next_error_layout = QHBoxLayout(self.next_error_container)
         
         # 下一步按钮
-        self.next_btn = QPushButton(get_init_lang('03'))
+        self.next_btn = QPushButton(get_inst_lang('03'))
         self.next_btn.clicked.connect(self.on_next)
         self.next_error_layout.addWidget(self.next_btn)
         
         # 错误重叠容器
-        self.copy_error_btn = QPushButton(get_init_lang('04'))
+        self.copy_error_btn = QPushButton(get_inst_lang('04'))
         self.copy_error_btn.clicked.connect(self.copy_error)
         self.next_error_layout.addWidget(self.copy_error_btn)
         
@@ -338,12 +338,12 @@ class InstallWindow(PagesUI):
         self.action_button_layout = QHBoxLayout(self.action_button_container)
         
         # 取消按钮
-        self.cancel_btn = QPushButton(get_init_lang('05'))
+        self.cancel_btn = QPushButton(get_inst_lang('05'))
         self.cancel_btn.clicked.connect(self.cancel)
         self.action_button_layout.addWidget(self.cancel_btn)
         
         # 完成按钮
-        self.finish_btn = QPushButton(get_init_lang('06'))
+        self.finish_btn = QPushButton(get_inst_lang('06'))
         self.finish_btn.clicked.connect(self.close)
         self.action_button_layout.addWidget(self.finish_btn)
         
@@ -360,7 +360,7 @@ class InstallWindow(PagesUI):
         match page_index:
             case self.PAGE_hello:
                 # 第一页：欢迎
-                page_layout.addWidget(QLabel(get_init_lang('07')))
+                page_layout.addWidget(QLabel(get_inst_lang('07')))
             case self.PAGE_set_components:
                 # 第四页：设置组件
                 # 初始化数据
@@ -371,10 +371,10 @@ class InstallWindow(PagesUI):
                 self.selected_components = self.all_packages_name.copy()
                 self.protected_components = [get_lang(i, source=package_langs) for i in init_packages['protected_components']]
                 self.templates = {
-                    get_init_lang('21'): self.selected_components,
-                    get_init_lang('0e'): [get_lang(i, source=package_langs) for i in init_packages['selected_components']],
-                    get_init_lang('0f'): self.protected_components,
-                    get_init_lang('10'): self.all_components,
+                    get_inst_lang('21'): self.selected_components,
+                    get_inst_lang('0e'): [get_lang(i, source=package_langs) for i in init_packages['selected_components']],
+                    get_inst_lang('0f'): self.protected_components,
+                    get_inst_lang('10'): self.all_components,
                 }
 
                 # 创建主水平布局
@@ -392,15 +392,15 @@ class InstallWindow(PagesUI):
                 template_layout = QHBoxLayout()
                 
                 self.template_combo = QComboBox()
-                self.template_combo.addItems(list(self.templates.keys()) + [get_init_lang('11')])
+                self.template_combo.addItems(list(self.templates.keys()) + [get_inst_lang('11')])
                 
                 # 布局
-                template_layout.addWidget(QLabel(get_init_lang('12')))
+                template_layout.addWidget(QLabel(get_inst_lang('12')))
                 template_layout.addWidget(self.template_combo)
                 template_layout.addStretch()
                 
-                self.add_btn = QPushButton(get_init_lang('13'))
-                self.remove_btn = QPushButton(get_init_lang('14'))
+                self.add_btn = QPushButton(get_inst_lang('13'))
+                self.remove_btn = QPushButton(get_inst_lang('14'))
                 
                 control_layout.addLayout(template_layout)
                 control_layout.addStretch(1)
@@ -410,7 +410,7 @@ class InstallWindow(PagesUI):
 
                 # 已选择组件列表
                 right_layout = QVBoxLayout()
-                right_layout.addWidget(QLabel(get_init_lang('22')))
+                right_layout.addWidget(QLabel(get_inst_lang('22')))
                 
                 self.selected_list = QListView()
                 self.selected_model = QStandardItemModel()
@@ -421,7 +421,7 @@ class InstallWindow(PagesUI):
                 main_layout.addLayout(control_layout, 1)
                 main_layout.addWidget(self.selected_list, 5)
                 
-                page_layout.addWidget(QLabel(get_init_lang('15')))
+                page_layout.addWidget(QLabel(get_inst_lang('15')))
                 page_layout.addLayout(main_layout)
 
                 # 初始化列表
@@ -436,17 +436,17 @@ class InstallWindow(PagesUI):
                 self.install_status = ''
             case self.PAGE_finish:
                 # 第六页：完成        
-                page_layout.addWidget(QLabel(get_init_lang('23')))
+                page_layout.addWidget(QLabel(get_inst_lang('23')))
             case self.PAGE_cancel:
                 # 第七页：取消
-                page_layout.addWidget(QLabel(get_init_lang('18')))
+                page_layout.addWidget(QLabel(get_inst_lang('18')))
             case self.PAGE_error:
                 # 第八页：错误
-                self.error_label = QLabel(get_init_lang('19').format('', ''))
+                self.error_label = QLabel(get_inst_lang('19').format('', ''))
                 page_layout.addWidget(self.error_label)
             case self.PAGE_finish_nochanges:
                 # 第九页：完成（无变化）
-                page_layout.addWidget(QLabel(get_init_lang('17')))
+                page_layout.addWidget(QLabel(get_inst_lang('17')))
         
         page_layout.addStretch(1) # 居上显示
         return page_widget
@@ -454,7 +454,7 @@ class InstallWindow(PagesUI):
     def copy_error(self):
         '''复制错误信息到剪贴板'''
         pyperclip.copy(self.error_label.text())
-        MessageBox.information(self, get_init_lang('1a'), get_init_lang('1b'))
+        MessageBox.information(self, get_inst_lang('1a'), get_inst_lang('1b'))
     
     def setup_connections(self):
         '''设置信号与槽的连接'''
@@ -494,7 +494,7 @@ class InstallWindow(PagesUI):
                 self.selected_components.append(component)
         
         self.update_components_lists()
-        self.template_combo.setCurrentText(get_init_lang('11'))
+        self.template_combo.setCurrentText(get_inst_lang('11'))
 
     @Slot()
     def remove_selected(self):
@@ -512,12 +512,12 @@ class InstallWindow(PagesUI):
             self.selected_components.remove(component)
         
         self.update_components_lists()
-        self.template_combo.setCurrentText(get_init_lang('11'))
+        self.template_combo.setCurrentText(get_inst_lang('11'))
 
     @Slot(str)
     def apply_template(self, template_name):
         '''应用选择的模板'''
-        if template_name == get_init_lang('11'):
+        if template_name == get_inst_lang('11'):
             return
         
         if template_name in self.templates:
@@ -581,12 +581,12 @@ class InstallWindow(PagesUI):
         global package_name
 
         try:
-            self.set_status('初始化')
+            self.set_status(get_inst_lang('2b'))
             if not self.changes:
                 self.set_page(self.PAGE_finish_nochanges)
                 return
 
-            self.set_status('检查需要更新的文件')
+            self.set_status(get_inst_lang('2e'))
             remove = []
             add = []
             for comp in self.changes:
@@ -595,13 +595,13 @@ class InstallWindow(PagesUI):
                 elif comp.startswith('+'):
                     add.append(comp[1:])
             
-            self.set_status('正在替换包管理器文件')
+            self.set_status(get_inst_lang('26'))
             package_name = list(set(package_name) - set(remove))
             package_name = package_name + add
             with open('./packages.json', 'w', encoding='utf-8') as f:
                 json.dump(package_name, f)
 
-            self.set_status('正在安装包')
+            self.set_status(get_inst_lang('27'))
             for comp in add:
                 extract_zip(get_resource_path('packages', f'{comp}.zip'), f'extensions/{comp}')
 
@@ -611,7 +611,7 @@ class InstallWindow(PagesUI):
             self.set_page(self.PAGE_finish)
         except Exception:
             error_stack = traceback.format_exc()
-            self.error_label.setText(get_init_lang('19').format(self.install_status, error_stack))
+            self.error_label.setText(get_inst_lang('19').format(self.install_status, error_stack))
             self.set_page(self.PAGE_error)
             
     def cancel(self):
@@ -625,8 +625,8 @@ class InstallWindow(PagesUI):
             
             message = MessageBox.question(
                 self,
-                get_init_lang('1a'),
-                get_init_lang('24').format('\n'.join(self.changes if self.changes else ['没有包变动'])),
+                get_inst_lang('1a'),
+                get_inst_lang('24').format('\n'.join(self.changes if self.changes else [get_inst_lang('2f')])),
             QMessageBox.Yes | QMessageBox.No,
             )
             

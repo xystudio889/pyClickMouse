@@ -1,8 +1,12 @@
 [
     {
         "package_name": "xystudio.clickmouse",
-        "install_location": "",
         "package_name_index": "01",
         "show_in_extension_list": false
+    },
+    {
+        "package_name": "xystudio.clickmouse.repair",
+        "package_name_index": "02",
+        "show_in_extension_list": true
     }
 ]

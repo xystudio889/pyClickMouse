@@ -197,6 +197,10 @@ QStatusBar {
     font-weight: bold;
 }
 
+.bold {
+    font-weight: bold;
+}
+
 /* 元数据 */
 .meta { 
     mode: light;
