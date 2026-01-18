@@ -18,7 +18,7 @@ import os # 系统库
 import shutil # 用于删除文件夹
 from uiStyles import (SelectUI, UnitInputLayout, UCheckBox, styles, maps, StyleReplaceMode, UMessageBox, ULabel) # 软件界面样式
 from uiStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (run_software, parse_system_language_to_lang_id, is_process_running) # 共享库
+from sharelibs import (run_software, is_process_running) # 共享库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
@@ -102,13 +102,17 @@ def save_update_cache(**kwargs):
     update_info = kwargs.get('update_info', None)
     update_log = cache_path / 'update_log.md'
     
+    if 'update_info' in kwargs:
+        del kwargs['update_info']
+    
     cache_data = {
         'last_check_time': time(),
         **kwargs
     }
+    
     with open(update_cache_path, 'w', encoding='utf-8') as f:
         json.dump(cache_data, f)
-    
+        
     with open(update_log, 'w', encoding='utf-8') as f:
         if update_info:
             f.write(update_info)
@@ -824,6 +828,7 @@ class MainWindow(QMainWindow):
         self.total_time_label = ULabel(get_lang('2c'))
         self.total_time_label.setAlignment(Qt.AlignHCenter)
         set_style(self.total_time_label, 'big_text_14')
+        self.total_time_label.textChanged.emit()
         
         # 创建状态栏
         self.status_bar = QStatusBar()
@@ -961,7 +966,12 @@ class MainWindow(QMainWindow):
     def do_extension(self, index):
         '''执行扩展'''
         try:
-            subprocess.Popen(f'extensions/{index}/main.exe')
+            match index:
+                case 'xystudio.clickmouse.repair':
+                    QMessageBox.information(self, get_lang('16'), get_lang('b3').format(Path.cwd() / 'repair.exe'))
+                    return
+                case _:
+                    subprocess.Popen(f'extensions/{index}/main.exe')
         except Exception as e:
             MessageBox.critical(self, get_lang('14'), get_lang('9c').format(e))
             logger.error(f'执行扩展失败: {e}')
@@ -1079,7 +1089,7 @@ class MainWindow(QMainWindow):
         if should_check_update_res:
             result = check_data
         else:
-            result = (update_cache['should_update'], update_cache['latest_version'], update_cache['update_info']) # 使用缓存
+            result = (update_cache['should_update'], update_cache['latest_version']) # 使用缓存
         
         # 检查结果处理
         if settings.get('update_notify', 0) in {0}: # 判断是否需要弹出通知
@@ -1505,15 +1515,17 @@ class CleanCacheWindow(QDialog):
         super().__init__()
         self.setWindowTitle(filter_hotkey(get_lang('02')))
         self.setWindowIcon(icon)
+
+        # 加载常量
+        logger.debug('加载常量')
+        self.locked_checkbox = False # 锁定选择框模式，按下后将不会产生来自非手动操作的更新选择框
+        
         self.init_ui()
         
         new_color_bar(self)
 
     def init_ui(self):
-        # 加载常量
-        logger.debug('加载常量')
-        self.locked_checkbox = False # 锁定选择框模式，按下后将不会产生来自非手动操作的更新选择框
-
+        logger.debug('加载ui')
         # 创建面板
         layout = QGridLayout()
         
@@ -1522,10 +1534,10 @@ class CleanCacheWindow(QDialog):
         logger.debug('加载列表标题')
         
         title = QLabel(get_lang('3d'))
-        
-        set_style(title, 'big_text_16')
+        set_style(title, 'big_text_20')
 
         dest = QLabel(get_lang('3e'))
+        set_style(dest, 'dest')
         
         # 布局1
         logger.debug('加载布局-1')
@@ -1535,11 +1547,15 @@ class CleanCacheWindow(QDialog):
         logger.debug('加载动态数据')
 
         # 加载ui
-        self.point_y = 70 # 初始y坐标
         file = QLabel(get_lang('33'))
         path = QLabel(get_lang('34'))
         dest = QLabel(get_lang('35'))
         size =  QLabel(get_lang('36'))
+        
+        set_style(file, 'bold')
+        set_style(path, 'bold')
+        set_style(dest, 'bold')
+        set_style(size, 'bold')
         # 布局2
         logger.debug('加载布局-2')
         layout.addWidget(file, 2, 0)
@@ -1557,11 +1573,21 @@ class CleanCacheWindow(QDialog):
         for k, v in load_cache.items():
             if k.startswith(' '):
                 cache_list[get_lang(k[1:])] = [] # 初始化空项
+                k_is_lang = True
+            else:
+                cache_list[k] = []
+                k_is_lang = False
             for value in v:
                 if type(value) is str and value.startswith(' '):
-                    cache_list[get_lang(k[1:])].append(get_lang(value[1:]))
+                    if k_is_lang:
+                        cache_list[get_lang(k[1:])].append(get_lang(value[1:]))
+                    else:
+                        cache_list[k].append(get_lang(value[1:]))
                 else:
-                    cache_list[get_lang(k[1:])].append(value)
+                    if k_is_lang:
+                        cache_list[get_lang(k[1:])].append(value)
+                    else:
+                        cache_list[k].append(value)
 
         self.cache_dir_list = {'logs'} # 缓存文件路径的列表
         self.cache_file_list = {'update.json'} # 缓存文件列表
@@ -1588,7 +1614,6 @@ class CleanCacheWindow(QDialog):
             v = d[1]
             len_v = len(v)
             box = UCheckBox(k)
-            box.palette().text().setColor(QColor(0, 0, 0))
             box.setChecked(v[size_index + 1] if len_v > size_index + 1 else True)
             self.checkbox_list.append(box)
             path = QLabel(v[0])
@@ -1808,8 +1833,8 @@ class UpdateWindow(QDialog):
         logger.info('初始化更新窗口')
         super().__init__()
         self.setWindowTitle(get_lang('29'))
-        self.setGeometry(100, 100, 300, 140)
-        self.setFixedSize(300, 140)
+        self.setGeometry(100, 100, 300, 110)
+        self.setFixedSize(self.width(), self.height())
         self.setWindowIcon(icon)
         
         self.init_ui()
@@ -1846,7 +1871,7 @@ class UpdateWindow(QDialog):
         layout.addWidget(title)
         layout.addWidget(version)
 
-        bottom_layout.addStretch(1)
+        bottom_layout.addStretch()
         bottom_layout.addWidget(update)
         bottom_layout.addWidget(update_log)
         bottom_layout.addWidget(cancel)
@@ -1864,19 +1889,12 @@ class UpdateWindow(QDialog):
         logger.debug('打开更新日志')
 
         update_log = cache_path / 'update_log.md' # 更新日志路径
-        
-        if not update_log.exists(): # 重建更新日志
-            update_info = result[2]
-            
-            with open(update_log, 'w', encoding='utf-8') as f:
-                if update_info:
-                    f.write(update_info)
-                else:
-                    f.write('更新内容获取失败')
-        
-        os.startfile(update_log) # 打开更新日志
-        # 弹出提示窗口
-        MessageBox.information(self, get_lang('16'), get_lang('28'))
+
+        try:
+            os.startfile(update_log) # 打开更新日志
+            MessageBox.information(self, get_lang('16'), get_lang('28')) 
+        except:
+            MessageBox.critical(self, get_lang('14'), get_lang('58'))
 
 class HotkeyHelpWindow(QDialog):
     def __init__(self):
@@ -2204,7 +2222,7 @@ class SettingWindow(SelectUI):
                 unit_layout.newRow()
                 unit_layout.addWidget(use_default_delay)
                 unit_layout.newRow()
-                unit_layout.addSpacer(10)
+                unit_layout.addWidget(line1)
                 
                 self.default_time = QLineEdit()
                 self.default_time.setText(str(settings.get('click_times', '')))
@@ -2225,7 +2243,6 @@ class SettingWindow(SelectUI):
                 
                 self.total_time_label = QLabel(f'{get_lang('2c')}: {get_lang('61')}')
                 set_style(self.total_time_label, 'big_text_14')
-                self.total_time_label.setAlignment(Qt.AlignHCenter)
                 self.on_input_change()
                 
                 # 布局
@@ -2236,7 +2253,7 @@ class SettingWindow(SelectUI):
                 # 连接信号
                 self.default_delay.textChanged.connect(lambda: self.on_default_input_changed(self.default_delay, 'click_delay', use_default_delay))
                 self.default_delay.textChanged.connect(self.on_input_change)
-                use_default_delay.stateChanged.connect(lambda: self.on_setting_changed(use_default_delay.isChecked, 'times_failed_use_default'))
+                use_default_delay.stateChanged.connect(lambda: self.on_setting_changed(use_default_delay.isChecked, 'failed_use_default'))
                 self.default_time.textChanged.connect(lambda: self.on_default_input_changed(self.default_time, 'click_times', use_default_time))
                 self.default_time.textChanged.connect(self.on_input_change)
                 use_default_time.stateChanged.connect(lambda: self.on_setting_changed(use_default_time.isChecked, 'times_failed_use_default'))
@@ -2284,7 +2301,7 @@ class SettingWindow(SelectUI):
                 
                 style_use_windows_layout = QHBoxLayout() # 颜色使用windows按钮布局
                 style_choice_use_windows = UCheckBox(get_lang('a8'))
-                tip_label = QLabel('注意：这个操作不会完全改变组件风格，选择框等组件仍会使用系统强调色。')
+                tip_label = QLabel(get_lang('b4'))
                 set_style(tip_label, 'dest_small')
                 
                 style_choice_use_windows.setChecked(settings.get('use_windows_color', True))
@@ -2320,7 +2337,7 @@ class SettingWindow(SelectUI):
         
         lang = self.lang_choice.currentIndex()
         
-        restart_place =list(map(lambda x: get_lang(x, lang_id=lang), restart_place))
+        restart_place = list(map(lambda x: get_lang(x, lang_id=lang), restart_place))
         
         need_restart = MessageBox.warning(self, get_lang('15', lang_id=lang), f'{get_lang("89", lang_id=lang)}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if need_restart == QMessageBox.Yes:
@@ -2772,11 +2789,8 @@ class TrayApp:
 
 if __name__ == '__main__':
     if not(is_process_running('init.exe')):
-        if not(data_path / 'first_run').exists():
-            settings['select_lang'] = parse_system_language_to_lang_id()
-            select_lang = settings.get('select_lang', 0)
-            save_settings(settings)
-            run_software('init.py', 'init.exe')
+        if not((data_path / 'first_run').exists()):
+            QMessageBox.information(None, get_lang('14'), '前往当前目录的init.exe文件运行初始化程序')
         else:
             try:
                 packages = []
@@ -2786,8 +2800,13 @@ if __name__ == '__main__':
                     packages.append(import_package(i))
             except FileNotFoundError:
                 os.remove(data_path / 'first_run')
-                run_software('init.py', 'init.exe')
-                exit(2)
+                with open(data_path / 'first_run', 'w'):pass
+                if not(os.path.exists('packages.json')):
+                    package = ['xystudio.clickmouse']
+                    with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
+                        json.dump(package, f)
+                if os.path.exists('extensions') and os.path.isdir('extensions'):
+                    shutil.rmtree('extensions')
                 pass
             
             has_packages = os.path.exists(get_resource_path('packages'))

@@ -32,13 +32,24 @@
             "1b": "Error message has been copied to the clipboard",
             "1c": "Are you sure you want to install the following components: {0}\nand create the following shortcuts: {1}{2}?",
             "1d": "Error",
-            "1e": "ClickMouse is already installed, attempting to repair the Clickmouse files.",
+            "1e": "ClickMouse is already installed.",
             "1f": "Pre-built package installation will not be added, please package it yourself (must be in zip format) and place it in the res/packages folder.",
             "20": "Please run this program as an administrator.",
             "21": "Current",
             "22": "Selected components:",
             "23": "Change complete! \nPlease restart the ClickMouse application to take effect.",
-            "24": "Are you sure you want to change the following components: {0}?"
+            "24": "Are you sure you want to change the following components: {0}?",
+            "25": "Package {0} does not exist.",
+            "26": "Writing package manager file...",
+            "27": "Unzipping package...",
+            "28": "Creating installation information...",
+            "29": "Creating uninstallation information...",
+            "2a": "Creating shortcut...",
+            "2b": "Initializing...",
+            "2c": "\nDesktop shortcut",
+            "2d": "\nStart menu shortcut",
+            "2e": "Checking for update files...",
+            "2f": "No package change"
         }
     },
     {
@@ -74,13 +85,24 @@
             "1b": "错误信息已复制到剪贴板",
             "1c": "即将安装以下组件:{0}\n并创建以下快捷方式：{1}{2}\n是否继续？",
             "1d": "错误",
-            "1e": "检测到已安装 ClickMouse，即将为你尝试修复损坏的Clickmouse文件。",
+            "1e": "已安装 ClickMouse。",
             "1f": "再编译版安装包不会添加，请自行打包（格式必须为zip）并放入res/packages文件夹下。",
             "20": "请以管理员身份运行本程序。",
             "21": "当前",
             "22": "已选择组件:",
             "23": "更改完成！\n请重启 ClickMouse 应用以生效。",
-            "24": "即将变动以下组件: {0}\n是否继续？"
+            "24": "即将变动以下组件: {0}\n是否继续？",
+            "25": "包名 {0} 不存在。",
+            "26": "正在写入包管理器文件...",
+            "27": "解压安装包...",
+            "28": "正在创建安装信息...",
+            "29": "正在创建卸载信息...",
+            "2a": "正在创建快捷方式...",
+            "2b": "初始化...",
+            "2c": "\n桌面快捷方式",
+            "2d": "\n开始菜单快捷方式",
+            "2e": "检查需要更新的文件...",
+            "2f": "没有包变动"
         }
     }
 ]

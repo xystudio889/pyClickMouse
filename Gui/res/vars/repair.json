@@ -1,0 +1,26 @@
+{
+    " 12": [
+        "cache/*;!cache/update.json",
+        " 13"
+    ],
+    " 14": [
+        "cache/update.json;cache/update_log.md",
+        " 15"
+    ],
+    " 16": [
+        "packages.json;extensions/",
+        " 17"
+    ],
+    " 18": [
+        "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\clickmouse;\nHKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\clickmouse",
+        " 19"
+    ],
+    " 1a": [
+        "data/*;!data/first_run",
+        " 1b"
+    ],
+    " 1c": [
+        "data/first_run",
+        " 1d"
+    ]
+}

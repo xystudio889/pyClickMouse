@@ -3,14 +3,16 @@
         "lang_name": "English",
         "lang_id": 0,
         "lang_package": {
-            "01": "ClicMouse main program"
+            "01": "ClicMouse",
+            "02": "clickmouse repair"
         }
     },
     {
         "lang_name": "简体中文",
         "lang_id": 1,
         "lang_package": {
-            "01": "ClickMouse 主程序"
+            "01": "ClickMouse 主程序",
+            "02": "clickmouse 修复程序"
         }
     }
 ]
