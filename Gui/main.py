@@ -914,7 +914,7 @@ class MainWindow(QMainWindow):
         hotkey_help = help_menu.addAction(get_lang('5e'))
         
         # 文档菜单
-        doc = help_menu.addAction(get_lang('5f'))
+        # doc = help_menu.addAction(get_lang('5f'))
 
         # 扩展菜单
         extension_menu = menu_bar.addMenu(get_lang('8e'))
