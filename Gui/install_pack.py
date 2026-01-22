@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 import pyperclip
-from sharelibs import (get_resource_path, get_lang, settings, get_inst_lang)
+from sharelibs import (get_resource_path, get_lang, settings, get_inst_lang, mem_id)
 import win32com.client
 import winreg
 import zipfile
@@ -606,7 +606,7 @@ class InstallWindow(PagesUI):
                 extract_zip(get_resource_path('packages', f'{comp}.zip'), f'extensions/{comp}')
 
             for comp in remove:
-                rmtree(f'extensions/{comp}')
+                rmtree(f'extensions/{comp}', ignore_errors=True)
 
             self.set_page(self.PAGE_finish)
         except Exception:
@@ -651,6 +651,17 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
+    shared_memory = QSharedMemory(mem_id[2])
+    if shared_memory.attach():
+        # 已经有一个实例在运行
+        sys.exit(2)
+    shared_memory.create(1)
+    
+    is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
+    if is_running:
+        # 已经有一个实例在运行
+        sys.exit(2)
+
     window = InstallWindow()
     window.show()
     sys.exit(app.exec())

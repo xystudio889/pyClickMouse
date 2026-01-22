@@ -174,7 +174,9 @@
             "b1": "GITEE_API_KEY not set. Please configure res/key.json and recompile.",
             "b2": "res/key.json file not found. Please configure res/key.json and recompile.",
             "b3": "Please close this program and enter {0} to fix the issue.",
-            "b4": "Note: This operation will not completely change the component style. Components such as selection boxes will still use the system accent color."
+            "b4": "Note: This operation will not completely change the component style. Components such as selection boxes will still use the system accent color.",
+            "b5": null,
+            "b6": "Auto startup"
         }
     },
     {
@@ -351,7 +353,9 @@
             "b1": "未设置GITEE_API_KEY，请配置res/key.json后再次编译",
             "b2": "未找到res/key.json文件，请配置res/key.json后再次编译",
             "b3": "请关闭本程序并进入{0}修复",
-            "b4": "注意：这个操作不会完全改变组件风格，选择框等组件仍会使用系统强调色。"
+            "b4": "注意：这个操作不会完全改变组件风格，选择框等组件仍会使用系统强调色。",
+            "b5": null,
+            "b6": "开机自启动"
         }
     }
 ]

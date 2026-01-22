@@ -18,14 +18,15 @@ import os # 系统库
 import shutil # 用于删除文件夹
 from uiStyles import (SelectUI, UnitInputLayout, UCheckBox, styles, maps, StyleReplaceMode, UMessageBox, ULabel) # 软件界面样式
 from uiStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (run_software, is_process_running) # 共享库
+from sharelibs import (run_software, mem_id, run_as_admin) # 共享库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 from pynput import keyboard # 热键功能库
 import math # 数学库
-import subprocess # 子进程库
 import traceback # 异常处理库
 import colorsys # 颜色库
+import struct # 字节处理库
+import pytz # 时区库
 
 # 系统api
 import ctypes
@@ -298,6 +299,132 @@ def lighten_color_hex(hex_color, factor):
     )
     
     return hex_result
+
+def datetime_to_filetime(dt_utc: datetime):
+    '''
+    将datetime对象转换为FILETIME（64位整数）
+    输入必须是UTC时间
+    '''
+    # FILETIME纪元：1601-01-01 00:00:00 UTC
+    filetime_epoch = datetime(1601, 1, 1, tzinfo=pytz.UTC)
+    
+    # 计算时间差（微秒精度）
+    delta = dt_utc - filetime_epoch
+    
+    # 转换为100纳秒间隔数
+    # 1秒 = 10,000,000个100纳秒间隔
+    filetime_units = delta.total_seconds() * 1e7
+    
+    return int(filetime_units)
+
+def get_now_filetime():
+    '''
+    获取当前UTC时间对应的FILETIME值
+    '''
+    # 获取当前UTC时间
+    now_utc = datetime.now(pytz.UTC)
+    # 转换为FILETIME
+    filetime_value = datetime_to_filetime(now_utc)
+    # 将整数转换为小端字节序（8字节）
+    little_endian = struct.pack('<Q', filetime_value)
+    return little_endian
+
+def set_style(widget: QWidget, class_name: str):
+    '''
+    设置按钮的class属性并刷新样式
+    '''
+    # 1. 设置class属性
+    widget.setProperty('class', class_name)
+    
+    # 2. 强制样式刷新
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+    
+    # 3. 触发重绘
+    widget.update()
+    
+def get_soft_size():
+    '''
+    获取软件大小
+    '''
+    size = 0
+    for root, dirs, files in os.walk(Path.cwd()): # 遍历文件
+        for file in files:
+            size += os.path.getsize(os.path.join(root, file))
+    return size // 1024 # 单位KB
+
+class StartManager(QObject):
+    '''开机自启动管理器'''
+    updated = Signal(bool)
+    def __init__(self):
+        super().__init__()
+        self.app_name = 'clickmouse'
+        self.registry_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
+        self.status_path = r'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
+        self.create_reg()
+        self.auto_start = self.is_enabled()
+        
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.check_value)
+        self.timer.start(1)
+        
+    def check_registry_value_exists(self):
+        '''
+        检查注册表值是否存在
+        
+        Args:
+            key_path: 注册表键路径（如：'Software\\MyApp'）
+            value_name: 要检查的值名称（如：'InstallPath'）
+            hive: 注册表根键，默认为HKEY_CURRENT_USER
+        
+        Returns:
+            bool: 值是否存在
+        '''
+        # 打开注册表键
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.registry_path, 0, winreg.KEY_READ) as key:
+            try:
+                # 尝试查询值
+                winreg.QueryValueEx(key, self.app_name)
+                return True
+            except FileNotFoundError:
+                return False
+
+    def create_reg(self):
+        '''检查是否已启用开机自启动'''
+        if not self.check_registry_value_exists():
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                                self.registry_path, 0, winreg.KEY_WRITE) as key:
+                winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, str(Path.cwd() / 'main.exe'))
+            
+            self.disable()
+
+    def is_enabled(self):
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.status_path, 0, winreg.KEY_READ) as key:
+                value, _ = winreg.QueryValueEx(key, self.app_name)
+
+            return value[0] == 2
+        except FileNotFoundError:
+            return False
+    
+    def check_value(self):
+        '''检查注册表值是否最新'''
+        new_value = self.is_enabled()
+        if new_value != self.auto_start:
+            self.auto_start = new_value
+            self.updated.emit(self.auto_start)
+    
+    def enable(self):
+        '''启用开机自启动'''
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                            self.status_path, 0, winreg.KEY_WRITE) as key:
+            winreg.SetValueEx(key, self.app_name, 0, winreg.REG_BINARY, bytes([0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]))
+
+    def disable(self):
+        '''禁用开机自启动''' 
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                            self.status_path, 0, winreg.KEY_WRITE) as key:
+            winreg.SetValueEx(key, self.app_name, 0, winreg.REG_BINARY, bytes([0x03, 0x00, 0x00, 0x00]) + get_now_filetime())
 
 class MessageBox(UMessageBox):
     @staticmethod
@@ -669,20 +796,6 @@ class ColorGetter(QObject):
         app.setStyleSheet(select_styles.css_text)  # 全局应用
         self.refresh()
     
-def set_style(widget: QWidget, class_name: str):
-    '''
-    设置按钮的class属性并刷新样式
-    '''
-    # 1. 设置class属性
-    widget.setProperty('class', class_name)
-    
-    # 2. 强制样式刷新
-    widget.style().unpolish(widget)
-    widget.style().polish(widget)
-    
-    # 3. 触发重绘
-    widget.update()
-    
 # Windows API常量
 DWMWA_USE_IMMERSIVE = 20
 DWMWA_USE_IMMERSIVE_DARK_MODE = 20
@@ -694,7 +807,7 @@ data_path = Path('data')
 settings = load_settings()
 
 clicker = Click()
-
+auto_start_manager = StartManager()
 color_getter = ColorGetter()
 
 # 变量
@@ -971,7 +1084,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, get_lang('16'), get_lang('b3').format(Path.cwd() / 'repair.exe'))
                     return
                 case _:
-                    subprocess.Popen(f'extensions/{index}/main.exe')
+                    run_software('NoneFile', f'extensions/{index}/main.exe')
         except Exception as e:
             MessageBox.critical(self, get_lang('14'), get_lang('9c').format(e))
             logger.error(f'执行扩展失败: {e}')
@@ -2190,10 +2303,22 @@ class SettingWindow(SelectUI):
     
                 tray_layout.addWidget(tray)
                 tray_layout.addStretch(1)
+                
+                # 开机自启动
+                start_layout = QHBoxLayout() # 开机自启动布局
+                self.start_checkbox = UCheckBox(get_lang('b6'))
+                self.start_checkbox.setChecked(auto_start_manager.auto_start)
+    
+                start_layout.addWidget(self.start_checkbox)
+                start_layout.addStretch(1)
+                
+                auto_start_manager.updated.connect(lambda enb: self.start_checkbox.setChecked(enb))
+                self.start_checkbox.stateChanged.connect(self.on_auto_start_changed)
 
                 # 布局
                 layout.addLayout(lang_choice_layout)
                 layout.addLayout(tray_layout)
+                layout.addLayout(start_layout)
                 
                 # 绑定事件
                 self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang'))
@@ -2327,6 +2452,13 @@ class SettingWindow(SelectUI):
         layout.addStretch()
         
         return page
+                
+    def on_auto_start_changed(self, state):
+        '''自启动复选框状态改变'''
+        if state:
+            auto_start_manager.enable()
+        else:
+            auto_start_manager.disable()
         
     def on_need_restart_setting_changed(self, handle , key: str, restart_place: list[str] = ['a9'], *args):
         '''托盘图标选择事件'''
@@ -2788,37 +2920,52 @@ class TrayApp:
             self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
 
 if __name__ == '__main__':
-    if not(is_process_running('init.exe')):
-        if not((data_path / 'first_run').exists()):
-            QMessageBox.information(None, get_lang('14'), '前往当前目录的init.exe文件运行初始化程序')
-        else:
-            try:
-                packages = []
-                with open('packages.json', 'r', encoding='utf-8') as f:
-                    packages_name = json.load(f)
-                for i in packages_name:
-                    packages.append(import_package(i))
-            except FileNotFoundError:
-                os.remove(data_path / 'first_run')
-                with open(data_path / 'first_run', 'w'):pass
-                if not(os.path.exists('packages.json')):
-                    package = ['xystudio.clickmouse']
-                    with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
-                        json.dump(package, f)
-                if os.path.exists('extensions') and os.path.isdir('extensions'):
-                    shutil.rmtree('extensions')
-                pass
-            
-            has_packages = os.path.exists(get_resource_path('packages'))
-            package_names, show_list, package_ids = get_packages()
-            has_plural = get_has_plural()
+    shared_memory = QSharedMemory(mem_id[0])
+    if shared_memory.attach():
+        # 已经有一个实例在运行
+        sys.exit(2)
+    shared_memory.create(1)
 
-            main_window = MainWindow()
-            hotkey_help_window = HotkeyHelpWindow()
-            
-            app = TrayApp()
-            app.run()
-            
-            logger.info('主程序退出')
+    if QSharedMemory(mem_id[1]).attach():
+        # 已经有一个实例在运行
+        sys.exit(2)
+        
+    is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
+    if is_running:
+        # 已经有一个实例在运行
+        sys.exit(2)
+
+    if not((data_path / 'first_run').exists()):
+        run_as_admin('init.py', 'init.exe')
+        exit(0)
     else:
-        QMessageBox.critical(None, get_lang('14'), '请关闭初始化程序运行')
+        try:
+            packages = []
+            with open('packages.json', 'r', encoding='utf-8') as f:
+                packages_name = json.load(f)
+            for i in packages_name:
+                packages.append(import_package(i))
+        except FileNotFoundError:
+            os.remove(data_path / 'first_run')
+            with open(data_path / 'first_run', 'w'):pass
+            if not(os.path.exists('packages.json')):
+                package = ['xystudio.clickmouse']
+                with open(fr'{Path.cwd()}\packages.json', 'w', encoding='utf-8') as f:
+                    json.dump(package, f)
+            if os.path.exists('extensions') and os.path.isdir('extensions'):
+                shutil.rmtree('extensions')
+            pass
+        
+        has_packages = os.path.exists(get_resource_path('packages'))
+        package_names, show_list, package_ids = get_packages()
+        has_plural = get_has_plural()
+
+        # 检查版本号与注册表是否一致,不一样就修改注册表
+        run_software('check_reg_ver.py', 'check_reg_ver.exe')
+        main_window = MainWindow()
+        hotkey_help_window = HotkeyHelpWindow()
+        
+        app = TrayApp()
+        app.run()
+        
+        logger.info('主程序退出')
