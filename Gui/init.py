@@ -11,9 +11,8 @@ import pyperclip # 复制错误信息
 import win32com.client # 创建快捷方式
 import zipfile # 解压文件
 import json # 读写json文件
-from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, system_lang, is_admin, settings, parse_system_language_to_lang_id) # 共享库
+from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, system_lang, is_admin, settings, parse_system_language_to_lang_id, mem_id) # 共享库
 from uiStyles import PagesUI, styles, UCheckBox
-import shutil # 删除文件夹
 import traceback # 异常捕获
     
 with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
@@ -55,9 +54,12 @@ def extract_zip(file_path, extract_path):
     '''
     解压zip文件
     '''
-    with zipfile.ZipFile(file_path, 'r') as f:
-        f.extractall(extract_path)
-    
+    try:
+        with zipfile.ZipFile(file_path, 'r') as f:
+            f.extractall(extract_path)
+    except:
+        pass
+        
 def check_reg_key(subkey):
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, subkey, 0, winreg.KEY_READ):
@@ -80,7 +82,7 @@ def get_dir_size_for_reg(dir):
             try:
                 size += os.path.getsize(os.path.join(root, file))
             except:
-                print(f'Error: {file} does not exist')
+                pass
     return size // 1024
 
 def import_package(package_id):
@@ -567,7 +569,7 @@ class InstallWindow(PagesUI):
             winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
 
             winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
-            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudio/pyclickmouse')
+            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudiocode/pyclickmouse')
             winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
             
             winreg.SetValueEx(uninstall_key, 'RegOwner', 0, winreg.REG_SZ, 'xystudio')
@@ -622,7 +624,6 @@ class InstallWindow(PagesUI):
         elif self.current_page == self.PAGE_finish:
             with open(data_path / 'first_run', 'w'):pass # 标记为第一次运行
             settings['select_lang'] = parse_system_language_to_lang_id()
-            select_lang = settings.get('select_lang', 0)
             save_settings(settings)
             if self.run_clickmouse.isChecked():
                 run_software('main.py', 'main.exe')
@@ -631,8 +632,20 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
+    shared_memory = QSharedMemory(mem_id[1])
+    if shared_memory.attach():
+        # 已经有一个实例在运行
+        sys.exit(2)
+    shared_memory.create(1)
+    
+    is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
+    if is_running:
+        # 已经有一个实例在运行
+        sys.exit(2)
+    
     if check_reg_key(software_reg_key):
         QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('1e'))
+        with open(data_path / 'first_run', 'w'):pass
         run_software('main.py', 'main.exe')
         sys.exit(1)
 

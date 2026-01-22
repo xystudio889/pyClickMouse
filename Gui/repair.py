@@ -1,19 +1,12 @@
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtCore import *
-import psutil
 from shutil import rmtree
 import os
 import winreg
-from sharelibs import get_control_lang, get_resource_path, is_admin
+from sharelibs import get_control_lang, get_resource_path, is_admin, mem_id
 import json
 import sys
-
-def is_process_running(process_name):
-   for proc in psutil.process_iter(['name']):
-       if proc.info['name'] == process_name:
-           return True
-   return False
 
 def remove_file(file_path):
     try:
@@ -139,9 +132,6 @@ class MainWindow(QMainWindow):
         clean_cache.clicked.connect(self.on_repair)
         ok.clicked.connect(self.close)
 
-        print(self.width(), self.height())
-
-
     def on_repair(self):
         '''修复'''
         message = QMessageBox.information(None, get_control_lang('04'), get_control_lang('09'), QMessageBox.Yes | QMessageBox.No)
@@ -176,21 +166,32 @@ class MainWindow(QMainWindow):
             
         QMessageBox.information(None, get_control_lang('04'), get_control_lang('0a'))
         self.close()
+        sys.exit(0)
 
 if __name__ == '__main__':
+    shared_memory = QSharedMemory(mem_id[3])
+    if shared_memory.attach():
+        # 已经有一个实例在运行
+        sys.exit(2)
+    shared_memory.create(1)
+    
     app = QApplication()
+    is_running = any(list(map(lambda x: QSharedMemory(x).attach(), [i for i in mem_id if i != mem_id[3]])))
+    if is_running:
+        # 已经有一个实例在运行
+        QMessageBox.critical(None, get_control_lang('04'), get_control_lang('08'))
+        sys.exit(2)
+    
     with open('packages.json', 'r', encoding='utf-8') as f:
         packages = json.load(f)
     if 'xystudio.clickmouse.repair' in packages:
-        if is_process_running('main.exe'):
-            QMessageBox.warning(None, get_control_lang('04'), get_control_lang('08'))
+        if is_admin():
+            window = MainWindow()
+            window.show()
         else:
-            if is_admin():
-                window = MainWindow()
-                window.show()
-            else:
-                QMessageBox.critical(None, get_control_lang('04'), get_control_lang('07'))
-                sys.exit(1)
+            QMessageBox.critical(None, get_control_lang('04'), get_control_lang('07'))
+            sys.exit(1)
     else:
         QMessageBox.critical(None, get_control_lang('04'), get_control_lang('11'))
+        sys.exit(1)
     sys.exit(app.exec())
