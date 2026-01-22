@@ -9,3 +9,4 @@ pynput>=1
 packaging>=22
 clickmouse
 ClickMouse_api
+pytz>=2014

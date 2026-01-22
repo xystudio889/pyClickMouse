@@ -7,7 +7,6 @@ import os
 import subprocess
 import winreg
 import sys
-import psutil
 import ctypes
 
 setting_path = Path('data', 'settings.json')
@@ -65,6 +64,8 @@ def load_settings():
         return {}
     
 settings = load_settings()
+with open(get_resource_path('vars', 'mem_id.json'), 'r') as f:
+    mem_id = json.load(f)
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
@@ -130,15 +131,12 @@ def is_dark_mode():
         return value == 0
     except FileNotFoundError:
         return False  # 注册表项不存在时默认浅色模式
-    
-def is_process_running(process_name):
-   for proc in psutil.process_iter(['name']):
-       if proc.info['name'] == process_name:
-           return True
-   return False
 
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
+    
+def run_as_admin(code, exe):
+    subprocess.Popen(f'powershell -Command "Start-Process \'{"python" if in_dev else exe}\' {f'-ArgumentList "{code}"' if in_dev else ''} -Verb RunAs"')
