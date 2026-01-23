@@ -12,22 +12,6 @@ def save_settings(settings):
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
 
-def create_shortcut(path, target, description, work_dir = None, icon_path = None):
-    # 创建快捷方式
-    try:
-        icon_path = target if icon_path is None else icon_path
-        work_dir = os.path.dirname(target) if work_dir is None else work_dir
-        
-        shell = win32com.client.Dispatch('WScript.Shell')
-        shortcut = shell.CreateShortCut(path)
-        shortcut.TargetPath = target # 目标程序
-        shortcut.WorkingDirectory = work_dir # 工作目录
-        shortcut.IconLocation = icon_path # 图标（路径,图标索引）
-        shortcut.Description = description # 备注描述
-        shortcut.Save()
-    except:
-        pass
-
 def extract_zip(file_path, extract_path):
     '''
     解压zip文件
@@ -639,10 +623,9 @@ if __name__ == '__main__':
     if is_admin():  # 管理员权限
         import winreg # 注册表编辑
         import pyperclip # 复制错误信息
-        import win32com.client # 创建快捷方式
         import zipfile # 解压文件
         import json # 读写json文件
-        from sharelibs import (run_software, get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id) # 共享库
+        from sharelibs import (run_software, get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id, create_shortcut) # 共享库
         from uiStyles import styles, UCheckBox
         import traceback # 异常捕获
 

@@ -46,7 +46,10 @@ def main():
     
     remove_reg_key(r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickmouse')
     remove_reg_key(r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\clickmouse')
-    remove_reg_value(r'Software\Microsoft\Windows\CurrentVersion\Run', 'clickmouse')
+    try:
+        os.remove(os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'clickmouse.lnk'))
+    except:
+        pass
     remove_reg_value(r'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run', 'Clickmouse')
     
     QMessageBox.information(None, get_control_lang('04'), get_control_lang('05').format(soft_path))
@@ -81,7 +84,6 @@ if __name__ == '__main__':
             import shutil
             import winreg
             from pathlib import Path
-            sys.exit(3)
             main()
         else:
             sys.exit(3)

@@ -8,6 +8,7 @@ import subprocess
 import winreg
 import sys
 import ctypes
+import win32com.client
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -144,3 +145,19 @@ def is_admin():
     
 def run_as_admin(code, exe):
     subprocess.Popen(f'powershell -Command "Start-Process \'{"python" if in_dev else exe}\' {f'-ArgumentList "{code}"' if in_dev else ''} -Verb RunAs"')
+    
+def create_shortcut(path, target, description, work_dir = None, icon_path = None):
+    # 创建快捷方式
+    try:
+        icon_path = target if icon_path is None else icon_path
+        work_dir = os.path.dirname(target) if work_dir is None else work_dir
+        
+        shell = win32com.client.Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(path)
+        shortcut.TargetPath = target # 目标程序
+        shortcut.WorkingDirectory = work_dir # 工作目录
+        shortcut.IconLocation = icon_path # 图标（路径,图标索引）
+        shortcut.Description = description # 备注描述
+        shortcut.Save()
+    except:
+        pass

@@ -276,44 +276,20 @@ class StartManager(QObject):
     updated = Signal(bool)
     def __init__(self):
         super().__init__()
-        self.app_name = 'clickmouse'
-        self.registry_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
-        self.status_path = r'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
+        self.app_name = 'clickmouse.lnk'
+        self.status_path = r'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder'
         self.create_reg()
         self.auto_start = self.is_enabled()
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_value)
         self.timer.start(settings.get('soft_delay', 1))
-        
-    def check_registry_value_exists(self):
-        '''
-        检查注册表值是否存在
-        
-        Args:
-            key_path: 注册表键路径（如：'Software\\MyApp'）
-            value_name: 要检查的值名称（如：'InstallPath'）
-            hive: 注册表根键，默认为HKEY_CURRENT_USER
-        
-        Returns:
-            bool: 值是否存在
-        '''
-        # 打开注册表键
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.registry_path, 0, winreg.KEY_READ) as key:
-            try:
-                # 尝试查询值
-                winreg.QueryValueEx(key, self.app_name)
-                return True
-            except FileNotFoundError:
-                return False
 
     def create_reg(self):
         '''检查是否已启用开机自启动'''
-        if not self.check_registry_value_exists():
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
-                                self.registry_path, 0, winreg.KEY_WRITE) as key:
-                winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, str(Path.cwd() / 'main.exe'))
-            
+        start_path = Path(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', self.app_name)
+        if not(start_path.exists()):
+            create_shortcut(str(start_path), str(Path.cwd() / 'main.exe'), 'ClickMouse', work_dir=str(Path.cwd()))
             self.disable()
 
     def is_enabled(self):
@@ -2883,7 +2859,7 @@ if __name__ == '__main__':
         from check_update import check_update # 更新检查
         from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel) # 软件界面样式
         from uiStyles import indexes as style_indexes # 界面组件样式索引
-        from sharelibs import (run_software, langs) # 共享库
+        from sharelibs import (run_software, langs, create_shortcut) # 共享库
         import parse_dev # 解析开发固件配置
         import winreg # 注册表库
         import math # 数学库
