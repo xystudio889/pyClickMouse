@@ -27,7 +27,7 @@ def get_resource_path(*paths):
     try:
         resource = Path('res') # 获取当前目录的资源文件夹路径
         if not resource.exists():
-            raise FileNotFoundError('资源文件出现损坏')
+            raise FileNotFoundError('Resource folder missing: res not found')
         return str(resource.joinpath(*paths))
     except Exception as e:
         _show_message(f'Resource file missing: {e}', 'Error', 2)
@@ -72,13 +72,17 @@ def get_lang(lang_package_id, lang_id = None, source = None):
     lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
     for i in source:
         if i['lang_id'] == 0: # 设置默认语言包
-            lang_text = i['lang_package']
+            default_lang_text = i['lang_package']
         if i['lang_id'] == lang_id: # 设置目前语言包
             lang_text = i['lang_package']
     try:
         return lang_text[lang_package_id]
     except KeyError:
+        print(f'{lang_package_id} not found')
         return 'Language not found'
+    except UnboundLocalError:
+        lang_text = {}
+        return lang_text.get(lang_package_id, default_lang_text[lang_package_id])
     
 def get_system_language():
     '''通过Windows注册表获取系统语言'''

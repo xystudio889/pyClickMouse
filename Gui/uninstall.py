@@ -1,12 +1,3 @@
-from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QSharedMemory
-import os
-import sys
-import shutil
-import winreg
-from sharelibs import get_control_lang, mem_id, is_admin
-from pathlib import Path
-
 def remove_reg_key(sub_key):
     root_key = winreg.HKEY_LOCAL_MACHINE
     try:
@@ -62,11 +53,18 @@ def main():
     sys.exit(0)
                 
 if __name__ == '__main__':
+    from PySide6.QtCore import QSharedMemory
+    import sys
+    from sharelibs import mem_id
+
     shared_memory = QSharedMemory(mem_id[4])
     if shared_memory.attach():
         # 已经有一个实例在运行
         sys.exit(2)
     shared_memory.create(1)
+    
+    from PySide6.QtWidgets import QApplication, QMessageBox
+    from sharelibs import get_control_lang
 
     app = QApplication(sys.argv)
     is_running = any(list(map(lambda x: QSharedMemory(x).attach(), [i for i in mem_id if i != mem_id[4]])))
@@ -74,10 +72,20 @@ if __name__ == '__main__':
         # 已经有一个实例在运行
         QMessageBox.critical(None, get_control_lang('04'), get_control_lang('08'))
         sys.exit(2)
+        
+    from sharelibs import is_admin
 
     if is_admin():
         if QMessageBox.question(None, get_control_lang('04'), get_control_lang('06'), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            import os
+            import shutil
+            import winreg
+            from pathlib import Path
+            sys.exit(3)
             main()
+        else:
+            sys.exit(3)
     else:
         QMessageBox.critical(None, get_control_lang('01'), get_control_lang('07'))
+        sys.exit(1)
     sys.exit(app.exec())
