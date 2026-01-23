@@ -3,32 +3,13 @@ from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
-
-import json
-import os
-from pathlib import Path
-import pyperclip
-from sharelibs import (get_resource_path, get_lang, settings, get_inst_lang, mem_id)
-import win32com.client
-import winreg
-import zipfile
-from shutil import rmtree
-import traceback
-
-from uiStyles import PagesUI, UMessageBox, styles, maps
-
-# 系统api
-import ctypes
-from ctypes import wintypes
-
-with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
-    package_langs = json.load(f)
+from uiStyles import PagesUI, UMessageBox
     
 def import_package(package_id: str):
     for i in packages_info:
         if i['package_name'] == package_id:
             return i
-    raise ValueError(f'包名 {package_id} 不存在')
+    raise ValueError(f'Package {package_id} not found.')
 
 def extract_zip(file_path, extract_path):
     '''
@@ -63,9 +44,6 @@ def create_shortcut(path, target, description, work_dir = None, icon_path = None
     shortcut.IconLocation = icon_path # 图标（路径,图标索引）
     shortcut.Description = description # 备注描述
     shortcut.Save()
-    
-with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
-    packages_info = json.load(f)
 
 def get_packages():
     package_index = [] # 包索引
@@ -100,20 +78,8 @@ def new_color_bar(obj):
     '''
     给创建添加样式标题栏
     '''
-    getter.style_changed.connect(lambda: QTimer.singleShot(100, lambda: getter.apply_titleBar(obj)))
+    getter.style_changed.connect(lambda: QTimer.singleShot(settings.get('soft_delay', 1), lambda: getter.apply_titleBar(obj)))
     getter.style_changed.emit(getter.current_theme)
-
-try:
-    packages_source = []
-    with open('packages.json', 'r', encoding='utf-8') as f:
-        package_name = json.load(f)
-    
-    for i in package_name:
-        packages_source.append(import_package(i))
-except FileNotFoundError:
-    os.remove(Path('data', 'first_run'))
-
-packages = get_packages()
 
 class Refresh:
     def __init__(self):
@@ -133,7 +99,7 @@ class Refresh:
                 pass
         
     def refresh_title(self):
-        QTimer.singleShot(1, lambda: getter.style_changed.emit(getter.current_theme))
+        QTimer.singleShot(settings.get('soft_delay', 1), lambda: getter.style_changed.emit(getter.current_theme))
         
 class MessageBox(UMessageBox):
     @staticmethod
@@ -173,7 +139,7 @@ class ColorGetter(QObject):
         # 使用定时器定期检测主题变化
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_and_apply_theme)
-        self.timer.start(1)
+        self.timer.start(settings.get('style_delay', 1))
     
     def load_theme(self):
         theme = None
@@ -240,19 +206,6 @@ class ColorGetter(QObject):
             
         app.setStyleSheet(select_styles.css_text)  # 全局应用
         refresh.run()  # 运行刷新服务
-
-icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
-package_id_list = []
-select_package_id = []
-
-# Windows API常量
-DWMWA_USE_IMMERSIVE = 20
-DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-DWM_WINDOW_CORNER_PREFERENCE = 33
-DWMWCP_ROUND = 2
-DWMNCRP_ENABLED = 1
-
-getter = ColorGetter()
 
 class InstallWindow(PagesUI):
     def __init__(self):
@@ -651,16 +604,67 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
+    from sharelibs import mem_id
     shared_memory = QSharedMemory(mem_id[2])
     if shared_memory.attach():
         # 已经有一个实例在运行
         sys.exit(2)
     shared_memory.create(1)
     
+    from sharelibs import get_resource_path
+    import json
+    
+    with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+        package_langs = json.load(f)
+
+    with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
+        packages_info = json.load(f)
+    
     is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
     if is_running:
         # 已经有一个实例在运行
         sys.exit(2)
+
+    import os
+    from pathlib import Path
+    import pyperclip
+    from sharelibs import (get_lang, settings, get_inst_lang)
+    import win32com.client
+    import winreg
+    import zipfile
+    from shutil import rmtree
+    import traceback
+
+    from uiStyles import styles, maps
+
+    # 系统api
+    import ctypes
+    from ctypes import wintypes
+        
+    try:
+        packages_source = []
+        with open('packages.json', 'r', encoding='utf-8') as f:
+            package_name = json.load(f)
+        
+        for i in package_name:
+            packages_source.append(import_package(i))
+    except FileNotFoundError:
+        os.remove(Path('data', 'first_run'))
+
+    packages = get_packages()
+    
+    icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+    package_id_list = []
+    select_package_id = []
+
+    # Windows API常量
+    DWMWA_USE_IMMERSIVE = 20
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+    DWM_WINDOW_CORNER_PREFERENCE = 33
+    DWMWCP_ROUND = 2
+    DWMNCRP_ENABLED = 1
+
+    getter = ColorGetter()
 
     window = InstallWindow()
     window.show()
