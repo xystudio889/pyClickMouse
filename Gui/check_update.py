@@ -2,64 +2,66 @@
 from packaging.version import parse
 from version import __version__
 import requests
-import xQklN2n
+import keycrypter
 from pathlib import Path
-from sharelibs import get_lang
+from sharelibs import get_lang, get_resource_path
+import json
+import certifi
+
+def get_value_by_indices(data, indices_list):
+    result = []
+    for indices in indices_list:
+        current = data
+        for idx in indices:
+            current = current[idx]
+        result.append(current)
+    return result
 
 folder = Path(__file__).parent.resolve() # 获取资源文件夹
 
 # 加载敏感信息
 try:
-    keys = eval(''.join(chr((ord(c) - 129 + 137) % 128) for c in 'pIcdF*f&:p*qL0e !'))
-    GITHUB_API_KEY = keys.get('github_api_key', None)
-    GITEE_API_KEY = keys.get('gitee_api_key', None)
+    keys = keycrypter.decrypt()
+    with open(get_resource_path('update.json'), 'r', encoding='utf-8') as f:
+        keys_update = json.load(f)
 except FileNotFoundError:
-    GITEE_API_KEY = -1
-    GITHUB_API_KEY = -1
+    keys = None
+    keys_update = None
 
 # 检察更新的函数
-def get_version(website: str="github", include_prerelease: bool=False, header: None | dict=None, condition: callable = lambda x: x.get("prerelease", False), release_tag_condition:tuple[int, str] = (-1, "tag_name", "body")) -> str | None:
+def get_version(website: str="github", include_prerelease: bool=False) -> str | None:
     """获取最新的版本号"""
-    if website == "github":
-        # 检查是否设置GITHUB_API_KEY
-        if GITHUB_API_KEY is None:
-            return get_lang('b0'), -1
-        if GITHUB_API_KEY == -1:
-            return get_lang('b2'), -1
-        # 获取github的版本号
-        web = "https://api.github.com/repos/xystudio889/pyclickmouse/releases"
-        headers = {"Authorization": f"token {GITHUB_API_KEY}"}
-        else_data = {"verify": False}
-        condition = lambda x: x.get("prerelease", False)
-        release_tag_condition = (-1, "tag_name", "body")
-    elif website == "gitee":
-        # 检查是否设置GITEE_API_KEY
-        if GITEE_API_KEY is None:
-            return get_lang('b1'), -1
-        if GITEE_API_KEY == -1:
-            return get_lang('b2'), -1
-        # 获取gitee的版本号
-        web = "https://gitee.com/api/v5/repos/xystudio889/pyclickmouse/releases/"
-        headers = {"Authorization": f"Bearer {GITEE_API_KEY}"}
-        else_data = {}
-        release_tag_condition = (-1, "name", "body")
+    if keys is None:
+        return get_lang('b2'), -1
+    
+    for i in keys_update:
+        if i['website_name'] == website:
+            web_data = i
+            break
     else:
-        # 自定义的网站版本号
-        web = website
-        headers = header
+        return get_lang('b1'), -1
+    
+    try:
+        web = web_data['api_web']
+        headers = web_data['header']
+        headers['Authorization'] = headers['Authorization'].format(keys[web_data['website_name']])
+        else_data = web_data['addtional_info']
+        releases_tag_condition = web_data['releases_tag_condition']
+        condition = eval(web_data['condition'])
+    except Exception as e:
+        return e, -1
+    
     try:
         # 获取版本号
         response = requests.get(web, headers=headers, **else_data)
         response.raise_for_status()
         release = response.json()
         if include_prerelease:
-            releases = [r for r in release if condition(r)]
+            releases = [r for r in release]
         else:
             releases = [r for r in release if not condition(r)]
-        latest_tag = releases[release_tag_condition[0]][release_tag_condition[1]], releases[release_tag_condition[0]][release_tag_condition[2]]
+        latest_tag = get_value_by_indices(releases, releases_tag_condition)
         return latest_tag
-    except requests.exceptions.RequestException as e:
-        return e, -1
     except Exception as e:
         return e, -1
 

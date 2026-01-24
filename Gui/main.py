@@ -681,6 +681,7 @@ class ColorGetter(QObject):
                 select_styles = select_styles.replace(['.selected:hover', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.45), output_json=False)
                 select_styles = select_styles.replace(['.selected', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
                 select_styles = select_styles.replace(['.selected:hover', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
+                select_styles = select_styles.replace(['.selected:pressed', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
                 select_styles = select_styles.replace(['QCheckBox', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
             else:
                 select_styles = select_styles.replace(['.selected', 'background-color'], StyleReplaceMode.ALL, self.windows_color, output_json=False)
@@ -1025,7 +1026,7 @@ class MainWindow(QMainWindow):
         # 检查更新
         if should_check_update_res:
             shutil.rmtree(str(cache_path / 'logs'), ignore_errors=True) # 删除旧缓存
-            self.check_update_thread = QtThread(check_update, args=('gitee', False))
+            self.check_update_thread = QtThread(check_update, args=('gitee', True))
             self.check_update_thread.finished.connect(self.on_check_update_result)
             self.check_update_thread.start()
         else:
@@ -2275,7 +2276,7 @@ class SettingWindow(SelectUI):
                 check_update_notify_text = QLabel(get_lang('48')) # 选择更新检查提示
                 check_update_notify = QComboBox()
                 check_update_notify.addItems([get_lang('49'), get_lang('4a')])
-                check_update_notify.setCurrentIndex(settings.get('check_update_notify', 0))
+                check_update_notify.setCurrentIndex(settings.get('update_notify', 0))
                 
                 # 布局
                 check_update_layout.addWidget(check_update_notify_text)
@@ -2856,7 +2857,7 @@ if __name__ == '__main__':
         from webbrowser import open as open_url # 关于作者
         from version import __version__ # 版本信息
         from log import Logger # 日志库
-        from check_update import check_update # 更新检查
+        from check_update import check_update, keys # 更新检查
         from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel) # 软件界面样式
         from uiStyles import indexes as style_indexes # 界面组件样式索引
         from sharelibs import (run_software, langs, create_shortcut) # 共享库
