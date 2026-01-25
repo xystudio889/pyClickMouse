@@ -883,28 +883,28 @@ class MainWindow(QMainWindow):
         manage_extension_menu.triggered.connect(self.show_manage_extension) # 管理扩展菜单
         manage_extension_menu.setEnabled(has_packages)
         
-        # not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
+        not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
         
-        # cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
-        # cge_menu.addAction(get_lang('95')).setDisabled(True)
+        cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
+        cge_menu.addAction(get_lang('95')).setDisabled(True)
         
-        # cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
-        # cmm_menu.addAction(get_lang('97')).setDisabled(True)
+        cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
+        cmm_menu.addAction(get_lang('97')).setDisabled(True)
 
-        # not_official_extension_menu.addSeparator()
+        not_official_extension_menu.addSeparator()
 
-        # not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
-        # not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
+        not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
+        not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
         
-        # # 宏菜单
-        # macro_menu = menu_bar.addMenu(get_lang('99'))
+        # 宏菜单
+        macro_menu = menu_bar.addMenu(get_lang('99'))
         
-        # run_marco_menu = macro_menu.addMenu(get_lang('9d'))
-        # for action in cmm_menu.actions():
-        #     run_marco_menu.addAction(action)
+        run_marco_menu = macro_menu.addMenu(get_lang('9d'))
+        for action in cmm_menu.actions():
+            run_marco_menu.addAction(action)
             
-        # macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
-        # macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
+        macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
+        macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
