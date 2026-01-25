@@ -917,10 +917,17 @@ class MainWindow(QMainWindow):
         
     def do_extension(self, index):
         '''执行扩展'''
+        global running_repair
+
         try:
             match index:
                 case 'xystudio.clickmouse.repair':
-                    QMessageBox.information(self, get_lang('16'), get_lang('b3').format(Path.cwd() / 'repair.exe'))
+                    if running_repair:
+                        QMessageBox.information(self, '运行计划', '已取消预定启动计划。')
+                        running_repair = False
+                    else:
+                        QMessageBox.information(self, '运行计划', '已预定启动计划，将在本程序关闭后执行。')
+                        running_repair = True
                     return
                 case _:
                     run_software('NoneFile', f'extensions/{index}/main.exe')
@@ -1834,7 +1841,76 @@ class UpdateWindow(QDialog):
 
     def on_update(self):
         '''更新'''
-        open_url('https://github.com/xystudio889/pyClickMouse/releases')
+        pass
+
+    def on_open_update_log(self):
+        # 打开更新日志
+        logger.debug('打开更新日志')
+
+        update_log = cache_path / 'update_log.md' # 更新日志路径
+
+        try:
+            os.startfile(update_log) # 打开更新日志
+            MessageBox.information(self, get_lang('16'), get_lang('28')) 
+        except:
+            MessageBox.critical(self, get_lang('14'), get_lang('58'))
+            
+class UpdateWindow(QDialog):
+    def __init__(self):
+        # 初始化
+        logger.info('初始化更新窗口')
+        super().__init__()
+        self.setWindowTitle('安装更新成功')
+        self.setGeometry(100, 100, 300, 110)
+        self.setFixedSize(self.width(), self.height())
+        self.setWindowIcon(icon)
+        
+        self.init_ui()
+        
+        new_color_bar(self)
+
+    def init_ui(self):
+        # 创建面板
+        logger.debug('创建面板')
+        layout = QVBoxLayout()
+        
+        # 面板控件
+        logger.debug('创建面板控件')
+        title = QLabel(get_lang('更新就绪'))
+        tip = QLabel('关闭clickmouse以更新')
+
+        set_style(title, 'big_text_16')
+
+        # 按钮
+        update = QPushButton('立即重启') # 更新按钮
+        set_style(update, 'selected')
+        update_log = QPushButton(get_lang('27')) # 查看更新日志按钮
+        cancel = QPushButton(get_lang('1f')) # 取消按钮
+        
+        bottom_layout = QHBoxLayout()
+        # 绑定事件
+        logger.debug('绑定事件')
+        update.clicked.connect(self.on_update)
+        update_log.clicked.connect(self.on_open_update_log)
+        cancel.clicked.connect(self.close)
+        
+        # 布局
+        logger.debug('布局')
+        layout.addWidget(title)
+        layout.addWidget(tip)
+
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(update)
+        bottom_layout.addWidget(update_log)
+        bottom_layout.addWidget(cancel)
+
+        layout.addLayout(bottom_layout)
+        
+        self.setLayout(layout)
+
+    def on_update(self):
+        '''更新'''
+        pass
 
     def on_open_update_log(self):
         # 打开更新日志
@@ -2748,7 +2824,10 @@ class TrayApp:
     
     def run(self):
         '''运行应用程序'''
-        sys.exit(self.app.exec())
+        code = self.app.exec()
+        if running_repair:
+            run_as_admin('repair.py', 'repair.exe')
+        sys.exit(code)
         
     def refresh(self):
         refresh.run()
@@ -2830,15 +2909,40 @@ if __name__ == '__main__':
     else:
         import os # 系统库
         import shutil # 用于删除文件夹
+        from log import Logger # 日志库
+        
+        logger = Logger('主程序日志')
+        logger.info('日志系统启动')
 
         with open(get_resource_path('package_info.json')) as f:
             packages_info = json.load(f)
         try:
+            # 加载并移除弃用扩展
             packages = []
             with open('packages.json', 'r', encoding='utf-8') as f:
-                packages_name = json.load(f)
-            for i in packages_name:
-                packages.append(import_package(i))
+                packages_name: list = json.load(f)
+            for i in packages_name.copy():
+                try:
+                    packages.append(import_package(i))
+                except ValueError as e:
+                    logger.warning(f'扩展{i}已过期，自动清除')
+                    shutil.rmtree(f'extensions/{i}', ignore_errors=True)
+                    del packages_name[packages_name.index(i)]
+            for file in os.listdir('extensions'):
+                full_path = os.path.join('extensions', file)
+                # 检查是否是文件
+                if os.path.isfile(full_path):
+                    if file != 'packages.json':
+                        os.remove(full_path)
+                        logger.warning(f'错误文件{file}自动清除')
+                elif os.path.isdir(full_path):
+                    if file not in packages_name:
+                        logger.warning(f'扩展{file}已过期，自动清除')
+                        shutil.rmtree(full_path, ignore_errors=True)
+            if (os.path.exists('packages.json')) and (os.path.exists('extensions/packages.json')):
+                os.remove('extensions/packages.json')
+            with open('packages.json', 'w', encoding='utf-8') as f:
+                json.dump(packages_name, f)
         except FileNotFoundError:
             os.remove(data_path / 'first_run')
             with open(data_path / 'first_run', 'w'):pass
@@ -2856,8 +2960,7 @@ if __name__ == '__main__':
         from time import sleep, time # 延迟
         from webbrowser import open as open_url # 关于作者
         from version import __version__ # 版本信息
-        from log import Logger # 日志库
-        from check_update import check_update, keys # 更新检查
+        from check_update import check_update, keys_update # 更新检查
         from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel) # 软件界面样式
         from uiStyles import indexes as style_indexes # 界面组件样式索引
         from sharelibs import (run_software, langs, create_shortcut) # 共享库
@@ -2872,10 +2975,6 @@ if __name__ == '__main__':
         # 系统api
         import ctypes
         from ctypes import wintypes
-
-        
-        logger = Logger('主程序日志')
-        logger.info('日志系统启动')
         
         logger.info('加载资源')
         logger.debug('定义常量')
@@ -2931,6 +3030,8 @@ if __name__ == '__main__':
         latest_index = 2
         select_lang = settings.get('select_lang', 0)
         
+        running_repair = False
+        
         dev_config = parse_dev.parse() # 开发者模式配置
 
         logger.debug('定义资源完成')
@@ -2938,6 +3039,9 @@ if __name__ == '__main__':
         logger.debug('检查更新注册表')
         # 检查版本号与注册表是否一致,不一样就修改注册表
         run_software('check_reg_ver.py', 'check_reg_ver.exe')
+        
+        # 移除过期组件
+        shutil.rmtree('updater.old', ignore_errors=True)
 
         logger.debug('加载ui')
         logger.info('加载成功')

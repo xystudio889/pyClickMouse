@@ -1,7 +1,8 @@
 [
     {
         "website_name": "github",
-        "down_web": "https://github.com/xystudiocode/clickmouse/releases/",
+        "down_web": "https://github.com/xystudiocode/pyclickmouse/releases/download/{0}/clickmouse.7z",
+        "open_web": "https://github.com/xystudio889/pyclickmouse/releases/latest",
         "api_web": "https://api.github.com/repos/xystudiocode/pyclickmouse/releases",
         "header": {"Authorization": "token {0}"},
         "addtional_info": {"verify": false},
@@ -11,7 +12,8 @@
     },
     {
         "website_name": "gitee",
-        "down_web": "https://gitee.com/xystudio889/pyclickmouse/releases",
+        "down_web": "https://gitee.com/xystudio889/pyclickmouse/releases/download/{0}/clickmouse.7z",
+        "open_web": "https://gitee.com/xystudio889/pyclickmouse/releases/latest",
         "api_web": "https://gitee.com/api/v5/repos/xystudio889/pyclickmouse/releases/",
         "header": {"Authorization": "Bearer {0}"},
         "addtional_info": {},

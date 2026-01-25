@@ -503,6 +503,7 @@ class InstallWindow(PagesUI):
                 self.set_status(get_init_lang('27'))
                 with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
                     json.dump(["xystudio.clickmouse"], f)
+            os.mkdir('extensions')
                     
             # 卸载功能
             self.set_status(get_init_lang('28'))
