@@ -1,3 +1,4 @@
+# 怎么贡献？
 ## commit message
 
 需要遵循以下格式:
@@ -62,6 +63,8 @@ A.B.C.D((.dev | alpha | beta | rc)E)
 - 我们给了一些模板，可前往[issue模板](./.github/ISSUE_TEMPLATE/)下的markdown文件查看。
 - 使用`labels`来标记issue的类型，比如`bug`、`enhancement`、`question`等。
 - 设置issue的`milestone`为你想应用的issue版本。
+- 安全问题请见[安全说明文档](./SECURITY.md)。
+
 ### milestone
 - 我们给每个版本都设置了一个milestone，用来管理该版本的issue和pr。
 - 需要每个issue都关联到一个milestone，这样我们才能知道该issue是否已经完成，以及该issue是否在下个版本中进行。
@@ -73,3 +76,8 @@ A.B.C.D((.dev | alpha | beta | rc)E)
 - 关联issue，这样我们就可以知道这个pr解决了哪个issue。
 - 需要准确写出更新内容，关联到版本号的milestone。
 - 可选添加实现思路
+### 快车pr
+- 快车pr的意思是跳过部分正常的pr步骤，更快的合并到目标分支的功能。
+- 标题格式：`[快车] 标题`
+> [!WARNING]
+> 快车pr请谨慎使用
