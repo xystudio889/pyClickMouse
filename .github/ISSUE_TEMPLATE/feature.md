@@ -12,6 +12,8 @@ type: Feature
 **Descript the feture...**
 
 ## Resolution solution
+> [!TIP]
+> This is OPTIONAL
 1. step1
 2. step2
 3. step3
