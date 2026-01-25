@@ -30,12 +30,10 @@ QPushButton:disabled {
 
 QComboBox {
     background-color: #fafafa;
-    color: black;
 }
 
 QComboBox QAbstractItemView {
     background-color: white;
-    color: black;
 }
 
 QLineEdit {

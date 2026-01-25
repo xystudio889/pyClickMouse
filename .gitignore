@@ -408,8 +408,8 @@ mkpyd.bat
 cache/
 Gui/data/*
 data/
-xQklN2n.py
 key*
+!keycrypter.py
 default_key
 gui/dev_list/*
 !gui/dev_list/in_dev

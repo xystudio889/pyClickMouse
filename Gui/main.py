@@ -1,83 +1,14 @@
-# 加载框架
+# 加载ui框架
 from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
 
-from pathlib import Path # 文件管理库
-import pyautogui # 鼠标操作库
-import threading # 用于鼠标点击
-from time import sleep, time # 延迟
-from webbrowser import open as open_url # 关于作者
-from version import __version__ # 版本信息
-from log import Logger # 日志库
-from check_update import check_update # 更新检查
-from datetime import datetime # 用于检查缓存的时间和现在相差的时间
-import json # 用于读取配置文件
-import os # 系统库
-import shutil # 用于删除文件夹
-from uiStyles import (SelectUI, UnitInputLayout, UCheckBox, styles, maps, StyleReplaceMode, UMessageBox, ULabel) # 软件界面样式
-from uiStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (run_software, mem_id, run_as_admin) # 共享库
-import parse_dev # 解析开发固件配置
-import winreg # 注册表库
+from datetime import datetime # 检查时间
+from uiStyles import (SelectUI, UMessageBox, UCheckBox) # 软件界面样式
 from pynput import keyboard # 热键功能库
-import math # 数学库
-import traceback # 异常处理库
-import colorsys # 颜色库
-import struct # 字节处理库
-import pytz # 时区库
+from sharelibs import (get_lang)
 
-# 系统api
-import ctypes
-from ctypes import wintypes
-
-logger = Logger('主程序日志')
-logger.info('日志系统启动')
-
-logger.debug('定义函数')
-
-dev_config = parse_dev.parse()
-
-def get_resource_path(*paths):
-    '''
-    获取资源文件路径
-    '''
-    try:
-        logger.info(f'获取资源文件路径: {paths}')
-        resource = Path('res') # 获取当前目录的资源文件夹路径
-        if not resource.exists():
-            raise FileNotFoundError(get_lang('13'))
-        return str(resource.joinpath(*paths))
-    except Exception as e:
-        logger.error(f'获取资源文件路径失败: {e}')
-        MessageBox.critical(None, get_lang('14'), f'{get_lang('12')}:{e}')
-        sys.exit(1)
-
-def get_lang(lang_package_id, lang_id = None, source = None):
-    source = langs if source is None else source
-    lang_id = select_lang if lang_id is None else lang_id
-    for i in source:
-        if i['lang_id'] == 0: # 设置默认语言包
-            default_lang_text = i['lang_package']
-        if i['lang_id'] == lang_id: # 设置目前语言包
-            lang_text = i['lang_package']
-    try:
-        return lang_text.get(lang_package_id, default_lang_text[lang_package_id])
-    except KeyError:
-        logger.error(f'错误:出现一个不存在的语言包id:{lang_package_id}')
-        return 'Language not found'
-    except UnboundLocalError:
-        lang_text = {}
-        return lang_text.get(lang_package_id, default_lang_text[lang_package_id])
-    
-def get_lang_system_name(lang_id = None):
-    # 获取系统语言名称
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
-    for i in langs:
-        if lang_id == i['lang_id']:
-            return i['lang_system_name']
-    
 def filter_hotkey(text:str):
     return text.split('(')[0]
     
@@ -180,19 +111,6 @@ def all_in_list(list1, list2):
     if len(list1)!= len(list2):
         return False
     return all(item in list2 for item in list1)
-
-def check_default_delay():
-    '''检查默认延迟是否有效'''
-    try:
-        delay = int(settings.get('click_delay', ''))
-        if not delay:
-            return True
-        if delay < 1:
-            raise ValueError
-        return True
-    except ValueError:
-        MessageBox.critical(None, get_lang('14'), get_lang('5b'))
-        return False
         
 def init_units():
     units = {'ms': 1}
@@ -358,44 +276,20 @@ class StartManager(QObject):
     updated = Signal(bool)
     def __init__(self):
         super().__init__()
-        self.app_name = 'clickmouse'
-        self.registry_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
-        self.status_path = r'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
+        self.app_name = 'clickmouse.lnk'
+        self.status_path = r'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder'
         self.create_reg()
         self.auto_start = self.is_enabled()
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_value)
-        self.timer.start(1)
-        
-    def check_registry_value_exists(self):
-        '''
-        检查注册表值是否存在
-        
-        Args:
-            key_path: 注册表键路径（如：'Software\\MyApp'）
-            value_name: 要检查的值名称（如：'InstallPath'）
-            hive: 注册表根键，默认为HKEY_CURRENT_USER
-        
-        Returns:
-            bool: 值是否存在
-        '''
-        # 打开注册表键
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.registry_path, 0, winreg.KEY_READ) as key:
-            try:
-                # 尝试查询值
-                winreg.QueryValueEx(key, self.app_name)
-                return True
-            except FileNotFoundError:
-                return False
+        self.timer.start(settings.get('soft_delay', 1))
 
     def create_reg(self):
         '''检查是否已启用开机自启动'''
-        if not self.check_registry_value_exists():
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
-                                self.registry_path, 0, winreg.KEY_WRITE) as key:
-                winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, str(Path.cwd() / 'main.exe'))
-            
+        start_path = Path(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', self.app_name)
+        if not(start_path.exists()):
+            create_shortcut(str(start_path), str(Path.cwd() / 'main.exe'), 'ClickMouse', work_dir=str(Path.cwd()))
             self.disable()
 
     def is_enabled(self):
@@ -643,7 +537,7 @@ class Refresh:
                 logger.error(f'步骤{code.__name__}执行失败:{e}')
         
     def refresh_title(self):
-        QTimer.singleShot(1, color_getter.style_changed.emit)
+        QTimer.singleShot(settings.get('soft_delay', 1), color_getter.style_changed.emit)
     
     def left_check(self):
         if clicker.left_clicked:
@@ -688,7 +582,7 @@ class ColorGetter(QObject):
         # 使用定时器定期检测主题变化
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_and_apply_theme)
-        self.timer.start(1)
+        self.timer.start(settings.get('soft_delay', 1))
     
     def load_theme(self):
         logger.debug('获取最新的主题')
@@ -787,6 +681,7 @@ class ColorGetter(QObject):
                 select_styles = select_styles.replace(['.selected:hover', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.45), output_json=False)
                 select_styles = select_styles.replace(['.selected', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
                 select_styles = select_styles.replace(['.selected:hover', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
+                select_styles = select_styles.replace(['.selected:pressed', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
                 select_styles = select_styles.replace(['QCheckBox', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
             else:
                 select_styles = select_styles.replace(['.selected', 'background-color'], StyleReplaceMode.ALL, self.windows_color, output_json=False)
@@ -795,62 +690,6 @@ class ColorGetter(QObject):
             
         app.setStyleSheet(select_styles.css_text)  # 全局应用
         self.refresh()
-    
-# Windows API常量
-DWMWA_USE_IMMERSIVE = 20
-DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-DWM_WINDOW_CORNER_PREFERENCE = 33
-DWMWCP_ROUND = 2
-DWMNCRP_ENABLED = 1
-
-data_path = Path('data')
-settings = load_settings()
-
-clicker = Click()
-auto_start_manager = StartManager()
-color_getter = ColorGetter()
-
-# 变量
-logger.debug('定义资源')
-
-logger.debug('定义数据路径和创建文件夹')
-
-# 定义数据路径
-cache_path = Path('cache')
-update_cache_path = cache_path / 'update.json'
-
-# 创建文件夹（如果不存在）
-data_path.mkdir(parents=True, exist_ok=True)
-cache_path.mkdir(parents=True, exist_ok=True)
-
-# 创建资源
-should_check_update_res = should_check_update()
-update_cache = load_update_cache()
-icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
-
-logger.debug('定义语言包')
-with open(get_resource_path('langs', 'langs.json'), 'r', encoding='utf-8') as f:
-    langs = json.load(f)
-    
-with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
-    package_lang = json.load(f)
-    
-with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
-    unit_lang = json.load(f)
-
-with open(get_resource_path('package_info.json')) as f:
-    packages_info = json.load(f)
-    
-settings_need_restart = False
-
-# 单位控制
-units = init_units()
-latest_index = 2
-select_lang = settings.get('select_lang', 0)
-
-logger.debug('定义资源完成')
-
-logger.debug('加载ui')
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -1078,10 +917,17 @@ class MainWindow(QMainWindow):
         
     def do_extension(self, index):
         '''执行扩展'''
+        global running_repair
+
         try:
             match index:
                 case 'xystudio.clickmouse.repair':
-                    QMessageBox.information(self, get_lang('16'), get_lang('b3').format(Path.cwd() / 'repair.exe'))
+                    if running_repair:
+                        QMessageBox.information(self, '运行计划', '已取消预定启动计划。')
+                        running_repair = False
+                    else:
+                        QMessageBox.information(self, '运行计划', '已预定启动计划，将在本程序关闭后执行。')
+                        running_repair = True
                     return
                 case _:
                     run_software('NoneFile', f'extensions/{index}/main.exe')
@@ -1187,7 +1033,7 @@ class MainWindow(QMainWindow):
         # 检查更新
         if should_check_update_res:
             shutil.rmtree(str(cache_path / 'logs'), ignore_errors=True) # 删除旧缓存
-            self.check_update_thread = QtThread(check_update, args=('gitee', False))
+            self.check_update_thread = QtThread(check_update, args=('gitee', True))
             self.check_update_thread.finished.connect(self.on_check_update_result)
             self.check_update_thread.start()
         else:
@@ -1995,7 +1841,76 @@ class UpdateWindow(QDialog):
 
     def on_update(self):
         '''更新'''
-        open_url('https://github.com/xystudio889/pyClickMouse/releases')
+        pass
+
+    def on_open_update_log(self):
+        # 打开更新日志
+        logger.debug('打开更新日志')
+
+        update_log = cache_path / 'update_log.md' # 更新日志路径
+
+        try:
+            os.startfile(update_log) # 打开更新日志
+            MessageBox.information(self, get_lang('16'), get_lang('28')) 
+        except:
+            MessageBox.critical(self, get_lang('14'), get_lang('58'))
+            
+class UpdateWindow(QDialog):
+    def __init__(self):
+        # 初始化
+        logger.info('初始化更新窗口')
+        super().__init__()
+        self.setWindowTitle('安装更新成功')
+        self.setGeometry(100, 100, 300, 110)
+        self.setFixedSize(self.width(), self.height())
+        self.setWindowIcon(icon)
+        
+        self.init_ui()
+        
+        new_color_bar(self)
+
+    def init_ui(self):
+        # 创建面板
+        logger.debug('创建面板')
+        layout = QVBoxLayout()
+        
+        # 面板控件
+        logger.debug('创建面板控件')
+        title = QLabel(get_lang('更新就绪'))
+        tip = QLabel('关闭clickmouse以更新')
+
+        set_style(title, 'big_text_16')
+
+        # 按钮
+        update = QPushButton('立即重启') # 更新按钮
+        set_style(update, 'selected')
+        update_log = QPushButton(get_lang('27')) # 查看更新日志按钮
+        cancel = QPushButton(get_lang('1f')) # 取消按钮
+        
+        bottom_layout = QHBoxLayout()
+        # 绑定事件
+        logger.debug('绑定事件')
+        update.clicked.connect(self.on_update)
+        update_log.clicked.connect(self.on_open_update_log)
+        cancel.clicked.connect(self.close)
+        
+        # 布局
+        logger.debug('布局')
+        layout.addWidget(title)
+        layout.addWidget(tip)
+
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(update)
+        bottom_layout.addWidget(update_log)
+        bottom_layout.addWidget(cancel)
+
+        layout.addLayout(bottom_layout)
+        
+        self.setLayout(layout)
+
+    def on_update(self):
+        '''更新'''
+        pass
 
     def on_open_update_log(self):
         # 打开更新日志
@@ -2153,7 +2068,7 @@ class ClickAttrWindow(QDialog):
         # 定义变量
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_attr)
-        self.timer.start(1000)
+        self.timer.start(settings.get('soft_delay', 1))
         
         self.init_ui()
         
@@ -2314,66 +2229,109 @@ class SettingWindow(SelectUI):
                 
                 auto_start_manager.updated.connect(lambda enb: self.start_checkbox.setChecked(enb))
                 self.start_checkbox.stateChanged.connect(self.on_auto_start_changed)
-
+                
+                # 延迟
+                soft_delay_layout = QHBoxLayout() # 颜色延迟布局
+                soft_delay_setting = settings.get('soft_delay', 1)
+                
+                soft_delay = QSlider(Qt.Horizontal)
+                soft_delay.setMinimum(0)
+                soft_delay.setMaximum(100)
+                soft_delay.setValue(settings.get('soft_delay', 1) // 10)
+                soft_delay.setTickPosition(QSlider.TicksBelow)
+                soft_delay.setTickInterval(10)
+                soft_delay.setFixedWidth(200)
+                
+                delay_tip_label = QLabel('响应延迟越快，软件使用越顺畅，但会造成更多的占用。')
+                set_style(delay_tip_label, 'dest_small')
+                
+                # 布局
+                soft_delay_layout.addWidget(QLabel('响应延迟'))
+                soft_delay_layout.addWidget(soft_delay)
+                soft_delay_layout.addWidget(delay_tip_label)
+                soft_delay_layout.addStretch(1)
+                
+                delay_layout_text = QLabel(f'响应延迟: {soft_delay_setting}毫秒')
+                set_style(delay_layout_text, 'big_text_14')
                 # 布局
                 layout.addLayout(lang_choice_layout)
                 layout.addLayout(tray_layout)
                 layout.addLayout(start_layout)
+                layout.addWidget(create_horizontal_line())
+                layout.addLayout(soft_delay_layout)
+                layout.addWidget(delay_layout_text)
+                layout.addWidget(create_horizontal_line())
                 
                 # 绑定事件
                 self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang'))
                 tray.stateChanged.connect(lambda: self.on_setting_changed(tray.isChecked,'show_tray_icon'))
                 tray.stateChanged.connect(lambda: self.app.setQuitOnLastWindowClosed(not tray.isChecked()))  # 关闭窗口时不退出应用
+                soft_delay.valueChanged.connect(lambda: self.on_setting_changed(lambda: soft_delay.value() * 10 if soft_delay.value() > 0 else 1, 'soft_delay'))
+                soft_delay.valueChanged.connect(lambda: delay_layout_text.setText(f'布局响应延迟: {soft_delay.value() * 10 if soft_delay.value() > 0 else 1}毫秒'))
             case self.page_click:
                 set_content_label(get_lang('84'))
                 # 选择默认连点器延迟
-                unit_layout = UnitInputLayout() # 窗口风格布局
+                layout_delay = QVBoxLayout() # 延迟布局
+                unit_delay_layout = QHBoxLayout() # 窗口风格布局
                 self.default_delay = QLineEdit()
                 self.default_delay.setText(str(settings.get('click_delay', '')))
                 self.delay_combo = QComboBox()
                 self.delay_combo.addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
                 self.delay_combo.setCurrentIndex(settings.get('delay_unit', 0))
-                unit_layout.addUnitRow(get_lang('46'), self.default_delay, self.delay_combo)
+
+                unit_delay_layout.addWidget(QLabel(get_lang('46') + ': '))
+                unit_delay_layout.addWidget(self.default_delay)
+                unit_delay_layout.addWidget(self.delay_combo)
+                unit_delay_layout.addStretch(1)
                 
                 # 连点出错时使用默认值
                 use_default_delay = UCheckBox(get_lang('47'))
                 use_default_delay.setChecked(settings.get('failed_use_default', False))
                 if not self.default_delay.text():
                     use_default_delay.setEnabled(False)
-                    
-                line1 = create_horizontal_line()
 
                 # 布局
-                unit_layout.newRow()
-                unit_layout.addWidget(use_default_delay)
-                unit_layout.newRow()
-                unit_layout.addWidget(line1)
-                
+                layout_delay.addLayout(unit_delay_layout)
+                layout_delay.addWidget(use_default_delay)
+                layout_delay.addWidget(create_horizontal_line())
+                layout_delay.addStretch(1)
+
+                # 连点器默认点击次数
+                layout_time = QVBoxLayout() # 次数布局
+                unit_time_layout = QHBoxLayout() # 窗口风格布局
                 self.default_time = QLineEdit()
                 self.default_time.setText(str(settings.get('click_times', '')))
                 self.times_combo = QComboBox()
                 self.times_combo.addItems([get_lang('66'), get_lang('2a'), get_lang('2b')])
                 self.times_combo.setCurrentIndex(settings.get('times_unit', 0))
-                unit_layout.addUnitRow(get_lang('85'), self.default_time, self.times_combo)
+
+                unit_time_layout.addWidget(QLabel(get_lang('85') + ': '))
+                unit_time_layout.addWidget(self.default_time)
+                unit_time_layout.addWidget(self.times_combo)
+                unit_time_layout.addStretch(1)
                 
                 # 连点出错时使用默认值
                 use_default_time = UCheckBox(get_lang('86'))
                 use_default_time.setChecked(settings.get('times_failed_use_default', False))
                 if not self.default_time.text():
                     use_default_time.setEnabled(False)
-                unit_layout.newRow()
-                unit_layout.addWidget(use_default_time)
-                
-                line2 = create_horizontal_line()
                 
                 self.total_time_label = QLabel(f'{get_lang('2c')}: {get_lang('61')}')
                 set_style(self.total_time_label, 'big_text_14')
                 self.on_input_change()
                 
                 # 布局
-                layout.addLayout(unit_layout)
-                layout.addWidget(line2)
+                layout_time.addLayout(unit_time_layout)
+                layout_time.addWidget(use_default_time)
+                layout_time.addWidget(create_horizontal_line())
+                layout_time.addStretch(1)
+                
+                # 布局
+                layout.addLayout(layout_delay)
+                layout.addLayout(layout_time)
                 layout.addWidget(self.total_time_label)
+                layout.addWidget(create_horizontal_line())
+                layout.addStretch(1)
                 
                 # 连接信号
                 self.default_delay.textChanged.connect(lambda: self.on_default_input_changed(self.default_delay, 'click_delay', use_default_delay))
@@ -2394,7 +2352,7 @@ class SettingWindow(SelectUI):
                 check_update_notify_text = QLabel(get_lang('48')) # 选择更新检查提示
                 check_update_notify = QComboBox()
                 check_update_notify.addItems([get_lang('49'), get_lang('4a')])
-                check_update_notify.setCurrentIndex(settings.get('check_update_notify', 0))
+                check_update_notify.setCurrentIndex(settings.get('update_notify', 0))
                 
                 # 布局
                 check_update_layout.addWidget(check_update_notify_text)
@@ -2428,7 +2386,6 @@ class SettingWindow(SelectUI):
                 style_choice_use_windows = UCheckBox(get_lang('a8'))
                 tip_label = QLabel(get_lang('b4'))
                 set_style(tip_label, 'dest_small')
-                
                 style_choice_use_windows.setChecked(settings.get('use_windows_color', True))
                 
                 # 布局
@@ -2867,7 +2824,10 @@ class TrayApp:
     
     def run(self):
         '''运行应用程序'''
-        sys.exit(self.app.exec())
+        code = self.app.exec()
+        if running_repair:
+            run_as_admin('repair.py', 'repair.exe')
+        sys.exit(code)
         
     def refresh(self):
         refresh.run()
@@ -2920,6 +2880,10 @@ class TrayApp:
             self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
 
 if __name__ == '__main__':
+    from sharelibs import (mem_id, get_resource_path, run_as_admin) # 共享库
+    import json # 用于读取json文件
+    from pathlib import Path # 路径库
+
     shared_memory = QSharedMemory(mem_id[0])
     if shared_memory.attach():
         # 已经有一个实例在运行
@@ -2934,17 +2898,51 @@ if __name__ == '__main__':
     if is_running:
         # 已经有一个实例在运行
         sys.exit(2)
-
+        
+    with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+        package_lang = json.load(f)
+    
+    data_path = Path('data')
     if not((data_path / 'first_run').exists()):
         run_as_admin('init.py', 'init.exe')
         exit(0)
     else:
+        import os # 系统库
+        import shutil # 用于删除文件夹
+        from log import Logger # 日志库
+        
+        logger = Logger('主程序日志')
+        logger.info('日志系统启动')
+
+        with open(get_resource_path('package_info.json')) as f:
+            packages_info = json.load(f)
         try:
+            # 加载并移除弃用扩展
             packages = []
             with open('packages.json', 'r', encoding='utf-8') as f:
-                packages_name = json.load(f)
-            for i in packages_name:
-                packages.append(import_package(i))
+                packages_name: list = json.load(f)
+            for i in packages_name.copy():
+                try:
+                    packages.append(import_package(i))
+                except ValueError as e:
+                    logger.warning(f'扩展{i}已过期，自动清除')
+                    shutil.rmtree(f'extensions/{i}', ignore_errors=True)
+                    del packages_name[packages_name.index(i)]
+            for file in os.listdir('extensions'):
+                full_path = os.path.join('extensions', file)
+                # 检查是否是文件
+                if os.path.isfile(full_path):
+                    if file != 'packages.json':
+                        os.remove(full_path)
+                        logger.warning(f'错误文件{file}自动清除')
+                elif os.path.isdir(full_path):
+                    if file not in packages_name:
+                        logger.warning(f'扩展{file}已过期，自动清除')
+                        shutil.rmtree(full_path, ignore_errors=True)
+            if (os.path.exists('packages.json')) and (os.path.exists('extensions/packages.json')):
+                os.remove('extensions/packages.json')
+            with open('packages.json', 'w', encoding='utf-8') as f:
+                json.dump(packages_name, f)
         except FileNotFoundError:
             os.remove(data_path / 'first_run')
             with open(data_path / 'first_run', 'w'):pass
@@ -2956,12 +2954,97 @@ if __name__ == '__main__':
                 shutil.rmtree('extensions')
             pass
         
+        # 加载框架
+        import pyautogui # 鼠标操作库
+        import threading # 用于鼠标点击
+        from time import sleep, time # 延迟
+        from webbrowser import open as open_url # 关于作者
+        from version import __version__ # 版本信息
+        from check_update import check_update, keys_update # 更新检查
+        from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel) # 软件界面样式
+        from uiStyles import indexes as style_indexes # 界面组件样式索引
+        from sharelibs import (run_software, langs, create_shortcut) # 共享库
+        import parse_dev # 解析开发固件配置
+        import winreg # 注册表库
+        import math # 数学库
+        import traceback # 异常处理库
+        import colorsys # 颜色库
+        import struct # 字节处理库
+        import pytz # 时区库
+
+        # 系统api
+        import ctypes
+        from ctypes import wintypes
+        
+        logger.info('加载资源')
+        logger.debug('定义常量')
         has_packages = os.path.exists(get_resource_path('packages'))
         package_names, show_list, package_ids = get_packages()
+        
+        # Windows API常量
+        logger.debug('定义Windows API常量')
+        DWMWA_USE_IMMERSIVE = 20
+        DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        DWM_WINDOW_CORNER_PREFERENCE = 33
+        DWMWCP_ROUND = 2
+        DWMNCRP_ENABLED = 1
+
+        logger.debug('加载设置')
+        settings = load_settings()
+
+        logger.debug('加载类')
+        clicker = Click()
+        auto_start_manager = StartManager()
+        color_getter = ColorGetter()
+
+        # 变量
+        logger.debug('定义资源')
+
+        logger.debug('定义数据路径和创建文件夹')
+
+        # 定义数据路径
+        cache_path = Path('cache')
+        update_cache_path = cache_path / 'update.json'
+        extension_path = Path('extensions')
+
+        # 创建文件夹（如果不存在）
+        data_path.mkdir(parents=True, exist_ok=True)
+        cache_path.mkdir(parents=True, exist_ok=True)
+        extension_path.mkdir(parents=True, exist_ok=True)
+
+        # 创建资源
+        should_check_update_res = should_check_update()
+        update_cache = load_update_cache()
+        icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+
+        logger.debug('定义语言包')
+        with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
+            unit_lang = json.load(f)
+
         has_plural = get_has_plural()
 
+        settings_need_restart = False
+
+        # 单位控制
+        units = init_units()
+        latest_index = 2
+        select_lang = settings.get('select_lang', 0)
+        
+        running_repair = False
+        
+        dev_config = parse_dev.parse() # 开发者模式配置
+
+        logger.debug('定义资源完成')
+
+        logger.debug('检查更新注册表')
         # 检查版本号与注册表是否一致,不一样就修改注册表
         run_software('check_reg_ver.py', 'check_reg_ver.exe')
+        
+        # 移除过期组件
+        shutil.rmtree('updater.old', ignore_errors=True)
+
+        logger.debug('加载ui')
+        logger.info('加载成功')
         main_window = MainWindow()
         hotkey_help_window = HotkeyHelpWindow()
         
