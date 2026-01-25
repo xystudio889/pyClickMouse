@@ -3,25 +3,7 @@ from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
-
-import os
-from pathlib import Path
-import winreg # 注册表编辑
-import pyperclip # 复制错误信息
-import win32com.client # 创建快捷方式
-import zipfile # 解压文件
-import json # 读写json文件
-from sharelibs import (get_resource_path, run_software, get_init_lang, get_lang, system_lang, is_admin, settings, parse_system_language_to_lang_id, mem_id) # 共享库
-from uiStyles import PagesUI, styles, UCheckBox
-import traceback # 异常捕获
-    
-with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
-    package_langs = json.load(f)
-    
-with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
-    packages_info = json.load(f)
-    
-software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
+from uiStyles import (PagesUI) 
 
 def save_settings(settings):
     '''
@@ -29,26 +11,6 @@ def save_settings(settings):
     '''
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
-
-data_path = Path('data')
-
-package_id_list = []
-
-def create_shortcut(path, target, description, work_dir = None, icon_path = None):
-    # 创建快捷方式
-    try:
-        icon_path = target if icon_path is None else icon_path
-        work_dir = os.path.dirname(target) if work_dir is None else work_dir
-        
-        shell = win32com.client.Dispatch('WScript.Shell')
-        shortcut = shell.CreateShortCut(path)
-        shortcut.TargetPath = target # 目标程序
-        shortcut.WorkingDirectory = work_dir # 工作目录
-        shortcut.IconLocation = icon_path # 图标（路径,图标索引）
-        shortcut.Description = description # 备注描述
-        shortcut.Save()
-    except:
-        pass
 
 def extract_zip(file_path, extract_path):
     '''
@@ -135,10 +97,6 @@ class ColorGetter(QObject):
         select_styles = styles[self.current_theme]
                 
         app.setStyleSheet(select_styles.css_text)  # 全局应用
-
-icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
-
-getter = ColorGetter()
 
 class InstallWindow(PagesUI):
     def __init__(self):
@@ -545,6 +503,7 @@ class InstallWindow(PagesUI):
                 self.set_status(get_init_lang('27'))
                 with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
                     json.dump(["xystudio.clickmouse"], f)
+            os.mkdir('extensions')
                     
             # 卸载功能
             self.set_status(get_init_lang('28'))
@@ -632,6 +591,8 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
+    from sharelibs import mem_id
+
     shared_memory = QSharedMemory(mem_id[1])
     if shared_memory.attach():
         # 已经有一个实例在运行
@@ -642,6 +603,13 @@ if __name__ == '__main__':
     if is_running:
         # 已经有一个实例在运行
         sys.exit(2)
+        
+    import os
+    from pathlib import Path
+    from sharelibs import get_resource_path, is_admin, get_init_lang
+        
+    software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
+    data_path = Path('data')
     
     if check_reg_key(software_reg_key):
         QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('1e'))
@@ -654,6 +622,26 @@ if __name__ == '__main__':
         QMessageBox.warning(None, get_init_lang('1d'), get_init_lang('1f'))
 
     if is_admin():  # 管理员权限
+        import winreg # 注册表编辑
+        import pyperclip # 复制错误信息
+        import zipfile # 解压文件
+        import json # 读写json文件
+        from sharelibs import (run_software, get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id, create_shortcut) # 共享库
+        from uiStyles import styles, UCheckBox
+        import traceback # 异常捕获
+
+        with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
+            package_langs = json.load(f)
+            
+        with open(get_resource_path('package_info.json'), 'r', encoding='utf-8') as f:
+            packages_info = json.load(f)
+
+        package_id_list = []
+        
+        icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+
+        getter = ColorGetter()
+
         window = InstallWindow()
         window.show()
     else:
