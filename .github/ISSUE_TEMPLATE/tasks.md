@@ -3,7 +3,7 @@ name: Tasks
 about: TODO-list
 title: "☑️[TASK]"
 labels: enhancement
-assignees: xystudio889
+type: Task
 
 ---
 

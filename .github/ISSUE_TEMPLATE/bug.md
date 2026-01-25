@@ -3,7 +3,7 @@ name: Bug Report Description
 about: Bug issue template
 title: "\U0001F41B[BUG]"
 labels: bug
-assignees: xystudio889
+type: Bug
 
 ---
 
