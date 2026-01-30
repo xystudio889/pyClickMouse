@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
+from PySide6.QtGui import QIcon
 import os
 import subprocess
 import winreg
@@ -161,3 +162,13 @@ def create_shortcut(path, target, description, work_dir = None, icon_path = None
         shortcut.Save()
     except:
         pass
+
+with open(get_resource_path('versions.json'), 'r') as f:
+    __version__ = json.load(f)['clickmouse']
+ 
+__author__ = 'xystudio'
+is_pre = ('alpha' in __version__) or ('beta' in __version__) or ('dev' in __version__) or ('rc' in __version__)
+
+def get_icon(icon_name):
+    icon_folder = 'clickmouse_pre' if is_pre else 'clickmouse'
+    return QIcon(get_resource_path('icons', icon_folder, f'{icon_name}.ico'))

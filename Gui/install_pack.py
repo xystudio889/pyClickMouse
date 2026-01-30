@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
-from uiStyles import PagesUI, UMessageBox
+from uiStyles import PagesUI, UMessageBox, MessageButtonTemplate, MessageOut
     
 def import_package(package_id: str):
     for i in packages_info:
@@ -107,13 +107,12 @@ class MessageBox(UMessageBox):
                 title: str, 
                 text: str, 
                 icon: QMessageBox.Icon, 
-                buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
-                defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+                buttons: MessageButtonTemplate = MessageButtonTemplate.OK,
+                defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
         
         msg_box = UMessageBox.new_msg(parent, title, text, icon, buttons, defaultButton)
-        
         new_color_bar(msg_box)
-        
+
         return msg_box
 
 class ColorGetter(QObject):
@@ -245,7 +244,8 @@ class InstallWindow(PagesUI):
         image_label = QLabel()
 
         # 加载图片
-        image_label.setPixmap(self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'), 32, 32))
+        clickmouse_icon = get_icon('icon')
+        image_label.setPixmap(clickmouse_icon.pixmap(32, 32))
         
         # 加载文字
         title_label = QLabel(get_inst_lang('01'))
@@ -483,20 +483,6 @@ class InstallWindow(PagesUI):
             
             self.selected_components = template_components.copy()
             self.update_components_lists()
-    
-    def loadImage(self, image_path, width, height):
-        '''加载并显示图片'''
-        # 创建QPixmap对象
-        pixmap = QPixmap(image_path)
-        
-        # 按比例缩放图片以适应标签大小
-        scaled_pixmap = pixmap.scaled(
-            width, 
-            height,
-            Qt.KeepAspectRatio, 
-            Qt.SmoothTransformation
-        )
-        return scaled_pixmap
 
     def update_buttons(self):
         if (self.current_page >= self.PAGE_finish):
@@ -580,7 +566,7 @@ class InstallWindow(PagesUI):
                 self,
                 get_inst_lang('1a'),
                 get_inst_lang('24').format('\n'.join(self.changes if self.changes else [get_inst_lang('2f')])),
-            QMessageBox.Yes | QMessageBox.No,
+            MessageButtonTemplate.YESNO,
             )
             
             for i in packages_info:
@@ -592,7 +578,7 @@ class InstallWindow(PagesUI):
                 
             self.changes = get_list_diff(select_package_id, package_id_list)
 
-            if message == QMessageBox.No:
+            if message == MessageOut.YES:
                 return
         super().on_next()
         
@@ -628,7 +614,7 @@ if __name__ == '__main__':
     import os
     from pathlib import Path
     import pyperclip
-    from sharelibs import (get_lang, settings, get_inst_lang)
+    from sharelibs import (get_lang, settings, get_inst_lang, get_icon)
     import win32com.client
     import winreg
     import zipfile
@@ -653,7 +639,7 @@ if __name__ == '__main__':
 
     packages = get_packages()
     
-    icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+    icon = get_icon('init')
     package_id_list = []
     select_package_id = []
 

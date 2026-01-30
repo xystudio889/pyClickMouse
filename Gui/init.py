@@ -626,7 +626,7 @@ if __name__ == '__main__':
         import pyperclip # 复制错误信息
         import zipfile # 解压文件
         import json # 读写json文件
-        from sharelibs import (run_software, get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id, create_shortcut) # 共享库
+        from sharelibs import (run_software, get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id, create_shortcut, get_icon) # 共享库
         from uiStyles import styles, UCheckBox
         import traceback # 异常捕获
 
@@ -638,7 +638,7 @@ if __name__ == '__main__':
 
         package_id_list = []
         
-        icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+        icon = get_icon('init')
 
         getter = ColorGetter()
 

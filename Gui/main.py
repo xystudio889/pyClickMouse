@@ -5,7 +5,7 @@ app = QApplication(sys.argv)
 from uiStyles.QUI import *
 
 from datetime import datetime # 检查时间
-from uiStyles import (SelectUI, UMessageBox, UCheckBox) # 软件界面样式
+from uiStyles import (SelectUI, UCheckBox, UMessageBox, MessageButtonTemplate, MessageOut) # 软件界面样式
 from pynput import keyboard # 热键功能库
 from sharelibs import (get_lang)
 
@@ -16,7 +16,7 @@ def load_update_cache():
     '''
     加载更新缓存文件
     '''
-    logger.info('加载缓存文件')
+    logger.info('加载更新缓存')
     if update_cache_path.exists():
         with open(update_cache_path, 'r', encoding='utf-8') as f:
             cache = json.load(f)
@@ -56,7 +56,7 @@ def should_check_update():
     检查是否应该检查更新
     '''
     logger.info('检查是否应该检查更新')
-    last_check_time = load_update_cache().get('last_check_time')
+    last_check_time = update_cache.get('last_check_time')
     if not last_check_time:
         return True
     last_check_time_stamp = datetime.fromtimestamp(last_check_time)
@@ -69,7 +69,6 @@ def load_settings():
     '''
     加载设置
     '''
-    logger.info('加载设置')
     try:
         with open(data_path / 'settings.json', 'r', encoding='utf-8') as f:
             settings = json.load(f)
@@ -326,13 +325,12 @@ class MessageBox(UMessageBox):
                 title: str, 
                 text: str, 
                 icon: QMessageBox.Icon, 
-                buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
-                defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+                buttons: MessageButtonTemplate = MessageButtonTemplate.OK,
+                defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
         
         msg_box = UMessageBox.new_msg(parent, title, text, icon, buttons, defaultButton)
-        
         new_color_bar(msg_box)
-        
+
         return msg_box
 
 class QtThread(QThread):
@@ -386,8 +384,7 @@ class HotkeyListener(QObject):
         # 将按下的键添加到集合中
         self.pressed_keys.add(key)
         self.pressed_key.emit(key)
-        
-        # 检查是否为Ctrl+Alt+A组合键
+
         self.check_combination()
     
     def on_key_release(self, key):
@@ -397,8 +394,7 @@ class HotkeyListener(QObject):
             self.pressed_keys.remove(key)
     
     def check_combination(self):
-        '''检查特定的组合键'''
-        # 检查是否同时按下了Ctrl、Alt和A
+        '''发送特定的组合键'''
         self.combination_pressed.emit(list(map(str, self.pressed_keys)))  # 发送组合键信息
                 
 class Click(QObject):
@@ -522,15 +518,16 @@ class Refresh:
         ]
     
     def run(self):
+        logger.info('运行刷新服务')
         self.do_step(self.steps)
                 
     def do_step(self, codes):
         # 尝试执行代码
         for code in codes:
-            logger.info(f'执行步骤{code.__name__}')
+            logger.debug(f'执行步骤{code.__name__}')
             try:
                 code()
-                logger.info(f'步骤{code.__name__}执行成功')
+                logger.debug(f'步骤{code.__name__}执行成功')
             except NameError as e:
                 logger.warning(f'步骤{code.__name__}操作存在未定义:{e}')
             except Exception as e:
@@ -543,15 +540,37 @@ class Refresh:
         if clicker.left_clicked:
             set_style(main_window.left_click_button, 'selected')
         else:
-            logger.info('左键未连点')
+            logger.debug('左键未连点')
             set_style(main_window.left_click_button, '')
     
     def right_check(self):
         if clicker.right_clicked:
             set_style(main_window.right_click_button,'selected')
         else:
-            logger.info('右键未连点')
+            logger.debug('右键未连点')
             set_style(main_window.right_click_button, '')
+
+class RunAfter:
+    def __init__(self):
+        self.program_list = {}
+        
+    def add(self, name, python_path, exe_path, run_as_admin=False):
+        logger.debug('添加计划')
+        self.program_list[name] = (python_path, exe_path, run_as_admin)
+        MessageBox.information(main_window, '运行计划', '已预定启动计划，程序将在退出时执行')
+        
+    def remove(self, name):
+        logger.debug('移除计划')
+        del self.program_list[name]
+        MessageBox.information(main_window, '运行计划', '已取消启动计划。')
+        
+    def run(self):
+        logger.info('运行运行计划')
+        for python_path, exe_path, use_admin in self.program_list.values():
+            if use_admin:
+                run_as_admin(python_path, exe_path)
+            else:
+                run_software(python_path, exe_path)
 
 class ColorGetter(QObject):
     style_changed = Signal()
@@ -639,13 +658,11 @@ class ColorGetter(QObject):
             self.apply_global_theme()
             
     def refresh(self):
-        logger.info('刷新软件')
-
         refresh.run()
             
     def apply_titleBar(self, window: QMainWindow | QDialog):
         '''应用标题栏样式'''
-        logger.info('应用标题栏样式')
+        logger.debug('应用标题栏样式')
         
         hwnd = window.winId().__int__()
         
@@ -693,7 +710,7 @@ class ColorGetter(QObject):
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        logger.info('初始化')
+        logger.debug('初始化主窗口')
 
         super().__init__()
         self.setWindowTitle('ClickMouse')
@@ -825,7 +842,7 @@ class MainWindow(QMainWindow):
         logger.debug('刷新按钮状态')
         self.on_input_change()
         
-        logger.info('初始化完成')
+        logger.debug('初始化完成')
         
     def reload_status(self):
         '''刷新状态栏'''
@@ -883,28 +900,28 @@ class MainWindow(QMainWindow):
         manage_extension_menu.triggered.connect(self.show_manage_extension) # 管理扩展菜单
         manage_extension_menu.setEnabled(has_packages)
         
-        not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
+        # not_official_extension_menu = extension_menu.addMenu(get_lang('93'))
         
-        cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
-        cge_menu.addAction(get_lang('95')).setDisabled(True)
+        # cge_menu = not_official_extension_menu.addMenu(get_lang('94'))
+        # cge_menu.addAction(get_lang('95')).setDisabled(True)
         
-        cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
-        cmm_menu.addAction(get_lang('97')).setDisabled(True)
+        # cmm_menu = not_official_extension_menu.addMenu(get_lang('96'))
+        # cmm_menu.addAction(get_lang('97')).setDisabled(True)
 
-        not_official_extension_menu.addSeparator()
+        # not_official_extension_menu.addSeparator()
 
-        not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
-        not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
+        # not_official_extension_menu.addAction(get_lang('98')).triggered.connect(self.show_import_extension_mode) # 管理扩展菜单
+        # not_official_extension_menu.addAction(get_lang('92')).triggered.connect(self.show_manage_not_official_extension) # 管理扩展菜单
         
         # 宏菜单
-        macro_menu = menu_bar.addMenu(get_lang('99'))
+        # macro_menu = menu_bar.addMenu(get_lang('99'))
         
-        run_marco_menu = macro_menu.addMenu(get_lang('9d'))
-        for action in cmm_menu.actions():
-            run_marco_menu.addAction(action)
+        # run_marco_menu = macro_menu.addMenu(get_lang('9d'))
+        # for action in cmm_menu.actions():
+        #     run_marco_menu.addAction(action)
             
-        macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
-        macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
+        # macro_menu.addAction(get_lang('9a')).triggered.connect(self.show_import_macro) # 导入宏
+        # macro_menu.addAction(get_lang('9b')).triggered.connect(self.show_manage_not_official_extension) # 管理宏
             
         # 绑定动作
         about_action.triggered.connect(self.show_about)
@@ -917,23 +934,19 @@ class MainWindow(QMainWindow):
         
     def do_extension(self, index):
         '''执行扩展'''
-        global running_repair
-
         try:
             match index:
                 case 'xystudio.clickmouse.repair':
-                    if running_repair:
-                        QMessageBox.information(self, '运行计划', '已取消预定启动计划。')
-                        running_repair = False
+                    if 'repair' in run_after.program_list:
+                        run_after.remove('repair')
                     else:
-                        QMessageBox.information(self, '运行计划', '已预定启动计划，将在本程序关闭后执行。')
-                        running_repair = True
+                        run_after.add('repair', 'repair.py', 'repair.exe', True)
                     return
                 case _:
                     run_software('NoneFile', f'extensions/{index}/main.exe')
         except Exception as e:
-            MessageBox.critical(self, get_lang('14'), get_lang('9c').format(e))
-            logger.error(f'执行扩展失败: {e}')
+            MessageBox.critical(self, get_lang('14'), get_lang('9c').format(format_exc()))
+            logger.error(f'执行扩展失败:\n{format_exc()}')
             
     def show_manage_extension(self):
         '''管理扩展'''
@@ -1032,12 +1045,11 @@ class MainWindow(QMainWindow):
     def on_check_update(self):
         # 检查更新
         if should_check_update_res:
-            shutil.rmtree(str(cache_path / 'logs'), ignore_errors=True) # 删除旧缓存
             self.check_update_thread = QtThread(check_update, args=('gitee', True))
             self.check_update_thread.finished.connect(self.on_check_update_result)
             self.check_update_thread.start()
         else:
-            logger.info('距离上次更新检查不到1天，使用缓存')
+            logger.info('使用缓存检查更新')
             self.on_check_update_result(update_cache)
             
     def on_check_update_result(self, check_data):
@@ -1327,7 +1339,7 @@ class MainWindow(QMainWindow):
 class AboutWindow(QDialog):
     def __init__(self):
         super().__init__()
-        logger.info('初始化关于窗口')
+        logger.debug('初始化关于窗口')
         self.setWindowTitle(filter_hotkey(get_lang('0a')))
         self.setGeometry(100, 100, 375, 175)
         self.setWindowIcon(icon)
@@ -1349,10 +1361,10 @@ class AboutWindow(QDialog):
 
         self.image_label = QLabel()
         # 加载图片
-        self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'))
+        self.image_label.setPixmap(icon.pixmap(64, 64))
         
         # 版本信息
-        version_status_text = get_lang('65') if ('alpha' in __version__) or ('beta' in __version__) or ('dev' in __version__) else ''
+        version_status_text = get_lang('65') if is_pre else ''
         version = QLabel(get_lang('1c').format(__version__, version_status_text))
         if not dev_config['verify_clickmouse']:
             not_official_version = QLabel(get_lang('67'))
@@ -1378,21 +1390,7 @@ class AboutWindow(QDialog):
         logger.debug('绑定事件')
         support_author.clicked.connect(self.on_support_author)
         ok_button.clicked.connect(self.close)
-        logger.info('初始化关于窗口完成')
-        
-    def loadImage(self, image_path):
-        '''加载并显示图片'''
-        # 创建QPixmap对象
-        pixmap = QPixmap(image_path)
-        
-        # 按比例缩放图片以适应标签大小
-        scaled_pixmap = pixmap.scaled(
-            50, 
-            50,
-            Qt.KeepAspectRatio, 
-            Qt.SmoothTransformation
-        )
-        self.image_label.setPixmap(scaled_pixmap)
+        logger.debug('初始化关于窗口完成')
 
     def on_support_author(self):
         '''支持作者'''
@@ -1400,7 +1398,7 @@ class AboutWindow(QDialog):
 
 class UpdateLogWindow(QDialog):
     def __init__(self):
-        logger.info('初始化更新日志窗口')
+        logger.debug('初始化更新日志窗口')
         super().__init__()
         self.setWindowTitle(filter_hotkey(get_lang('08')))
         self.setWindowIcon(icon)
@@ -1459,7 +1457,7 @@ class UpdateLogWindow(QDialog):
         layout.addWidget(license_label)
         layout.addLayout(bottom_layout)
         
-        logger.info('初始化更新日志窗口完成')
+        logger.debug('初始化更新日志窗口完成')
         
         self.setLayout(layout)
 
@@ -1470,7 +1468,7 @@ class UpdateLogWindow(QDialog):
 
 class CleanCacheWindow(QDialog):
     def __init__(self):
-        logger.info('初始化清理缓存窗口')
+        logger.debug('初始化清理缓存窗口')
         super().__init__()
         self.setWindowTitle(filter_hotkey(get_lang('02')))
         self.setWindowIcon(icon)
@@ -1618,7 +1616,7 @@ class CleanCacheWindow(QDialog):
             
         self.setLayout(layout)
         
-        logger.info('清理缓存窗口初始化完成')
+        logger.debug('清理缓存窗口初始化完成')
         
     def update_all_check_status(self):
         '''当任何复选框状态变化时自动更新全选按钮状态'''
@@ -1637,114 +1635,136 @@ class CleanCacheWindow(QDialog):
     def on_scan_cache(self):
         '''扫描缓存'''
         logger.info('扫描缓存')
-        cache_size = [0 if i is None else i for i in self.calc_cache_size(True)]
-        for text, cache, checkbox in zip(self.cache_size_list, cache_size, self.checkbox_list):
-            if cache != 0:
+        cache_size = self.calc_cache_size(True)
+        total_size = 0
+        for text, cache in zip(self.cache_size_list, cache_size):
+            if cache is not None:
                 text.setText(self.format_size(cache))
-            elif checkbox.isChecked():
-                    text.setText(self.format_size(0))
-        self.all_size_text.setText(self.format_size(sum(cache_size)))
+                total_size += cache
+        
+        self.all_size_text.setText(self.format_size(total_size))
+        
+    def try_to_remove_file(self, file_path: str):
+        '''尝试删除文件'''
+        try:
+            size = self.get_dir_or_file_size(file_path)
+            os.remove(file_path)
+            return size
+        except:
+            return 0
+    
+    def delete_empty_folders(self, root_path):
+        '''
+        删除所有空文件夹（包括嵌套的空文件夹）
+        '''
+        if not os.path.exists(root_path) or not os.path.isdir(root_path):
+            return
+        
+        # 标记是否删除了任何文件夹
+        deleted_any = False
+        
+        # 递归处理子文件夹
+        for item in os.listdir(root_path):
+            item_path = os.path.join(root_path, item)
+            if os.path.isdir(item_path):
+                if self.delete_empty_folders(item_path):
+                    deleted_any = True
+        
+        # 检查当前文件夹是否为空
+        try:
+            items = os.listdir(root_path)
+            print(items, root_path)
+        except PermissionError:
+            return deleted_any
+        
+        # 如果为空则删除
+        if len(items) == 0:
+            try:
+                os.rmdir(root_path)
+                return True
+            except OSError:
+                pass
+        
+        return deleted_any
     
     def on_clean_cache(self):
         '''清理缓存'''
         logger.info('清理缓存')
-        cache = []
-        select_cache_size = self.calc_cache_size()
-        # 获取选择的缓存文件
-        for checkbox, text in zip(self.checkbox_list, self.cache_path_list):
-            if checkbox.isChecked() and text.text():
-                cache.append(text.text())
-        # 清理缓存文件
-        for i in cache:
-            try:
-                if os.path.isfile('cache/' + i):
-                    os.remove('cache/' + i)
-                elif os.path.isdir('cache/' + i):
-                    shutil.rmtree('cache/' + i, ignore_errors=True)
-            except Exception as e:
-                MessageBox.critical(self, get_lang('14'), get_lang('3a').format(e))
-                logger.error(f'无法删除文件或文件夹:{e}')
 
-        dir_list = []
-        # 添加文件夹开始的字符
-        for i in self.cache_dir_list:
-            dir_list.append('cache\\' + i)
-        # 扫描其他文件
-        additional_cache_list = []
+        cache_clicked = list(map(lambda x: x.isChecked(), self.checkbox_list))
+        cache_size = 0
+        
+        if cache_clicked[0]:
+            for root, dirs, files in os.walk(cache_path / 'logs'):
+                for file in files:
+                    cache_size += self.try_to_remove_file(os.path.join(root, file))
+        if cache_clicked[1]:
+            cache_size += self.try_to_remove_file(cache_path / 'update.json') + self.try_to_remove_file(cache_path / 'update_log.md') # 尝试删除缓存文件
+        if cache_clicked[2]:
+            for root, dirs, files in os.walk(cache_path):
+                for file in files:
+                    if file in ['update.json', 'update_log.md'] or 'logs' in root:
+                        continue        
+                    cache_size += self.try_to_remove_file(os.path.join(root, file))
+        
         for root, dirs, files in os.walk(cache_path):
-            for file in files:
-                if root in dir_list:
-                    continue
-                if file in self.cache_file_list:
-                    continue
-                additional_cache_list.append(file)
             for dir in dirs:
-                if dir in self.cache_dir_list:
-                    continue
-                additional_cache_list.append(dir)
+                self.delete_empty_folders(os.path.join(root, dir))
 
-        # 删除其他文件
-        for i in additional_cache_list:
-            try:
-                if os.path.isfile('cache/' + i):
-                    os.remove('cache/' + i)
-                elif os.path.isdir('cache/' + i):
-                    shutil.rmtree('cache/' + i, ignore_errors=True)
-            except Exception as e:
-                MessageBox.critical(self, get_lang('14'), get_lang('3a').format(e))
-                logger.error(f'无法删除文件或文件夹:{e}')
         # 弹出提示窗口
-        MessageBox.information(self, get_lang('16'), get_lang('3b').format(self.format_size(select_cache_size)))
+        MessageBox.information(self, get_lang('16'), get_lang('3b').format(self.format_size(cache_size)))
+        
+    def get_dir_or_file_size(self, dir_or_file_path: str) -> int:
+        '''获取目录或文件大小'''
+        if os.path.isfile(dir_or_file_path):
+            # 是文件的情况
+            size = os.path.getsize(dir_or_file_path)
+            return size
+        elif os.path.isdir(dir_or_file_path):
+            # 是目录的情况
+            size = 0
+            for root, dirs, files in os.walk(dir_or_file_path):
+                for file in files:
+                    size += os.path.getsize(os.path.join(root, file))
+            return size
+        else:
+            # 其他情况返回值
+            return 0
     
     def calc_cache_size(self, output_every_file:bool=False) -> int:
         '''扫描缓存'''
         logger.info('计算缓存大小')
-        cache = []
+        
+        cache_clicked = list(map(lambda x: x.isChecked(), self.checkbox_list))
         every_cache_size = []
         cache_size = 0
-        # 获取选择的缓存文件
-        for checkbox, text in zip(self.checkbox_list, self.cache_path_list):
-            if checkbox.isChecked() and text.text():
-                cache.append(text.text())
-            else:
-                cache.append(None)
-        
-        # 扫描缓存文件大小
-        for i in cache:
-            if i is not None:
-                one_cache_size = self.scan_file_size('cache/' + i, False)
-                cache_size += one_cache_size
-                every_cache_size.append(one_cache_size)
-            else:
-                every_cache_size.append(None)
-        
-        extra_cache_size = 0
-        if self.checkbox_list[-1].isChecked():
-            dir_list = []
-            # 添加文件夹开始的字符
-            for i in self.cache_dir_list:
-                dir_list.append('cache\\' + i)
 
-            # 扫描其他文件大小
-            additional_cache_list = []
+        # 扫描缓存文件大小
+        if cache_clicked[0]:
+            size = self.get_dir_or_file_size(cache_path / 'logs')
+            every_cache_size.append(size)
+            cache_size += size
+        else:
+            every_cache_size.append(None)
+        if cache_clicked[1]:
+            size = self.get_dir_or_file_size(cache_path / 'update.json') + self.get_dir_or_file_size(cache_path / 'update_log.md')
+            every_cache_size.append(size)
+            cache_size += size
+        else:
+            every_cache_size.append(None)
+        if cache_clicked[2]:
+            size = 0
             for root, dirs, files in os.walk(cache_path):
                 for file in files:
-                    if root in dir_list:
+                    if file in ['update.json', 'update_log.md'] or 'logs' in root:
                         continue
-                    if file in self.cache_file_list:
-                        continue
-                    additional_cache_list.append(file)
-                for dir in dirs:
-                    if dir in self.cache_dir_list:
-                        continue
-                    additional_cache_list.append(dir)
-            # 计算其他文件大小
-            for i in additional_cache_list:
-                one_cache_size = self.scan_file_size('cache/' + i, False)
-                extra_cache_size += one_cache_size
-            every_cache_size[-1] = extra_cache_size
-        
-        return every_cache_size if output_every_file else cache_size + extra_cache_size
+                    size += self.get_dir_or_file_size(os.path.join(root, file))
+            every_cache_size.append(size)
+            cache_size += size
+        else:
+            every_cache_size.append(None)
+    
+        return every_cache_size if output_every_file else cache_size
 
     def scan_file_size(self, file_or_dir_path: str, format_size: bool = True) -> str | int:
         '''扫描文件大小'''
@@ -1789,7 +1809,7 @@ class CleanCacheWindow(QDialog):
 class UpdateWindow(QDialog):
     def __init__(self):
         # 初始化
-        logger.info('初始化更新窗口')
+        logger.debug('初始化更新窗口')
         super().__init__()
         self.setWindowTitle(get_lang('29'))
         self.setGeometry(100, 100, 300, 110)
@@ -1838,6 +1858,8 @@ class UpdateWindow(QDialog):
         layout.addLayout(bottom_layout)
         
         self.setLayout(layout)
+        
+        logger.debug('初始化更新窗口完成')
 
     def on_update(self):
         '''更新'''
@@ -1855,10 +1877,10 @@ class UpdateWindow(QDialog):
         except:
             MessageBox.critical(self, get_lang('14'), get_lang('58'))
             
-class UpdateWindow(QDialog):
+class UpdateOKWindow(QDialog):
     def __init__(self):
         # 初始化
-        logger.info('初始化更新窗口')
+        logger.debug('初始化等待安装窗口')
         super().__init__()
         self.setWindowTitle('安装更新成功')
         self.setGeometry(100, 100, 300, 110)
@@ -1907,6 +1929,8 @@ class UpdateWindow(QDialog):
         layout.addLayout(bottom_layout)
         
         self.setLayout(layout)
+        
+        logger.debug('初始化更新窗口完成')
 
     def on_update(self):
         '''更新'''
@@ -1926,7 +1950,7 @@ class UpdateWindow(QDialog):
 
 class HotkeyHelpWindow(QDialog):
     def __init__(self):
-        logger.info('初始化热键帮助窗口')
+        logger.debug('初始化热键帮助窗口')
         super().__init__()
         self.setWindowTitle(filter_hotkey(get_lang('5e')))
         self.setWindowIcon(icon)
@@ -1971,10 +1995,12 @@ class HotkeyHelpWindow(QDialog):
         layout.addLayout(bottom_layout)
         
         self.setLayout(layout)
+        
+        logger.debug('初始化热键帮助窗口完成')
 
 class FastSetClickWindow(QMainWindow):
     def __init__(self):
-        logger.info('初始化')
+        logger.debug('初始化快速连点窗口')
 
         super().__init__()
         self.setWindowTitle(get_lang('75'))
@@ -2052,7 +2078,7 @@ class FastSetClickWindow(QMainWindow):
         self.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.delay_combo, main_window.delay_combo))
         self.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.times_combo, main_window.times_combo))
         
-        logger.info('初始化完成')
+        logger.debug('初始化快速连点窗口完成')
         
     def sync_input(self, get_handle, set_handle, source, dest):
         '''同步输入框'''
@@ -2060,7 +2086,7 @@ class FastSetClickWindow(QMainWindow):
 
 class ClickAttrWindow(QDialog):
     def __init__(self):
-        logger.info('初始化连点器属性窗口')
+        logger.debug('初始化连点器属性窗口')
         super().__init__()
         self.setWindowTitle(get_lang('8c'))
         self.setWindowIcon(icon)
@@ -2108,6 +2134,8 @@ class ClickAttrWindow(QDialog):
         
         self.setLayout(central_layout)
         
+        logger.debug('初始化连点器属性窗口完成')
+        
     def update_attr(self):
         '''更新属性'''
         self.left_clicked.setText(f'{get_lang('69')}: {get_lang('7b') if clicker.left_clicked else get_lang('7c')}')
@@ -2132,6 +2160,7 @@ class SettingWindow(SelectUI):
     def __init__(self, parent=None):
         super().__init__()
 
+        logger.debug('初始化设置窗口')
         self.setGeometry(300, 300, 600, 400)  # 增加窗口大小以容纳更多内容
         self.setWindowTitle(filter_hotkey(get_lang('04')))
         self.setParent(parent)
@@ -2151,8 +2180,11 @@ class SettingWindow(SelectUI):
         
         # 连接信号
         clicker.started.connect(self.on_clicker_started)
+        
+        logger.debug('初始化设置窗口完成')
 
     def create_setting_page(self, title):
+        logger.debug(f'创建设置页面: {title}')
         page = QWidget()
         layout = QVBoxLayout(page)
         
@@ -2167,9 +2199,11 @@ class SettingWindow(SelectUI):
         layout.addWidget(content_label)
         
         def set_content_label(text):
+            logger.debug(f'设置内容标签')
             content_label.setText(text)
             
         def create_horizontal_line():
+            logger.debug(f'创建水平线')
             line = QFrame()
             line.setFrameShape(QFrame.Shape.HLine)  # 水平线
             line.setFrameShadow(QFrame.Shadow.Sunken)  # 凹陷效果
@@ -2198,16 +2232,14 @@ class SettingWindow(SelectUI):
         match title:
             case self.page_general:
                 set_content_label(get_lang('7f'))
-                # 选择语言
-                choice_text = QLabel(get_lang('45')) # 选择语言提示
-                
+                # 选择语言 
                 lang_choice_layout = QHBoxLayout() # 语言选择布局
                 self.lang_choice = QComboBox()
                 self.lang_choice.addItems([i['lang_name'] for i in langs])
                 self.lang_choice.setCurrentIndex(settings.get('select_lang', 0))
                 
                 # 布局
-                lang_choice_layout.addWidget(choice_text)
+                lang_choice_layout.addWidget(QLabel(f'{get_lang('45')}{get_lang('b5')}:')) # 选择语言提示
                 lang_choice_layout.addWidget(self.lang_choice)
                 lang_choice_layout.addStretch(1)   
                 
@@ -2232,7 +2264,7 @@ class SettingWindow(SelectUI):
                 
                 # 延迟
                 soft_delay_layout = QHBoxLayout() # 颜色延迟布局
-                soft_delay_setting = settings.get('soft_delay', 1)
+                soft_delay_setting = settings.get('soft_delay', 1000)
                 
                 soft_delay = QSlider(Qt.Horizontal)
                 soft_delay.setMinimum(0)
@@ -2246,7 +2278,7 @@ class SettingWindow(SelectUI):
                 set_style(delay_tip_label, 'dest_small')
                 
                 # 布局
-                soft_delay_layout.addWidget(QLabel('响应延迟'))
+                soft_delay_layout.addWidget(QLabel(f'响应延迟{get_lang('b5')}'))
                 soft_delay_layout.addWidget(soft_delay)
                 soft_delay_layout.addWidget(delay_tip_label)
                 soft_delay_layout.addStretch(1)
@@ -2372,7 +2404,7 @@ class SettingWindow(SelectUI):
                 style_layout = QHBoxLayout() # 窗口风格布局
                 style_choice = QComboBox()
                 
-                items = list(style_indexes[settings.get('select_lang', 0)]['lang_package'].values())
+                items = list(style_indexes[select_lang]['lang_package'].values())
     
                 style_choice.addItems([get_lang('82')] + items)
                 style_choice.setCurrentIndex(settings.get('select_style', 0))
@@ -2428,8 +2460,8 @@ class SettingWindow(SelectUI):
         
         restart_place = list(map(lambda x: get_lang(x, lang_id=lang), restart_place))
         
-        need_restart = MessageBox.warning(self, get_lang('15', lang_id=lang), f'{get_lang("89", lang_id=lang)}: {", ".join(restart_place)}', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if need_restart == QMessageBox.Yes:
+        need_restart = MessageBox.warning(self, get_lang('15', lang_id=lang), f'{get_lang("89", lang_id=lang)}: {", ".join(restart_place)}', MessageButtonTemplate.YESNO, MessageButtonTemplate.YES)
+        if need_restart == MessageOut.YES:
             self.restart()
         else:
             self.restart_window()
@@ -2616,7 +2648,7 @@ class SettingWindow(SelectUI):
 class SetImportExtensionModeWindow(QDialog):
     def __init__(self):
         super().__init__()
-        logger.info('初始化管理扩展窗口')
+        logger.debug('初始化管理扩展提示窗口')
         self.setWindowTitle(filter_hotkey(get_lang('92')))
         self.setGeometry(100, 100, 200, 125)
         self.setWindowIcon(icon)
@@ -2649,12 +2681,15 @@ class SetImportExtensionModeWindow(QDialog):
         # 连接信号
         mode_button.clicked.connect(self.on_mode_button_clicked)
         
+        logger.debug('管理扩展提示窗口初始化完成')
+        
     def on_mode_button_clicked(self):
         self.close()
         main_window.show_import_extension(self.mode_combo.currentIndex())
 
 class TrayApp:
     def __init__(self):
+        logger.info('加载托盘程序')
         self.app = get_application_instance()
 
         show_tray_icon = settings.get('show_tray_icon', True)
@@ -2689,9 +2724,12 @@ class TrayApp:
         clicker.click_conuter.connect(main_window.on_click_counter)
         clicker.started.connect(self.on_start)
         clicker.started.connect(main_window.on_start)
+        
+        logger.info('托盘程序框架加载完成')
 
     def setup_tray_icon(self):
         '''设置系统托盘图标'''
+        logger.info('设置系统托盘图标')
         self.tray_icon = QSystemTrayIcon()
         self.tray_icon.setIcon(icon)
         
@@ -2708,6 +2746,7 @@ class TrayApp:
         self.tray_icon.show()
     
     def create_menu(self):
+        logger.info('创建右键菜单')
         tray_menu = QMenu()
         
         # 添加'打开应用'菜单项
@@ -2750,6 +2789,7 @@ class TrayApp:
     
     def start_hotkey_listener(self):
         '''启动热键监听器''' 
+        logger.info('启动热键监听器')
         # 在后台线程中启动热键监听
         hotkey_thread = threading.Thread(target=self.hotkey_listener.start_listening)
         hotkey_thread.daemon = True  # 设置为守护线程，主程序退出时自动结束
@@ -2824,9 +2864,10 @@ class TrayApp:
     
     def run(self):
         '''运行应用程序'''
+        logger.info('运行托盘程序')
         code = self.app.exec()
-        if running_repair:
-            run_as_admin('repair.py', 'repair.exe')
+        run_after.run()
+        logger.info('主程序退出')
         sys.exit(code)
         
     def refresh(self):
@@ -2840,7 +2881,6 @@ class TrayApp:
             temp_combination[index] = i.replace('Key.', '').replace('_l', '').replace('_r', '').replace('_gr', '')
         combination = temp_combination.copy()
 
-        # print(combination)
         if all_in_list(combination, ['<70>', 'ctrl', 'alt']):
             # 处理Ctrl+Alt+F组合键
             if clicker.running:
@@ -2909,10 +2949,9 @@ if __name__ == '__main__':
     else:
         import os # 系统库
         import shutil # 用于删除文件夹
-        from log import Logger # 日志库
+        from logger import Logger
         
         logger = Logger('主程序日志')
-        logger.info('日志系统启动')
 
         with open(get_resource_path('package_info.json')) as f:
             packages_info = json.load(f)
@@ -2959,11 +2998,10 @@ if __name__ == '__main__':
         import threading # 用于鼠标点击
         from time import sleep, time # 延迟
         from webbrowser import open as open_url # 关于作者
-        from version import __version__ # 版本信息
         from check_update import check_update, keys_update # 更新检查
         from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel) # 软件界面样式
         from uiStyles import indexes as style_indexes # 界面组件样式索引
-        from sharelibs import (run_software, langs, create_shortcut) # 共享库
+        from sharelibs import (run_software, langs, create_shortcut, __version__, is_pre, get_icon) # 共享库
         import parse_dev # 解析开发固件配置
         import winreg # 注册表库
         import math # 数学库
@@ -2971,12 +3009,13 @@ if __name__ == '__main__':
         import colorsys # 颜色库
         import struct # 字节处理库
         import pytz # 时区库
+        from traceback import format_exc # 异常格式化
 
         # 系统api
         import ctypes
         from ctypes import wintypes
         
-        logger.info('加载资源')
+        logger.info('加载变量')
         logger.debug('定义常量')
         has_packages = os.path.exists(get_resource_path('packages'))
         package_names, show_list, package_ids = get_packages()
@@ -2989,18 +3028,17 @@ if __name__ == '__main__':
         DWMWCP_ROUND = 2
         DWMNCRP_ENABLED = 1
 
-        logger.debug('加载设置')
+        logger.info('加载设置')
         settings = load_settings()
 
-        logger.debug('加载类')
+        logger.info('加载服务程序')
         clicker = Click()
         auto_start_manager = StartManager()
         color_getter = ColorGetter()
+        run_after = RunAfter()
 
         # 变量
-        logger.debug('定义资源')
-
-        logger.debug('定义数据路径和创建文件夹')
+        logger.info('定义数据路径')
 
         # 定义数据路径
         cache_path = Path('cache')
@@ -3013,11 +3051,11 @@ if __name__ == '__main__':
         extension_path.mkdir(parents=True, exist_ok=True)
 
         # 创建资源
-        should_check_update_res = should_check_update()
         update_cache = load_update_cache()
-        icon = QIcon(str(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+        should_check_update_res = should_check_update()
+        icon = get_icon('icon')
 
-        logger.debug('定义语言包')
+        logger.info('定义语言包')
         with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
             unit_lang = json.load(f)
 
@@ -3029,26 +3067,21 @@ if __name__ == '__main__':
         units = init_units()
         latest_index = 2
         select_lang = settings.get('select_lang', 0)
-        
-        running_repair = False
-        
+
         dev_config = parse_dev.parse() # 开发者模式配置
 
-        logger.debug('定义资源完成')
+        logger.info('定义资源完成')
 
-        logger.debug('检查更新注册表')
+        logger.info('检查更新注册表')
         # 检查版本号与注册表是否一致,不一样就修改注册表
         run_software('check_reg_ver.py', 'check_reg_ver.exe')
         
         # 移除过期组件
         shutil.rmtree('updater.old', ignore_errors=True)
 
-        logger.debug('加载ui')
-        logger.info('加载成功')
+        logger.info('加载ui')
         main_window = MainWindow()
         hotkey_help_window = HotkeyHelpWindow()
         
         app = TrayApp()
         app.run()
-        
-        logger.info('主程序退出')

@@ -1,6 +1,25 @@
 from uiStyles.QUI import *
 
-__all__ = ['UMessageBox', 'VScrollArea', 'HScrollArea', 'UCheckBox', 'UnitInputLayout', 'ULabel']
+__all__ = ['UMessageBox', 'VScrollArea', 'HScrollArea', 'UCheckBox', 'UnitInputLayout', 'ULabel', 'MessageButtonTemplate', 'MessageOut']
+
+class MessageButtonTemplate:
+    YES = 0b1
+    NO = 0b10
+    OK = 0b100
+    CANCEL = 0b1000
+    YESNO = YES | NO
+    OKCANCEL = OK | CANCEL
+        
+class MessageOut:
+    YES = 2
+    NO = 3
+    OK = 4
+    CANCEL = 5
+
+class CustonMessageButton:
+    def __init__(self, text, role):
+        self.text = text
+        self.role = role
 
 class UMessageBox(QMessageBox):
     @staticmethod
@@ -8,35 +27,71 @@ class UMessageBox(QMessageBox):
                 title: str, 
                 text: str, 
                 icon: QMessageBox.Icon, 
-                buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
-                defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+                buttons: MessageButtonTemplate = MessageButtonTemplate.OK,
+                defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
         
-        # 使用位置参数
-        msg_box = QMessageBox(icon, title, text, buttons, parent)
+        msg_box = QMessageBox(icon, title, text, buttons=QMessageBox.NoButton, parent=parent)
         
-        # 设置默认按钮
-        if defaultButton != QMessageBox.StandardButton.NoButton:
-            msg_box.setDefaultButton(defaultButton)
+        default_btn = None
+        
+        # 虽然下面的规则匹配有点奇怪，但是为了显示整齐所以要这样写
+        if isinstance(buttons, int):
+            if buttons & MessageButtonTemplate.YES:
+                btn = msg_box.addButton('是', QMessageBox.YesRole)
+                if defaultButton == MessageButtonTemplate.YES:
+                    default_btn = btn
             
+            if buttons & MessageButtonTemplate.NO:
+                btn = msg_box.addButton('否', QMessageBox.AcceptRole)
+                if defaultButton == MessageButtonTemplate.NO:
+                    default_btn = btn
+            
+            if buttons & MessageButtonTemplate.OK:
+                btn = msg_box.addButton('确定', QMessageBox.NoRole)
+                if defaultButton == MessageButtonTemplate.OK:
+                    default_btn = btn
+            
+            if buttons & MessageButtonTemplate.CANCEL:
+                btn = msg_box.addButton('取消', QMessageBox.RejectRole)
+                if defaultButton == MessageButtonTemplate.CANCEL:
+                    default_btn = btn
+        elif isinstance(buttons, CustonMessageButton):
+            btn = msg_box.addButton(buttons.text, buttons.role)
+            if defaultButton == buttons.role:
+                default_btn = btn
+        elif isinstance(buttons, list):
+            for button in buttons:
+                if isinstance(button, CustonMessageButton):
+                    btn = msg_box.addButton(button.text, button.role)
+                    if defaultButton == button.role:
+                        default_btn = btn
+                else:
+                    raise ValueError('buttons must be a list of CustonMessageButton') # 报错
+        else:
+            raise ValueError('buttons must be a int or a list of CustonMessageButton') # 报错
+        
+        if default_btn:
+            msg_box.setDefaultButton(default_btn)
+
         return msg_box
     
     @classmethod
-    def warning(cls, parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+    def warning(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.OK, defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
         msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
         return msg_box.exec()
 
     @classmethod
-    def critical(cls, parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+    def critical(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.OK, defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
         msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
         return msg_box.exec()
     
     @classmethod
-    def information(cls, parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+    def information(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.OK, defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
         msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
         return msg_box.exec()
 
     @classmethod
-    def question(cls, parent, title: str, text: str, buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton):
+    def question(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.YESNO, defaultButton: MessageButtonTemplate = MessageButtonTemplate.YES):
         msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
         return msg_box.exec()
     
