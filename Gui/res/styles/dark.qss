@@ -181,6 +181,11 @@ QStatusBar {
 }
 
 /* 大字 */
+.big_text_14 {
+    font-size: 14px;
+    font-weight: bold;
+}
+
 .big_text_16 {
     font-size: 16px;
     font-weight: bold;
@@ -188,11 +193,6 @@ QStatusBar {
 
 .big_text_20 {
     font-size: 20px;
-    font-weight: bold;
-}
-
-.big_text_14 {
-    font-size: 14px;
     font-weight: bold;
 }
 

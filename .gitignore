@@ -404,7 +404,6 @@ FodyWeavers.xsd
 # debug information files
 *.dwo
 
-mkpyd.bat
 cache/
 Gui/data/*
 data/
@@ -416,7 +415,6 @@ gui/dev_list/*
 res/packages/
 Gui/packages.json
 extensions/
-is_author
 dev.dat
 *.zip
 *.7z
@@ -602,5 +600,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-!xQklN2n.cp313-win_amd64.pyd
