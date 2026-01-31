@@ -1,13 +1,10 @@
 """检查更新"""
 from packaging.version import parse
-from version import __version__
 import requests
 import keycrypter
 from pathlib import Path
-from sharelibs import get_lang, get_resource_path
+from sharelibs import get_lang, get_resource_path, __version__
 import json
-import certifi
-
 def get_value_by_indices(data, indices_list):
     result = []
     for indices in indices_list:

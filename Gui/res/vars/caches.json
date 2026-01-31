@@ -1,0 +1,15 @@
+[
+    {
+        "check_index": 0,
+        "path": {"dirs": ["logs"], "files": []}
+    },
+    {
+        "check_index": 1,
+        "path": {"dirs": [], "files": ["update.json", "update_log.md"]}
+    },
+    {
+        "check_index": 2,
+        "path": null,
+        "exclude": {}
+    }
+]
