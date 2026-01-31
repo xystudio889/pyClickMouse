@@ -6,4 +6,24 @@
 
 ## 提交漏洞格式
 
-见[提交格式](./.github/ISSUE_TEMPLATE/security.md)
+```markdown
+# Security Policy
+
+## Supported Versions
+
+clickmouse >= **version**
+
+## Reporting a Vulnerability
+
+Use this section to tell people how to report a vulnerability.
+
+Tell them where to go, how often they can expect to get an update on a
+reported vulnerability, what to expect if the vulnerability is accepted or
+declined, etc.
+
+## How to fix
+> [!TIP]
+> This section is optional.
+
+If the vulnerability is accepted, provide information on how to fix the vulnerability.
+```

@@ -99,7 +99,7 @@ class Logger:
         self.logger.addHandler(file_handler)
         
         self.info(f'{"-" * 50}', extra={'simple_format': True})
-        self.info(f'logger启动，位于{log_id}.log,程序名{name}')
+        self.info(f'logger启动')
         remove_old_log(folder_path)
 
     def debug(self, msg, extra=None):
@@ -116,3 +116,6 @@ class Logger:
 
     def critical(self, msg, extra=None):
         self.logger.critical(msg, extra=extra)
+        
+    def exception(self, service, trace, msg='', extra=None):
+        self.critical(f'{msg}在{service}发生错误：\n{trace}', extra=extra)

@@ -172,3 +172,6 @@ is_pre = ('alpha' in __version__) or ('beta' in __version__) or ('dev' in __vers
 def get_icon(icon_name):
     icon_folder = 'clickmouse_pre' if is_pre else 'clickmouse'
     return QIcon(get_resource_path('icons', icon_folder, f'{icon_name}.ico'))
+
+with open('res/langs/default_button_text.json', 'r', encoding='utf-8') as f:
+    default_button_text = json.load(f)

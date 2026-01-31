@@ -136,7 +136,7 @@ class InstallWindow(PagesUI):
         image_label = QLabel()
 
         # 加载图片
-        image_label.setPixmap(self.loadImage(get_resource_path('icons', 'clickmouse', 'icon.png'), 32, 32))
+        image_label.setPixmap(QIcon(get_icon('icon')).pixmap(32, 32))
         
         # 加载文字
         title_label = QLabel(get_init_lang('01'))
@@ -222,7 +222,7 @@ class InstallWindow(PagesUI):
                 page_layout.addWidget(self.emua_checkbox)
                 
                 # 信号连接
-                self.emua_checkbox.stateChanged.connect(self.set_emua_checkbox)
+                self.emua_checkbox.checkStateChanged.connect(self.set_emua_checkbox)
             case self.PAGE_set_path:
                 # 第三页：设置安装路径
                 path_edit = QLineEdit(str(Path.cwd()))
@@ -246,8 +246,8 @@ class InstallWindow(PagesUI):
                 page_layout.addWidget(start_menu_checkbox)
                 
                 # 信号连接
-                desktop_checkbox.stateChanged.connect(self.set_desktop_checkbox)
-                start_menu_checkbox.stateChanged.connect(self.set_start_menu_checkbox)
+                desktop_checkbox.checkStateChanged.connect(self.set_desktop_checkbox)
+                start_menu_checkbox.checkStateChanged.connect(self.set_start_menu_checkbox)
             case self.PAGE_set_components:
                 # 第四页：设置组件
                 # 初始化数据
@@ -426,20 +426,6 @@ class InstallWindow(PagesUI):
             self.selected_components = template_components.copy()
             self.update_components_lists()
     
-    def loadImage(self, image_path, width, height):
-        '''加载并显示图片'''
-        # 创建QPixmap对象
-        pixmap = QPixmap(image_path)
-        
-        # 按比例缩放图片以适应标签大小
-        scaled_pixmap = pixmap.scaled(
-            width, 
-            height,
-            Qt.KeepAspectRatio, 
-            Qt.SmoothTransformation
-        )
-        return scaled_pixmap
-    
     def set_emua_checkbox(self, checked):
         self.next_btn.setEnabled(checked)
     
@@ -503,8 +489,12 @@ class InstallWindow(PagesUI):
                 self.set_status(get_init_lang('27'))
                 with open(fr'{install_path}\packages.json', 'w', encoding='utf-8') as f:
                     json.dump(["xystudio.clickmouse"], f)
-            os.mkdir('extensions')
-                    
+            
+            try:
+                os.mkdir('extensions')
+            except:
+                pass    
+                
             # 卸载功能
             self.set_status(get_init_lang('28'))
             key = winreg.CreateKey(
@@ -592,6 +582,8 @@ class InstallWindow(PagesUI):
 
 if __name__ == '__main__':
     from sharelibs import mem_id
+    import winreg # 注册表编辑
+    from sharelibs import run_software
 
     shared_memory = QSharedMemory(mem_id[1])
     if shared_memory.attach():
@@ -610,7 +602,7 @@ if __name__ == '__main__':
         
     software_reg_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\clickMouse'
     data_path = Path('data')
-    
+
     if check_reg_key(software_reg_key):
         QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('1e'))
         with open(data_path / 'first_run', 'w'):pass
@@ -622,11 +614,10 @@ if __name__ == '__main__':
         QMessageBox.warning(None, get_init_lang('1d'), get_init_lang('1f'))
 
     if is_admin():  # 管理员权限
-        import winreg # 注册表编辑
         import pyperclip # 复制错误信息
         import zipfile # 解压文件
         import json # 读写json文件
-        from sharelibs import (run_software, get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id, create_shortcut, get_icon) # 共享库
+        from sharelibs import (get_init_lang, get_lang, system_lang, settings, parse_system_language_to_lang_id, create_shortcut, get_icon) # 共享库
         from uiStyles import styles, UCheckBox
         import traceback # 异常捕获
 

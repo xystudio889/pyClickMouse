@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
-from uiStyles import PagesUI, UMessageBox, MessageButtonTemplate, MessageOut
+from uiStyles import PagesUI, UMessageBox, MessageButtonTemplate
     
 def import_package(package_id: str):
     for i in packages_info:
@@ -578,7 +578,7 @@ class InstallWindow(PagesUI):
                 
             self.changes = get_list_diff(select_package_id, package_id_list)
 
-            if message == MessageOut.YES:
+            if message == 2:
                 return
         super().on_next()
         

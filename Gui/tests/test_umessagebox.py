@@ -8,12 +8,6 @@ class MessageButtonTemplate:
     CANCEL = 0b1000
     YESNO = YES | NO
     OKCANCEL = OK | CANCEL
-        
-class MessageOut:
-    YES = 2
-    NO = 3
-    OK = 4
-    CANCEL = 5
 
 class CustonMessageButton:
     def __init__(self, text, role):
@@ -97,8 +91,6 @@ class UMessageBox(QMessageBox):
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('测试')
-        self.resize(300, 200)
 
 def test_umessagebox():
     app = QApplication(sys.argv)
@@ -107,7 +99,7 @@ def test_umessagebox():
     print(msg_box)
     msg_box = UMessageBox.question(None, '测试', '你喜欢这个软件吗？', buttons=MessageButtonTemplate.YESNO, defaultButton=MessageButtonTemplate.YES)
     print(msg_box)
-    msg_box = UMessageBox.question(None, '测试', '你喜欢这个软件吗？', buttons=MessageButtonTemplate.YESNO, defaultButton=MessageButtonTemplate.YES)
+    msg_box = UMessageBox.question(None, '测试', '你喜欢这个软件吗？', buttons=MessageButtonTemplate.OKCANCEL, defaultButton=MessageButtonTemplate.YES)
     print(msg_box)
     window.show()
     app.exec()
