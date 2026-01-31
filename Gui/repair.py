@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(get_control_lang('0b'))
         self.setGeometry(0, 0, 880, 250)
-        self.setWindowIcon(QIcon(get_resource_path('icons', 'clickmouse', 'icon.ico')))
+        self.setWindowIcon(get_icon('repair'))
         self.setFixedSize(self.width(), self.height())
         self.init_ui()
 
@@ -190,7 +190,7 @@ if __name__ == '__main__':
             from shutil import rmtree
             import os
             import winreg
-            from sharelibs import get_resource_path
+            from sharelibs import get_resource_path, get_icon
             window = MainWindow()
             window.show()
         else:
