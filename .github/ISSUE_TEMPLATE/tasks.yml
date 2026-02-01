@@ -1,5 +1,5 @@
 name: ☑️Tasks
-about: 一些任务单，可以用来起草新版本规划等。
+description: 一些任务单，可以用来起草新版本规划等。
 title: "☑️[TASK]"
 labels: enhancement
 type: Task

@@ -1,7 +1,8 @@
 name: "🐛Bug report"
-title: "\U0001F41B[BUG]"
+title: "🐛[BUG]"
 description: 报告一个bug。
-labels: bug
+labels: 
+  - bug
 type: Bug
 body:
 - type: markdown
