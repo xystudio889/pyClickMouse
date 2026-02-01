@@ -1052,7 +1052,7 @@ class MainWindow(QMainWindow):
     def on_check_update(self):
         # 检查更新
         if should_check_update_res:
-            self.check_update_thread = QtThread(check_update, args=('gitee', True))
+            self.check_update_thread = QtThread(check_update, args=('github', True))
             self.check_update_thread.finished.connect(self.on_check_update_result)
             self.check_update_thread.start()
         else:

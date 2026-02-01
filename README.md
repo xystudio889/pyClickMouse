@@ -24,6 +24,9 @@
     </a>
 </div>
 
+> [!IMPORTANT]
+> 我们不会在gitee上处理issue和pr，请使用github。
+
 ## 版权声明
 <a target="_blank" href="https://icons8.com/icon/13347/mouse">鼠标</a> 的图标 <a target="_blank" href="https://icons8.com">Icons8</a>
 
