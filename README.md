@@ -14,10 +14,10 @@
     <a href="https://github.com/xystudio889/pyclickmouse/commits/master">
         <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
     </a>
-    <a href="https://github.com/sponsors/xystudio889">
+    <!-- <a href="https://github.com/sponsors/xystudio889">
         <img src="https://img.shields.io/badge/%E2%9D%A4-Sponsor%20me-%23c96198?style=flat&logo=GitHub"
             alt="sponsor">
-    </a>
+    </a> -->
     <br />
     <a href="https://github.com/xystudio889/clickmouse/releases">
         <img src="https://img.shields.io/badge/点击下载-旧版本clickmouse-536af5?color=63eafa&logoColor=white">
@@ -25,20 +25,23 @@
 </div>
 
 > [!IMPORTANT]
+> clickmouse主程序是main.exe,如果要运行clickmouse请点击main.exe,不要点击其他文件
+
+> [!IMPORTANT]
 > 我们不会在gitee上处理issue和pr，请使用github。
 
-## 版权声明
+## 🅱️版权声明
 <a target="_blank" href="https://icons8.com/icon/13347/mouse">鼠标</a> 的图标 <a target="_blank" href="https://icons8.com">Icons8</a>
 
-## 介绍
+## 📄介绍
 一款快捷，使用python制作的鼠标连点器。目前项目处于早期阶段，功能还不完善，欢迎大家提出宝贵意见。
 
 这个软件可以有较多的版本，基本都是C/C++调用版本、python调用版本和命令行交互版本。
 
-## 使用的第三方库和使用的功能
+## 📚使用的第三方库和使用的功能
 
-### python
-#### 需要使用的库
+### 🐍python
+#### 📔需要使用的库
 - PySide6：对于gui界面，他是图形核心框架
 - pyautogui：鼠标连点器核心
 - requests：用于检查版本号
@@ -52,14 +55,14 @@
 - packaging: 版本管理库
 - pytz: 时区管理库
 
-#### clickmouse官方制作的库
+#### 📖clickmouse官方制作的库
 - clickmouse: 连点器管理库
 - clickmouse_api: 扩展制作的调用api
 
-### 快速安装
+### ⬇️快速安装
 输入`pip install -r requirements.txt`安装
 
-## 支持调用的工具
+## 🛠️支持调用的工具
 - [x] C/C++头文件调用 使用原本C++版本的clickMouse改装而来 速度最快，兼容性最好，但是使用失效的可能性最大。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
 - [x] 使用原本C++版本的clickMouse 速度最快，兼容性最好，但是使用失效的可能性最大，已经停止更新，可以从[releases](https://github.com/xystudio889/pyClickMouse)下载，[之前的clickmouse项目](https://github.com/xystudio889/ClickMouse)
 - [x] 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
@@ -70,7 +73,7 @@
 - [ ] 使用标准命令行 使用 基于python语言。~~将会自带在gui版本和pip安装版本中~~ 暂时没有该版本，敬请期待
 
 
-## 安装和调用
+## ⚒️安装和调用
 Gui版本和~~命令行交互版本~~无需安装，直接运行即可。
 
 C/C++头文件调用可以直接使用以下代码调用(需要配置include目录)
@@ -99,47 +102,40 @@ clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间�
 ```bash
 ClickMouse.exe /h # 查看帮助
 ```
-## 再次编译方法
+## 💻再次编译方法
 请先`cd`到这个项目的根目录
 ### C/C++
-#### 头文件
+#### 🥴头文件
 仅需修改头文件，就可以被调用
-#### dll调用
+#### ⚙️dll调用
 使用visual studio修改`./dll/dll.sln`里的`源文件/dllmain.cpp`
-#### gui旧版本
+#### 🟥gui旧版本
 >[!NOTE]
 >gui旧版本的再编译不接受pull request
 使用visual studio修改`./ClickMouse-old/ClickMouse.sln`里的`源文件/clickmouse.cpp`
-### python
+### 🐍python
 建议先执行`pip install -r requirements.txt`
-#### python库调用
+#### 🔦python库调用
 修改`clickmouse/`下的代码，运行`pip install .`安装
-#### pyd调用
+#### ⚙️pyd调用
 修改`cython/main.py`的代码，然后执行
 ```python cython-setup.py build_ext --inplace```
 编译结束后，该目录下应该会有个以`.pyd`结尾的文件。
-#### gui版本
+#### 🟥gui版本
 使用python打包工具打包，注意需要添加`res/`目录。
 
-## 功能
+## 🔨功能
 - 鼠标连点
 - 自定义连点间隔
 
-## 下载
+## ⬇️下载
 前往[releases](https://github.com/xystudio889/pyClickMouse/releases)下载
 
-## 更新注意事项
-暂时不支持自动更新。
-
-更新删除除了data目录的安装目录下的其他文件或目录，然后将新下载的更新包移动到安装目录。
-> [!IMPORTANT]
-> 请不要删除data目录，要不然会导致设置等数据更新，如果需要删除data下的文件将会在release notes中说明。
-
-## 使用方法
+## 💊使用方法
 鼠标连点，目前支持左键和右键。
 下方的输入框输入间隔，再选择想要点击的类型即可开始连点。
 
-### 使用优先级
+### 📊使用优先级
 普通用户：
 ```mermaid
 graph LR
@@ -154,10 +150,10 @@ C[C/C++] --> E[dll调用] --> D
 鼠标连点器会一直保持运行，直到关闭程序或手动停止。
 目前支持暂停和停止功能。
 
-## Clickmouse 软件
-### 版本
+## 🖥️Clickmouse 软件
+### 🔠版本
 clickmouse版本格式为：`A.B.C.D[alpha E][beta F]`
-#### 正式版本
+#### 😊正式版本
 正式版不带alpha或beta后缀。
 
 A位代表有重大更新，有代码级的变动。如1.0升级到2.0就重构了代码。
@@ -168,7 +164,7 @@ C位代表有修复更新，通常会更新一些小功能和一些bug。
 
 D位代表版本代号，通常每A, B, C位有变动时候+1。也有可能A, B, C位没有变动，D位+1，这代表紧急更新，通常是修复几个重大影响的bug。
 
-#### 测试版本
+#### 🅱️测试版本
 测试版本带alpha或beta后缀。
 
 通常前面的`A.B.C.D`在一个测试周期内不变，代表下一个版本。
@@ -177,16 +173,17 @@ D位代表版本代号，通常每A, B, C位有变动时候+1。也有可能A, B
 
 `beta`代表发布预备更新，功能完善，bug较少，将不会更新功能，会发布release，但无法被更新工具捕获。
 
-## 内容展望
+## 📃内容展望
 - [x] 连点功能
 - [x] 输入间隔
 - [x] 热键启动
 - [x] 输入次数
 - [x] 自动检查更新
-- [ ] 自动下载和安装更新
+- [x] 自动下载和安装更新
 - [x] 设置
 - [ ] 命令行参数
 - [ ] 扩展
-- [ ] 官方安装助手
-- [ ] 包管理
+- [x] 官方安装助手
+- [x] 包管理
 - [x] 后台运行
+- [ ] 第三方api工具
