@@ -1,24 +1,19 @@
 [
     {
         "website_name": "github",
-        "down_web": "https://github.com/xystudiocode/pyclickmouse/releases/download/{0}/clickmouse.7z",
+        "down_web": "https://github.com/xystudiocode/pyclickmouse/releases/download/{latest_version}/clickmouse.7z",
         "open_web": "https://github.com/xystudio889/pyclickmouse/releases/latest",
         "api_web": "https://api.github.com/repos/xystudiocode/pyclickmouse/releases",
         "header": {"Authorization": "token {0}"},
         "addtional_info": {"verify": false},
-        "lang": "en",
-        "releases_tag_condition": [[0, "tag_name"], [0, "body"]],
-        "condition": "lambda x: x.get('prerelease', False)"
-    },
-    {
-        "website_name": "gitee",
-        "down_web": "https://gitee.com/xystudio889/pyclickmouse/releases/download/{0}/clickmouse.7z",
-        "open_web": "https://gitee.com/xystudio889/pyclickmouse/releases/latest",
-        "api_web": "https://gitee.com/api/v5/repos/xystudio889/pyclickmouse/releases/",
-        "header": {"Authorization": "Bearer {0}"},
-        "addtional_info": {},
-        "lang": "zh-CN",
-        "releases_tag_condition": [[-1, "name"], [-1, "body"]],
-        "condition": "lambda x: x.get('prerelease', False)"
+        "lang": "default",
+        "releases_tag_condition": [[0, "tag_name"], [0, "body"], [0]],
+        "condition": "lambda x: x.get('prerelease', False)",
+        "has_hash": true,
+        "hash_data": {
+            "hash_type": "sha256",
+            "condition_list": [["assets"], ["name"], ["digest", "7+"]],
+            "bin_name": "clickmouse.7z"
+        }
     }
 ]

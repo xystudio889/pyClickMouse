@@ -3,6 +3,12 @@ from pathlib import Path
 import subprocess
 import shutil
 
+def try_to_delete(path):
+    if os.path.isdir(path):
+        shutil.rmtree(path, ignore_errors=True)
+    elif os.path.isfile(path):
+        os.remove(path)
+
 def delete_folder(folder_path, exclude_dirs):
     '''
     递归删除文件夹，保留指定目录列表中的内容
@@ -104,6 +110,8 @@ if __name__ == '__main__':
     clickmouse_path = Path.cwd()
     shutil.move(clickmouse_path / 'packages.json', clickmouse_path / 'extensions')
     extract_7z('updater.old/clickmouse.7z')
-    delete_folder(clickmouse_path, ['data', 'updater.old', 'extensions', 'clickmouse'])
+    delete_folder(clickmouse_path, ['data', 'updater.old', 'extensions', 'clickmouse', 'cache'])
+    try_to_delete(clickmouse_path / 'cache' / 'update.json')
+    try_to_delete(clickmouse_path / 'cache' / 'update_log.md')
     move_contents_to_parent(clickmouse_path / 'clickmouse')
     shutil.move(clickmouse_path / 'extensions' / 'packages.json', clickmouse_path)

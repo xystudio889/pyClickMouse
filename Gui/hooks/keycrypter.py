@@ -51,3 +51,8 @@ def decrypt(encrypted_data):
             result[key] = value
         
         return result
+
+if __name__ == '__main__':
+    data = {} # 替换为key
+    
+    print(encrypt(data)) # 加密

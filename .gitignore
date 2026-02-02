@@ -405,7 +405,9 @@ FodyWeavers.xsd
 *.dwo
 
 cache/
-Gui/data/*
+updater/
+updater.old/
+updaterback/
 data/
 key*
 !keycrypter.py
