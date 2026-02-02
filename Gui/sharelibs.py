@@ -10,6 +10,7 @@ import winreg
 import sys
 import ctypes
 import win32com.client
+import hashlib
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -116,22 +117,23 @@ def get_inst_lang(lang_id):
 
 in_dev = os.path.exists('dev_list/in_dev') # 是否处于开发模式
 
-def run_software(code_path, exe_path):
+def run_software(code_path, exe_path, args=None):
     '''
     运行软件
     '''
-    subprocess.Popen(f'python {code_path}' if in_dev else f'{exe_path}')
+    args = [] if args is None else args
+    subprocess.Popen(f'python {code_path} {' '.join(args)}' if in_dev else f'{exe_path} {" ".join(args)}')
     
 def is_dark_mode():
     '''是否是深色模式'''
     try:
         # 打开注册表项
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
-                            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", 
+                            r'SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize', 
                             0, winreg.KEY_READ)
         
         # 读取AppsUseLightTheme值（0表示深色模式，1表示浅色模式）
-        value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        value, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
         winreg.CloseKey(key)
         
         return value == 0
@@ -144,8 +146,13 @@ def is_admin():
     except:
         return False
     
-def run_as_admin(code, exe):
-    subprocess.Popen(f'powershell -Command "Start-Process \'{"python" if in_dev else exe}\' {f'-ArgumentList "{code}"' if in_dev else ''} -Verb RunAs"')
+def run_as_admin(code, exe, arg=None):
+    args = []
+    if in_dev:
+        args.append(code)
+    if arg:
+        args.extend(arg)
+    subprocess.Popen(f'powershell -Command "Start-Process \'{"python" if in_dev else exe}\' {f'-ArgumentList "{' '.join(args)}"' if args else ''} -Verb RunAs"')
     
 def create_shortcut(path, target, description, work_dir = None, icon_path = None):
     # 创建快捷方式
@@ -165,13 +172,97 @@ def create_shortcut(path, target, description, work_dir = None, icon_path = None
 
 with open(get_resource_path('versions.json'), 'r') as f:
     __version__ = json.load(f)['clickmouse']
+    
+with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
+    unit_lang = json.load(f)
  
 __author__ = 'xystudio'
 is_pre = ('alpha' in __version__) or ('beta' in __version__) or ('dev' in __version__) or ('rc' in __version__)
 
-def get_icon(icon_name):
+def get_icon(icon_name): 
     icon_folder = 'clickmouse_pre' if is_pre else 'clickmouse'
     return QIcon(get_resource_path('icons', icon_folder, f'{icon_name}.ico'))
 
 with open('res/langs/default_button_text.json', 'r', encoding='utf-8') as f:
     default_button_text = json.load(f)
+    
+def init_units():
+    '''初始化单位'''
+    units = {'ms': 1}
+    units['s'] = units['ms'] * 1000
+    units['min'] = units['s'] * 60
+    units['h'] = units['min'] * 60
+    units['d'] = units['h'] * 24
+
+    return units
+
+def init_size_units():
+    '''初始化大小单位'''
+    units = {'B': 1}
+    units['KB'] = units['B'] * 1024
+    units['MB'] = units['KB'] * 1024
+    
+    return units
+
+def get_has_plural():
+    return langs[settings.get('select_lang', 0)]['has_plural']
+
+def plural(count, value, plural):
+    if has_plural:
+        return value if count == 1 else plural
+    else:
+        return value
+
+has_plural = get_has_plural()
+
+units = init_units()
+size_units = init_size_units()
+
+def get_unit_value(value, unit_list = units, min_unit = 'ms', max_unit = 'd'):
+    unit = 1
+    unit_text = get_lang(min_unit, source=unit_lang)
+    for k, v in unit_list.items():
+        if value >= v:
+            unit_text = get_lang(k, source=unit_lang)
+            unit = v
+
+    if unit_text == get_lang(max_unit, source=unit_lang):
+        unit_text = f'{value // unit}{max_unit}'
+    return (round(value / unit, 2), unit_text)
+
+def get_unit_text(value, unit_list = units, min_unit = 'ms', max_unit = 'd'):
+    '''
+    获取单位文本
+    '''
+    return ''.join(map(lambda x: str(x), get_unit_value(value, unit_list, min_unit, max_unit)))
+
+def get_size_value(value):
+    return get_unit_value(value, size_units, 'B', 'MB')
+
+def get_size_text(value):
+    return get_unit_text(value, size_units, 'B', 'MB')
+
+def get_file_hash(file_path, algorithm):
+    '''
+    计算文件的哈希值
+    
+    参数:
+        file_path: 文件路径
+        algorithm: 哈希算法，可选值: 'md5', 'sha1', 'sha256', 'sha512'等
+    
+    返回:
+        文件的十六进制哈希字符串
+    '''
+    hash_func = hashlib.new(algorithm)
+    
+    try:
+        with open(file_path, 'rb') as f:
+            # 分块读取大文件，避免内存溢出
+            for chunk in iter(lambda: f.read(4096), b''):
+                hash_func.update(chunk)
+        return hash_func.hexdigest()
+    except FileNotFoundError:
+        return None
+    except Exception as e:
+        print(f'计算哈希时出错: {e}')
+        return None
