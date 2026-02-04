@@ -53,10 +53,20 @@ body:
       - 📦包管理器(包括初始化的包管理器)
       - 🗑️卸载程序
       - 🔄️检查更新服务
-      - 🔧扩展修复程序
+      - 🔧修复程序
       - ⤴️安装更新
       - 💠其他扩展
+      - ♻️清理缓存
       - ❓其他/未知
+  validations:
+    required: true
+- id: bug_resolution_solution
+  type: textarea
+  attributes:
+    label: 🐍描述你的bug
+    placeholder: |
+      请在这描述
+    description: 🐍描述你的bug
   validations:
     required: true
 - id: guess_version
@@ -65,7 +75,7 @@ body:
     label: ℹ️你预估的受影响的Clickmouse版本
     placeholder: |
       >=X.X.X 或 >=X.X.X.X
-    description: 反馈大于等于一个三位或四位版本号
+    description: 🔠反馈大于等于一个三位或四位版本号
   validations:
     required: false
 - id: bug_resolution_solution

@@ -33,9 +33,10 @@ body:
       - 📦包管理器(包括初始化的包管理器)
       - 🗑️卸载程序
       - 🔄️检查更新服务
-      - 🔧扩展修复程序
+      - 🔧修复程序
       - ⤴️安装更新
       - 💠其他扩展
+      - ♻️清理缓存
       - ❓其他/未知
   validations:
     required: true
@@ -45,8 +46,6 @@ body:
     label: 📄请详细描述你想要新增的功能。
     placeholder: |
       详细描述你想要新增的功能
-    value: |
-      新功能
     description: 📄请详细描述你想要新增的功能。
   validations:
     required: true
