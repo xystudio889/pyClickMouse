@@ -20,7 +20,7 @@ body:
   type: input
   attributes:
     label: 🔡Clickmouse版本
-    placeholder: X.X.X or X.X.X.X
+    placeholder: X.X.X 或 X.X.X.X
     description: 反馈三位或四位版本号，可前往"帮助" - "关于"界面查看当前clickmouse版本号
   validations:
     required: true
@@ -59,28 +59,20 @@ body:
       - ❓其他/未知
   validations:
     required: true
+- id: guess_version
+  type: input
+  attributes:
+    label: ℹ️你预估的受影响的Clickmouse版本
+    placeholder: |
+      >=X.X.X 或 >=X.X.X.X
+    description: 反馈大于等于一个三位或四位版本号
+  validations:
+    required: true
 - id: bug_resolution_solution
   type: textarea
   attributes:
     label: 📄你的解决步骤想法是什么？
     placeholder: |
-      - 解决方案1:
-      - 1. 解决步骤1
-      - 2. 解决步骤2
-      - 3. 解决步骤3
-      - 4. 解决步骤...
-      - 解决方案2:
-      - 1. 解决步骤1
-      - 2. 解决步骤2
-      - 3. 解决步骤3
-      - 4. 解决步骤...
-      - 解决方案3:
-      - 1. 解决步骤1
-      - 2. 解决步骤2
-      - 3. 解决步骤3
-      - 4. 解决步骤...
-      - 其他解决方案...
-    value: |
       - 解决方案1:
       - 1. 解决步骤1
       - 2. 解决步骤2
