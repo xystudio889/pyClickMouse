@@ -6,6 +6,7 @@ from pathlib import Path
 from sharelibs import get_lang, get_resource_path, __version__
 import json
 from traceback import format_exc
+import re
 
 def get_value_by_indices(data, indices_list):
     result = []
@@ -71,7 +72,7 @@ def get_version(website: str='github', include_prerelease: bool=False) -> str | 
             releases = [r for r in release if not condition(r)]
         latest_tag = get_value_by_indices(releases, releases_tag_condition)
         return latest_tag
-    except Exception as e:
+    except Exception:
         return format_exc(), -1, -1
 
 def check_update(
@@ -85,6 +86,7 @@ def check_update(
         use_website, 
         include_prerelease,
     )
+    version[0] = re.sub(r'-re\d+$', '', version[0]) # 去除结尾重制版标志
     latest_version = version[0]
     version_update_info = version[1]
     version_data = version[2]
