@@ -27,7 +27,7 @@
 > [!IMPORTANT]
 > clickmouse主程序是main.exe,如果要运行clickmouse请点击main.exe,不要点击其他文件
 
-> [!IMPORTANT]
+> [!TIP]
 > 我们不会在gitee上处理issue和pr，请使用github。
 
 ## 🅱️版权声明
