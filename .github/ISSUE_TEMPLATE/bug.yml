@@ -67,7 +67,7 @@ body:
       >=X.X.X 或 >=X.X.X.X
     description: 反馈大于等于一个三位或四位版本号
   validations:
-    required: true
+    required: false
 - id: bug_resolution_solution
   type: textarea
   attributes:
