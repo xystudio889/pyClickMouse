@@ -11,6 +11,24 @@ from sharelibs import (get_lang)
 
 # TODO: 添加更新设置，使用hashlib.algorithms_available获取支持的hash算法
 
+def get_windows_version():
+    '''获取winmdows版本'''
+    # 检查系统
+    if sys.platform != 'win32':
+        return
+    
+    version = platform.win32_ver()[1]
+    major_version = int(version.split('.')[0])
+    build_number = int(version.split('.')[2]) if len(version.split('.')) > 2 else 0
+    if major_version == 10: # win10或win11
+        if build_number >= 22000: # win11初始版本为22000
+            return 11
+        else:
+            return 10
+    else:
+        return major_version
+    
+    
 def filter_hotkey(text:str):
     return text.split('(')[0]
 
@@ -854,11 +872,10 @@ class MainWindow(QMainWindow):
         # 帮助菜单
         help_menu = menu_bar.addMenu(get_lang('09'))
         about_action = help_menu.addAction(get_lang('0a'))
-        create_issue_action = help_menu.addAction('反馈')
-        create_issue_action.triggered.connect(lambda: open_url('https://github.com/xystudiocode/pyClickMouse/issues/new/choose'))
 
         # 热键帮助
         hotkey_help = help_menu.addAction(get_lang('5e'))
+        create_issue_action = help_menu.addAction('反馈(&F)')
 
         # 文档菜单
         # doc = help_menu.addAction(get_lang('5f'))
@@ -910,6 +927,7 @@ class MainWindow(QMainWindow):
         settings_action.triggered.connect(self.show_setting)
         hotkey_help.triggered.connect(self.show_hotkey_help)
         exit_action.triggered.connect(app.quit)
+        create_issue_action.triggered.connect(lambda: open_url('https://github.com/xystudiocode/pyClickMouse/issues/new/choose'))
 
     def do_extension(self, index):
         '''执行扩展'''
@@ -2235,7 +2253,8 @@ class SettingWindow(SelectUI):
         super().__init__()
 
         logger.debug('初始化设置窗口')
-        self.setGeometry(300, 300, 625, 400)  # 增加窗口大小以容纳更多内容
+        self.setGeometry(300, 300, 625, 400)
+        self.setFixedSize(self.width(), self.height())
         self.setWindowTitle(filter_hotkey(get_lang('04')))
         self.setParent(parent)
         self.setWindowIcon(icon)
@@ -2462,19 +2481,17 @@ class SettingWindow(SelectUI):
             case self.page_style:
                 set_content_label(get_lang('a7'))
                 # 选择窗口风格
-                style_text = QLabel(get_lang('81')) # 选择窗口风格提示
-
                 style_layout = QHBoxLayout() # 窗口风格布局
-                style_choice = QComboBox()
+                self.style_choice = QComboBox()
 
                 items = list(style_indexes[select_lang]['lang_package'].values())
 
-                style_choice.addItems([get_lang('82')] + items)
-                style_choice.setCurrentIndex(settings.get('select_style', 0))
+                self.style_choice.addItems([get_lang('82')] + items)
+                self.style_choice.setCurrentIndex(settings.get('select_style', 0))
 
                 # 布局
-                style_layout.addWidget(style_text)
-                style_layout.addWidget(style_choice)
+                style_layout.addWidget(QLabel(get_lang('81'))) # 选择窗口风格提示
+                style_layout.addWidget(self.style_choice)
                 style_layout.addStretch(1)
 
                 style_use_windows_layout = QHBoxLayout() # 颜色使用windows按钮布局
@@ -2486,6 +2503,18 @@ class SettingWindow(SelectUI):
                 # 布局
                 style_use_windows_layout.addWidget(style_choice_use_windows)
                 style_use_windows_layout.addStretch(1)
+                
+                theme_layout = QHBoxLayout() # 主题布局
+                theme_tip_window = QLabel('注意: 部分主题可能不能很好的适配深色或反色模式，若你使用深色或反色模式，建议使用\n默认主题。')
+                set_style(theme_tip_window, 'dest_small')
+                theme_combo = QComboBox()
+                theme_combo.addItems(QStyleFactory.keys())
+                theme_combo.setCurrentText(settings.get('theme', theme))
+                
+                # 布局
+                theme_layout.addWidget(QLabel('窗口主题:'))
+                theme_layout.addWidget(theme_combo)
+                theme_layout.addStretch(1)
 
                 # 布局
                 layout.addLayout(style_layout)
@@ -2493,10 +2522,15 @@ class SettingWindow(SelectUI):
                 layout.addLayout(style_use_windows_layout)
                 layout.addWidget(tip_label)
                 layout.addWidget(create_horizontal_line())
+                layout.addLayout(theme_layout)
+                layout.addWidget(theme_tip_window)
+                layout.addWidget(create_horizontal_line())
 
                 # 连接信号
-                style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(style_choice.currentIndex, 'select_style'))
+                self.style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(self.style_choice.currentIndex, 'select_style'))
                 style_choice_use_windows.checkStateChanged.connect(lambda: self.on_setting_changed(style_choice_use_windows.isChecked, 'use_windows_color'))
+                theme_combo.currentIndexChanged.connect(lambda: self.on_setting_changed(theme_combo.currentText, 'theme'))
+                theme_combo.currentIndexChanged.connect(lambda: self.app.setStyle(theme_combo.currentText()))
 
         restart_layout = QHBoxLayout() # 重启提示布局
         self.restart_button = QPushButton(get_lang('7e'))
@@ -3117,6 +3151,7 @@ if __name__ == '__main__':
         import pytz # 时区库
         from traceback import format_exc # 异常格式化
         from itertools import chain # 迭代器库
+        import platform # 系统信息
 
         # 系统api
         import ctypes
@@ -3169,11 +3204,27 @@ if __name__ == '__main__':
         latest_index = 2
         select_lang = settings.get('select_lang', 0)
 
+        # 其他
         dev_config = parse_dev.parse() # 开发者模式配置
+
+        windows_version = get_windows_version()
+        if windows_version is None: # 非windows
+            default_theme = 'Fusion'
+        elif windows_version < 10: # 低于win10
+            default_theme = 'Windows'
+        elif windows_version == 10: # win10
+            default_theme = 'Windows10'
+        elif windows_version == 11: # win11
+            default_theme = 'Windows11'
+        else: # 未知
+            default_theme = 'Fusion'
+
+        theme = settings.get('theme', default_theme)
 
         logger.info('定义资源完成')
 
         logger.info('检查更新注册表')
+
         # 检查版本号与注册表是否一致,不一样就修改注册表
         run_software('check_reg_ver.py', 'check_reg_ver.exe')
 
@@ -3183,6 +3234,8 @@ if __name__ == '__main__':
         logger.info('加载ui')
         main_window = MainWindow()
         hotkey_help_window = HotkeyHelpWindow()
+        update_window = None
 
         app = TrayApp()
+        app.app.setStyle(theme)
         app.run()
