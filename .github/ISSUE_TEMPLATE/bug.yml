@@ -60,7 +60,7 @@ body:
       - ❓其他/未知
   validations:
     required: true
-- id: bug_resolution_solution
+- id: descript_bug
   type: textarea
   attributes:
     label: 🐍描述你的bug
