@@ -15,8 +15,7 @@ body:
 
       > [!TIP]
       > 请一次只报告1个问题。😀
-- id: modules
-  type: dropdown
+- type: dropdown
   attributes:
     label: 你想新增任务包含哪些模块？
     description: 你想新增任务包含哪些模块？
@@ -40,8 +39,7 @@ body:
       - ❓其他/未知
   validations:
     required: true
-- id: feature_description
-  type: textarea
+- type: textarea
   attributes:
     label: 🧾请详细描述你想要新增的功能。
     placeholder: |
@@ -52,8 +50,7 @@ body:
     description: 🧾请详细描述你想要新增的功能。
   validations:
     required: true
-- id: feature_reason
-  type: textarea
+- type: textarea
   attributes:
     label: ❓为什么需要这个功能？
     placeholder: |
@@ -64,8 +61,7 @@ body:
     description: ❓为什么需要这个功能？
   validations:
     required: false
-- id: resolution_solution
-  type: textarea
+- type: textarea
   attributes:
     label: 📄你的实行步骤想法是什么？
     placeholder: |
@@ -124,8 +120,7 @@ body:
     description: ♻️可以提供多个新功能的多个实行方案，但请确保每个方案都能实行你的需求。
   validations:
     required: false
-- id: Additional
-  type: textarea
+- type: textarea
   attributes:
     label: ➕其他相关信息
     description: ✉️你了解到的更多内容
