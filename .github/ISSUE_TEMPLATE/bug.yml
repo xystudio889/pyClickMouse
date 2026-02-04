@@ -16,8 +16,7 @@ body:
 
       > [!TIP]
       > 请一次只报告1个问题。😀
-- id: version
-  type: input
+- type: input
   attributes:
     label: 🔡Clickmouse版本
     placeholder: X.X.X 或 X.X.X.X
@@ -60,8 +59,7 @@ body:
       - ❓其他/未知
   validations:
     required: true
-- id: descript_bug
-  type: textarea
+- type: textarea
   attributes:
     label: 🐍描述你的bug
     placeholder: |
@@ -69,8 +67,7 @@ body:
     description: 🐍描述你的bug
   validations:
     required: true
-- id: guess_version
-  type: input
+- type: input
   attributes:
     label: ℹ️你预估的受影响的Clickmouse版本
     placeholder: |
@@ -78,8 +75,7 @@ body:
     description: 🔠反馈大于等于一个三位或四位版本号
   validations:
     required: false
-- id: bug_resolution_solution
-  type: textarea
+- type: textarea
   attributes:
     label: 📄你的解决步骤想法是什么？
     placeholder: |
@@ -102,8 +98,7 @@ body:
     description: ♻️可以提供多个Bug解决方案，但请确保每个方案都能解决你的问题。
   validations:
     required: false
-- id: Addtional
-  type: textarea
+- type: textarea
   attributes:
     label: ➕其他相关信息
     placeholder: |
