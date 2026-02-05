@@ -100,6 +100,16 @@ body:
     required: false
 - type: textarea
   attributes:
+    label: 📂文件日志
+    placeholder: |
+      请把文件日志最后一段复制过来...
+    description: |
+      ✉️日志位于clickmouse安装目录/cache/logs/今天日期.log中
+      日志段意思是以---分割的日志，请复制最后一段日志到这里。
+  validations:
+    required: false
+- type: textarea
+  attributes:
     label: ➕其他相关信息
     placeholder: |
       你使用的操作系统版本、系统语言、造成bug软件等。
