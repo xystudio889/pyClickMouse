@@ -35,18 +35,7 @@
 ## 🗂️分支
 
 请按此图所示的分支结构来更新：
-```mermaid
-graph LR
-A(main分支更新1) --> J(main分支更新2)
-B(release preview分支更新1) --> D(release preview分支更新2)
-C(develop分支更新1) --> E(develop分支更新2)
-
-F(feature/a功能分支更新1) --> G(feature/a功能分支更新2)
-H(fork/develop分支更新b) --> E
-G --> E
-E --> D
-D --> J
-```
+<img src='./imgs/readme/mergeSteps.png' alt="合并步骤" />
 
 创建的分支需要以`feature/`开头，以表示功能分支，或创建一个fork，并在fork的分支开发。
 
@@ -85,8 +74,7 @@ A.B.C.D((.dev | alpha | beta | rc)E)
 ```mermaid
 graph LR
 A(其他用户的功能开发分支) --> B(develop分支)
-B --> C(release preview分支)
-C --> D(main分支)
+B --> C(main分支)
 ```
 
 pr无特定格式，但是必须清晰描述更新内容，关联到版本号的milestone；标题要简略描述更新内容，若修复或添加了issue里的建议，把该issue编号写进该行为，若出现多个重复issue，则只用写一个，并简单描述此bug。
@@ -99,6 +87,8 @@ pr无特定格式，但是必须清晰描述更新内容，关联到版本号的
 - 使用快车必须在pr描述中说明使用的原因
 
 如果有人快车合并，但没写快车合并的原因，则拒绝合并该人的分支。
+
+快车pr有高优先级，会优先进行处理。
 
 ## 📊milestone
 - 我们给每个版本都设置了一个milestone，用来管理该版本的issue和pr。

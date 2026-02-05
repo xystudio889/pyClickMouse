@@ -14,7 +14,7 @@ body:
       > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
 
       > [!TIP]
-      > 请一次只报告1个问题。😀
+      > 请一次只报告1个功能。😀
 - type: dropdown
   attributes:
     label: ❇️你想新增功能的是什么模块？
