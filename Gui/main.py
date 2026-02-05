@@ -1056,12 +1056,17 @@ class MainWindow(QMainWindow):
         # 检查更新
         self.update_checked = True
         if should_check_update_res:
-            self.check_update_thread = QtThread(check_update, args=('github', True))
+            self.check_update_thread = QtThread(check_update, args=(False,))
             self.check_update_thread.finished.connect(self.on_check_update_result)
             self.check_update_thread.start()
         else:
             logger.info('使用缓存检查更新')
             self.on_check_update_result(update_cache)
+            
+    def save(self):
+        '''保存更新缓存'''
+        if should_check_update_res:
+            save_update_cache(should_update=result[0], latest_version=result[1], update_info=result[2], hash=result[3], update_version_tag=result[4]) # 缓存最新版本
 
     def on_check_update_result(self, check_data):
         '''检查更新结果'''
@@ -1071,14 +1076,17 @@ class MainWindow(QMainWindow):
         if should_check_update_res:
             result = check_data
         else:
-            result = (update_cache['should_update'], update_cache['latest_version'], None, update_cache['hash']) # 使用缓存
+            result = [update_cache['should_update'], update_cache['latest_version'], None, update_cache['hash'], update_cache['update_version_tag']] # 使用缓存
+        
+        if result[3] is None and web_data['has_hash']: # 哈希为空，但是有哈希属性，说明这个版本没有发布的编译压缩包
+            self.save()
+            result[0] = False # 因为没有最新版本，没有编译后版本，所以认为不需要更新
+            return
 
         # 检查结果处理
         if settings.get('update_notify', 0) in {0}: # 判断是否需要弹出通知
             if result[1] != -1:  # -1表示函数出错
-                if should_check_update_res:
-                    save_update_cache(should_update=result[0], latest_version=result[1], update_info=result[2], hash=result[3]) # 缓存最新版本
-                    pass
+                self.save()
                 if result[0]:  # 检查到需要更新
                     logger.info('检查到更新')
                     # 弹出更新窗口
@@ -1092,8 +1100,7 @@ class MainWindow(QMainWindow):
                     MessageBox.critical(self, get_lang('14'), f'{get_lang('18')}\n{result[0]}')
         else:
             if result[1] != -1:
-                if should_check_update_res:
-                    save_update_cache(should_update=result[0], latest_version=result[1], update_info=result[2], hash=result[3])
+                self.save()
 
     def on_update(self, judge = False):
         '''显示更新提示'''
@@ -1921,7 +1928,7 @@ class UpdateWindow(QDialog):
         try:
             self.close()
             os.rename('updater', 'updater.old')
-            self.down_thread = QtThread(download_file, args=(web_data['down_web'].format(latest_version=result[1]), 'updater.old/clickmouse.7z'))
+            self.down_thread = QtThread(download_file, args=(web_data['down_web'].format(latest_version=result[4]), 'updater.old/clickmouse.7z'))
             self.down_thread.finished.connect(self.on_update_finished)
             self.down_thread.start()
         except:
