@@ -878,8 +878,8 @@ class MainWindow(QMainWindow):
         create_issue_action = help_menu.addAction('反馈(&F)')
 
         # 文档菜单
-        # doc = help_menu.addAction(get_lang('5f'))
-        # doc.triggered.connect(lambda: open_url(f'{Path.cwd()/res/docs/main.html}'))
+        doc = help_menu.addAction(get_lang('5f'))
+        doc.triggered.connect(self.open_doc)
 
         # 扩展菜单
         extension_menu = menu_bar.addMenu(get_lang('8e'))
@@ -928,6 +928,16 @@ class MainWindow(QMainWindow):
         hotkey_help.triggered.connect(self.show_hotkey_help)
         exit_action.triggered.connect(app.quit)
         create_issue_action.triggered.connect(lambda: open_url('https://github.com/xystudiocode/pyClickMouse/issues/new/choose'))
+        
+    def open_doc(self):
+        '''打开文档'''
+        lang_name = langs[select_lang]['lang_system_name']
+        with open(get_resource_path('vars', 'supported_doc_lang.json'), 'r', encoding='utf-8') as f:
+            supported_doc_lang = json.load(f)
+        if lang_name in supported_doc_lang: # 受支持的语言包
+            open_url(f'https://xystudiocode.github.io/clickmouse_docs/{lang_name}')
+        else:
+            open_url(f'https://xystudiocode.github.io/clickmouse_docs/en')
 
     def do_extension(self, index):
         '''执行扩展'''
