@@ -25,13 +25,13 @@ body:
     required: true
 - type: dropdown
   attributes:
-    label: 🎭我是从非官方版本发现bug的（Clickmouse官方版只在github release页面发布）
+    label: 🎭你是否从官方版本发现bug
     description: ❗clickmouse官方版本只在[github releases](https://github.com/xystudiocode/pyclickmouse/releases)或[gitee releases](https://gitee.com/xystudio889/pyclickmouse/releases)页面发布，其他均为非官方版本。
     multiple: false
     options:
-      - ✅是从非官方版本发现bug的
-      - ❌不是从非官方版本发现bug的
-      - ❓我不知道/忘记从哪里下载了
+      - ✅是
+      - ❌不是
+      - ❓我不知道/忘记了
   validations:
     required: true
 - id: modules
