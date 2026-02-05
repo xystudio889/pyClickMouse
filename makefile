@@ -19,6 +19,7 @@ clickmouse_lib: setup.py
 
 extension:
 	echo No extension!
+# TODO:移动repair的make
 
 clean:
 	del -s -q -f build\ clickmouse.egg-info cython\*.c

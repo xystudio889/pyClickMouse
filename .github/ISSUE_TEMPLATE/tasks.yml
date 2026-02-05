@@ -12,9 +12,6 @@ body:
       
       > [!IMPORTANT]
       > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
-
-      > [!TIP]
-      > 请一次只报告1个问题。😀
 - type: dropdown
   attributes:
     label: 你想新增任务包含哪些模块？
@@ -36,6 +33,7 @@ body:
       - ⤴️安装更新
       - 💠其他扩展
       - ♻️清理缓存
+      - 📄文档
       - ❓其他/未知
   validations:
     required: true
