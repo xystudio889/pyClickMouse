@@ -420,6 +420,7 @@ extensions/
 dev.dat
 *.zip
 *.7z
+source/
 
 # nuitka build file
 *.build/
