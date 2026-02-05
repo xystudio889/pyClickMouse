@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
+  tests:
     runs-on: ubuntu-latest
     
     steps:
@@ -16,12 +16,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-            python-version: '3.13'
+          python-version: '3.13'
       - name: Install dependencies
         run: |
-          cd gui
-          python -m pip install --upgrade pip
-          pip install -r tests/requirements.txt
+          cd ./gui/
+          pip install -r ./tests/requirements.txt
       - name: Test🔍
-        run: |
-          pytest
+        run: pytest
