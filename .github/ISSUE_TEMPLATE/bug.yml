@@ -105,7 +105,7 @@ body:
       请把文件日志最后一段复制过来...
     description: |
       ✉️日志位于clickmouse安装目录/cache/logs/今天日期.log中
-      日志段意思是以---分割的日志，请复制最后一段日志到这里。
+      **日志段意思是以---分割的日志，请复制最后一段日志到这里**。
   validations:
     required: false
 - type: textarea
