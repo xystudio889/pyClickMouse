@@ -37,4 +37,12 @@
     "terminal.integrated.suggest.suggestOnTriggerCharacters": true,
     "terminal.integrated.shellIntegration.environmentReporting": false,
     "terminal.integrated.suggest.quickSuggestions": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": [
+        {
+            "path": "",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        }
+    ],
 }
