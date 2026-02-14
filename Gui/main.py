@@ -929,15 +929,15 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(app.quit)
         create_issue_action.triggered.connect(lambda: open_url('https://github.com/xystudiocode/pyClickMouse/issues/new/choose'))
         
-    def open_doc(self):
+    def open_doc(self, *, path: str=''):
         '''打开文档'''
         lang_name = langs[select_lang]['lang_system_name']
         with open(get_resource_path('vars', 'supported_doc_lang.json'), 'r', encoding='utf-8') as f:
             supported_doc_lang = json.load(f)
         if lang_name in supported_doc_lang: # 受支持的语言包
-            open_url(f'https://xystudiocode.github.io/clickmouse_docs/{lang_name}')
+            open_url(f'https://xystudiocode.github.io/clickmouse_docs/{lang_name}/{path}')
         else:
-            open_url(f'https://xystudiocode.github.io/clickmouse_docs/en')
+            open_url(f'https://xystudiocode.github.io/clickmouse_docs/en/path')
 
     def do_extension(self, index):
         '''执行扩展'''
@@ -1023,8 +1023,7 @@ class MainWindow(QMainWindow):
 
     def show_update_log(self):
         '''显示更新日志'''
-        update_log_window = UpdateLogWindow()
-        update_log_window.exec()
+        self.open_doc(path='updatelog')
 
     def show_clean_cache(self):
         '''清理缓存'''
@@ -1417,76 +1416,6 @@ class AboutWindow(QDialog):
     def on_support_author(self):
         '''支持作者'''
         open_url('https://github.com/xystudiocode/pyClickMouse')
-
-class UpdateLogWindow(QDialog):
-    def __init__(self):
-        logger.debug('初始化更新日志窗口')
-        super().__init__()
-        self.setWindowTitle(filter_hotkey(get_lang('08')))
-        self.setWindowIcon(icon)
-
-        logger.debug('加载更新日志')
-
-        if settings.get('select_lang', 0) != 1:
-            MessageBox.information(self, get_lang('16'), get_lang('21'))
-
-        with open(get_resource_path('vars', 'update_log.json'), 'r', encoding='utf-8') as f:
-            self.update_logs = json.load(f) # 加载更新日志
-
-        logger.debug('初始化更新日志窗口')
-        self.init_ui()
-
-        new_color_bar(self)
-
-    def init_ui(self):
-        # 创建面板
-        layout = QVBoxLayout()
-
-        # 通过字典存储的日志信息来绘制日志内容，并动态计算日志的高度，减少代码量且更加方便管理
-        for k, v in self.update_logs.items():
-            title_label = QLabel(f'{k}    {v[0]}')
-            set_style(title_label, 'big_text_14')
-            log_label = QLabel(f'{v[1]}')
-            layout.addWidget(title_label)
-            layout.addWidget(log_label)
-
-        # 调整页面高度，适配现在的更新日志界面大小
-        logger.debug('调整页面高度')
-
-        # 面板控件
-        license_label = QLabel(get_lang('22'))
-
-        # 按钮
-        logger.debug('创建按钮')
-
-        bottom_layout = QHBoxLayout() # 底布局
-
-        ok_button = QPushButton(get_lang('1e'))
-        set_style(ok_button, 'selected')
-        more_update_log = QPushButton(get_lang('23'))
-
-        bottom_layout.addStretch(1)
-        bottom_layout.addWidget(more_update_log)
-        bottom_layout.addWidget(ok_button)
-
-        # 绑定事件
-        logger.debug('绑定事件')
-        ok_button.clicked.connect(self.close)
-        more_update_log.clicked.connect(self.on_more_update_log)
-
-        # 设置布局
-        logger.debug('设置布局')
-        layout.addWidget(license_label)
-        layout.addLayout(bottom_layout)
-
-        logger.debug('初始化更新日志窗口完成')
-
-        self.setLayout(layout)
-
-    def on_more_update_log(self):
-        '''显示更多更新日志'''
-        logger.info('显示更多更新日志')
-        open_url('https://github.com/xystudicode/pyClickMouse/releases')
 
 class CleanCacheWindow(QDialog):
     def __init__(self):

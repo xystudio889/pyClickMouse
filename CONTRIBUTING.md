@@ -14,9 +14,9 @@
 | 类型 | 说明 |
 | --- | --- |
 | ✅feat | 新功能 |
-| ⚒️refactor | 重构 |
+| 🔧modify | 修改功能 |
 | 🐛fix | 修bug  |
-| ⚒️refactor |  重构 |
+| ⚒️refactor | 重构 |
 | 📃docs | 改文档，比如README |
 | ❇️style | 改代码风格，不影响功能 |
 | 🔎test | 加测试、改测试 |
@@ -24,7 +24,7 @@
 | ⏫perf | 性能优化  |
 | 🛒ci | CI/CD相关改动 |
 | 🚅build | 改构建系统或依赖 |
-| ◀️revert  | 回滚某个提交 |
+| ◀️revert  | 回滚 |
 | 🔡dependency | 依赖更新 |
 | ❌remove | 删除弃用的组件 |
 | ↪️move | 移动了组件 |
@@ -99,13 +99,12 @@ pr无特定格式，但是必须清晰描述更新内容，关联到版本号的
 ## ⬇️配置仓库
 1. 下载源码
 2. 放置一个`7z.exe`和`7z.dll`到`gui`目录
-3. 在github上制作一个api key，把密钥填入`gui/hooks/keycrpytr.py`的data变量中(格式为`{"github": "你的api key"}`),使用`cd gui&&runhook keycrpyter&&cd..`,把运行输出的结果同时放到`gui/key`和`gui/res/default_key`中
-4. 使用`make extension`编译扩展，放入`gui/res/packages`目录下
-5. 使用`make clickmouse`制作clickmouse的安装包,把`dist/clickmouse/`下的所有除了`main.dist`和`updater.dist`的.dist文件夹的**子文件**移动到`dist/clickmouse/main.dist`下
+3. 使用`make extension`编译扩展，放入`gui/res/packages`目录下
+4. 使用`make clickmouse`制作clickmouse的安装包,把`dist/clickmouse/`下的所有除了`main.dist`和`updater.dist`的.dist文件夹的**子文件**移动到`dist/clickmouse/main.dist`下
 > [!WARNING]
 > 请不要直接把这些文件夹复制，要把子文件复制，否则程序无法运行
-6. 把`dist/clickmouse/updater.dist`重命名为`updater`后**把整个文件夹**移动到`main.dist`下
+5. 把`dist/clickmouse/updater.dist`重命名为`updater`后**把整个文件夹**移动到`main.dist`下
 > [!WARNING]
 > 请不要直接把`updater`的子文件复制，要把整个文件夹复制，否则程序无法运行
-7. 可选择把`dist/clickmouse/main.dist`这个文件夹重命名
-8. 运行`main.exe`就可以加载clickmouse了。
+6. 可选择把`dist/clickmouse/main.dist`这个文件夹重命名
+7. 运行`main.exe`就可以加载clickmouse了。
