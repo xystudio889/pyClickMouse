@@ -43,7 +43,7 @@
 <a target="_blank" href="https://icons8.com/icon/13347/mouse">鼠标</a> 的图标 <a target="_blank" href="https://icons8.com">Icons8</a>
 
 ## 📄介绍
-一款快捷，使用python制作的鼠标连点器。目前项目处于早期阶段，功能还不完善，欢迎大家提出宝贵意见。
+一款快捷，简洁，轻便；使用python制作的鼠标连点器。
 
 这个软件可以有较多的版本，基本都是C/C++调用版本、python调用版本和命令行交互版本。
 
