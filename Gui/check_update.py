@@ -73,7 +73,7 @@ def get_version(include_prerelease: bool=False) -> str | None:
         latest_tag = get_value_by_indices(releases, releases_tag_condition)
         return latest_tag
     except Exception:
-        return [format_exc(), -1, -1]
+        return [format_exc(), -1]
 
 def check_update(
     include_prerelease=False
@@ -87,9 +87,8 @@ def check_update(
     version.append(version[0])
     version[0] = re.sub(r'-re\d+$', '', version[0]) # 去除结尾重制版标志
     latest_version = version[0]
-    version_update_info = version[1]
-    version_data = version[2]
-    if version_update_info == -1:
+    version_data = version[1]
+    if version_data == -1:
         # 出错
         return latest_version, -1, -1, -1
     
@@ -114,7 +113,7 @@ def check_update(
     else:
         needs_update = False
 
-    return [needs_update, latest_version, version_update_info, hash_data, version[-1]]
+    return [needs_update, latest_version, None, hash_data, version[-1]]
 
 def download_file(url, save_path):
     '''

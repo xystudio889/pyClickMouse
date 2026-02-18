@@ -146,13 +146,13 @@ def is_admin():
     except:
         return False
     
-def run_as_admin(code, exe, arg=None):
-    args = []
+def run_as_admin(code, exe, args=None):
+    args_list = []
     if in_dev:
-        args.append(code)
-    if arg:
-        args.extend(arg)
-    subprocess.Popen(f'powershell -Command "Start-Process \'{"python" if in_dev else exe}\' {f'-ArgumentList "{' '.join(args)}"' if args else ''} -Verb RunAs"')
+        args_list.append(code)
+    if args:
+        args_list.extend(args)
+    subprocess.Popen(f'powershell -Command "Start-Process \'{"python" if in_dev else exe}\' {f'-ArgumentList "{' '.join(args_list)}"' if args_list else ''} -Verb RunAs"')
     
 def create_shortcut(path, target, description, work_dir = None, icon_path = None):
     # 创建快捷方式
@@ -227,7 +227,7 @@ def get_unit_value(value, unit_list = units, min_unit = 'ms', max_unit = 'd'):
             unit = v
 
     if unit_text == get_lang(max_unit, source=unit_lang):
-        unit_text = f'{value // unit}{max_unit}'
+        unit_text = get_lang(max_unit, source=unit_lang)
     return (round(value / unit, 2), unit_text)
 
 def get_unit_text(value, unit_list = units, min_unit = 'ms', max_unit = 'd'):

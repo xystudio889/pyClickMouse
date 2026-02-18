@@ -17,7 +17,7 @@ body:
       > 请一次只报告1个功能。😀
 - type: dropdown
   attributes:
-    label: ❇️你想新增功能的是什么模块？
+    label: ❇️新增功能的模块
     description: ❇️你想新增功能的是什么模块？
     multiple: true
     options:
@@ -42,7 +42,7 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: 📄请详细描述你想要新增的功能。
+    label: 📄新增功能描述
     placeholder: |
       详细描述你想要新增的功能
     description: 📄请详细描述你想要新增的功能。
@@ -50,7 +50,7 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: ❔为什么需要这个功能？
+    label: ❔需要这个功能的原因
     placeholder: |
       解决了什么问题？
       增加了什么功能？
@@ -61,7 +61,7 @@ body:
     required: false
 - type: textarea
   attributes:
-    label: 🧾你的实行步骤想法是什么？
+    label: 🧾实行步骤想法
     placeholder: |
       - 实行方案1:
       - 1. 实行步骤1

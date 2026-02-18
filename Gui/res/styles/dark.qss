@@ -29,7 +29,7 @@ QComboBox QAbstractItemView {
 }
 
 QPushButton {
-    background-color: #353535;
+    background-color: #404040;
 }
 
 QPushButton:disabled {
@@ -203,6 +203,10 @@ QStatusBar {
 
 .bold {
     font-weight: bold;
+}
+
+.frame {
+    border: 3px solid #505050;
 }
 
 /* 元数据 */
