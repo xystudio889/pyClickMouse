@@ -10,6 +10,6 @@ packaging>=22
 clickmouse
 clickMouse_api
 pytz>=2014
-nuitka>=2.7
+nuitka>=2.8
 psutil>=1
 pytest>=5
