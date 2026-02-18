@@ -6,6 +6,7 @@ import os
 import json
 import re
 from enum import Enum
+from uiStyles.QUI import *
 
 __all__ = ['StyleReplaceMode', 'StyleSheet', 'styles', 'indexes', 'maps', 'style_path']
 

@@ -62,12 +62,31 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: 🐍描述你的bug
+    label: 🐍bug描述
     placeholder: |
       请在这描述
     description: 🐍描述你的bug
   validations:
     required: true
+- type: textarea
+  attributes:
+    label: 🔦这个bug的影响
+    placeholder: |
+      请在这描述
+    description: 🔦描述这个bug的影响
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 📝重现步骤
+    placeholder: |
+      1. 步骤1
+      2. 步骤2
+      3. 步骤3
+      4. 步骤...
+    description: 🔧描述如何重现这个bug
+  validations:
+    required: false
 - type: input
   attributes:
     label: ℹ️你预估的受影响的Clickmouse版本
@@ -78,7 +97,7 @@ body:
     required: false
 - type: textarea
   attributes:
-    label: 📄你的解决步骤想法是什么？
+    label: 📄你的解决步骤想法
     placeholder: |
       - 解决方案1:
       - 1. 解决步骤1
@@ -97,6 +116,29 @@ body:
       - 4. 解决步骤...
       - 其他解决方案...
     description: ♻️可以提供多个Bug解决方案，但请确保每个方案都能解决你的问题。
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 🔄️缓解bug的方案
+    placeholder: |
+      - 解决方案1:
+      - 1. 解决步骤1
+      - 2. 解决步骤2
+      - 3. 解决步骤3
+      - 4. 解决步骤...
+      - 解决方案2:
+      - 1. 解决步骤1
+      - 2. 解决步骤2
+      - 3. 解决步骤3
+      - 4. 解决步骤...
+      - 解决方案3:
+      - 1. 解决步骤1
+      - 2. 解决步骤2
+      - 3. 解决步骤3
+      - 4. 解决步骤...
+      - 其他解决方案...
+    description: 🔄️可以提供多个Bug环节方案，但请确保每个方案都能解决你的问题。
   validations:
     required: false
 - type: textarea
