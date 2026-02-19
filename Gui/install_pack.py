@@ -845,7 +845,8 @@ if __name__ == '__main__':
         for i in package_name:
             packages_source.append(import_package(i))
     except FileNotFoundError:
-        os.remove(Path('data', 'first_run'))
+        if os.path.exists('first_run'):
+            os.remove(Path('data', 'first_run'))
     
     packages = get_packages()
     
@@ -866,7 +867,6 @@ if __name__ == '__main__':
             sys.exit(1)
 
         if is_admin():
-            print('run as admin')
             is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
             if is_running:
                 # 已经有一个实例在运行
