@@ -1,4 +1,4 @@
-command = python -m nuitka --msvc=latest --remove-output --company-name="xystudio" --copyright="Copyright 2026 xystudio" --trademarks="xystudio" --product-version="3.1.3" --standalone --output-dir=dist/clickmouse/
+command = python -m nuitka --msvc=latest --remove-output --company-name="xystudio" --copyright="Copyright 2026 xystudio" --trademarks="xystudio" --product-version="3.2.0" --standalone --output-dir=dist/clickmouse/
 
 main:
 	echo Please run a build command, such as "make clickmouse".
