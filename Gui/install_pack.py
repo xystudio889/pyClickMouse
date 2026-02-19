@@ -867,7 +867,6 @@ if __name__ == '__main__':
             sys.exit(1)
 
         if is_admin():
-            print('run as admin')
             is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
             if is_running:
                 # 已经有一个实例在运行
