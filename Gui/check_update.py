@@ -44,12 +44,12 @@ except FileNotFoundError:
     keys_update = None
 
 # 检察更新的函数
-def get_version(website: str='github', include_prerelease: bool=False) -> str | None:
+def get_version(include_prerelease: bool=False) -> str | None:
     '''获取最新的版本号'''
     if keys is None:
-        return get_lang('b2'), -1
+        return [get_lang('b2'), -1]
     if web_data is None:
-        return get_lang('b1'), -1
+        return [get_lang('b1'), -1]
     
     try:
         web = web_data['api_web']
@@ -58,8 +58,8 @@ def get_version(website: str='github', include_prerelease: bool=False) -> str | 
         else_data = web_data['addtional_info']
         releases_tag_condition = web_data['releases_tag_condition']
         condition = eval(web_data['condition'])
-    except Exception as e:
-        return format_exc(), -1
+    except Exception:
+        return [format_exc(), -1]
     
     try:
         # 获取版本号
@@ -73,27 +73,24 @@ def get_version(website: str='github', include_prerelease: bool=False) -> str | 
         latest_tag = get_value_by_indices(releases, releases_tag_condition)
         return latest_tag
     except Exception:
-        return format_exc(), -1, -1
+        return [format_exc(), -1]
 
 def check_update(
-    use_website = 'github',
     include_prerelease=False
 ):
     '''检查更新'''
     # 获取版本号
     installed_version = __version__
     version = get_version(
-        use_website, 
         include_prerelease,
     )
+    version.append(version[0])
     version[0] = re.sub(r'-re\d+$', '', version[0]) # 去除结尾重制版标志
     latest_version = version[0]
-    version_update_info = version[1]
-    version_data = version[2]
-    latest_version
-    if version_update_info == -1:
+    version_data = version[1]
+    if version_data == -1:
         # 出错
-        return latest_version, -1, -1
+        return latest_version, -1, -1, -1
     
     # 获取哈希
     if web_data['has_hash']:
@@ -116,7 +113,7 @@ def check_update(
     else:
         needs_update = False
 
-    return needs_update, latest_version, version_update_info, hash_data
+    return [needs_update, latest_version, None, hash_data, version[-1]]
 
 def download_file(url, save_path):
     '''

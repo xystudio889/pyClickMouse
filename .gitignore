@@ -409,9 +409,7 @@ updater/
 updater.old/
 updaterback/
 data/
-key*
-!keycrypter.py
-default_key
+key.json
 gui/dev_list/*
 !gui/dev_list/in_dev
 res/packages/
@@ -420,6 +418,7 @@ extensions/
 dev.dat
 *.zip
 *.7z
+source/
 
 # nuitka build file
 *.build/
