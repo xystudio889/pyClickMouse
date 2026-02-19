@@ -11,23 +11,22 @@ from sharelibs import (get_lang)
 
 # TODO: 添加更新设置，使用hashlib.algorithms_available获取支持的hash算法
 
-def get_windows_version():
-    '''获取winmdows版本'''
-    # 检查系统
-    if sys.platform != 'win32':
-        return
+# def get_windows_version():
+#     '''获取winmdows版本'''
+#     # 检查系统
+#     if sys.platform != 'win32':
+#         return
     
-    version = platform.win32_ver()[1]
-    major_version = int(version.split('.')[0])
-    build_number = int(version.split('.')[2]) if len(version.split('.')) > 2 else 0
-    if major_version == 10: # win10或win11
-        if build_number >= 22000: # win11初始版本为22000
-            return 11
-        else:
-            return 10
-    else:
-        return major_version
-    
+#     version = platform.win32_ver()[1]
+#     major_version = int(version.split('.')[0])
+#     build_number = int(version.split('.')[2]) if len(version.split('.')) > 2 else 0
+#     if major_version == 10: # win10或win11
+#         if build_number >= 22000: # win11初始版本为22000
+#             return 11
+#         else:
+#             return 10
+#     else:
+#         return major_version
     
 def filter_hotkey(text:str):
     return text.split('(')[0]
@@ -1514,9 +1513,6 @@ class AboutWindow(QDialog):
         # 版本信息
         version_status_text = get_lang('65') if is_pre else ''
         version = QLabel(get_lang('1c').format(__version__, version_status_text))
-        if not dev_config['verify_clickmouse']:
-            not_official_version = QLabel(get_lang('67'))
-            central_layout.addWidget(not_official_version, 1, 1, 1, 2)
         about = QLabel(get_lang('1d'))
 
         # 按钮
@@ -1945,15 +1941,15 @@ class UpdateWindow(QDialog):
         set_style(title, 'big_text_16')
 
         # 按钮
-        update = QPushButton(get_lang('26')) # 更新按钮
-        set_style(update, 'selected')
+        # update = QPushButton(get_lang('26')) # 更新按钮
+        # set_style(update, 'selected')
         update_log = QPushButton(get_lang('27')) # 查看更新日志按钮
         cancel = QPushButton(get_lang('1f')) # 取消按钮
 
         bottom_layout = QHBoxLayout()
         # 绑定事件
         logger.debug('绑定事件')
-        update.clicked.connect(self.on_update)
+        # update.clicked.connect(self.on_update)
         update_log.clicked.connect(self.on_open_update_log)
         cancel.clicked.connect(self.close)
 
@@ -1963,7 +1959,7 @@ class UpdateWindow(QDialog):
         layout.addWidget(version)
 
         bottom_layout.addStretch()
-        bottom_layout.addWidget(update)
+        # bottom_layout.addWidget(update)
         bottom_layout.addWidget(update_log)
         bottom_layout.addWidget(cancel)
 
@@ -1973,35 +1969,35 @@ class UpdateWindow(QDialog):
 
         logger.debug('初始化更新窗口完成')
 
-    def on_update(self):
-        '''更新'''
-        try:
-            self.close()
-            os.rename('updater', 'updater.old')
-            self.down_thread = QtThread(download_file, args=(web_data['down_web'].format(latest_version=result[4]), 'updater.old/clickmouse.7z'))
-            self.down_thread.finished.connect(self.on_update_finished)
-            self.down_thread.start()
-        except:
-            trace = format_exc()
-            logger.exception('更新安装', trace)
-            os.rename('updater.old', 'updater')
-            MessageBox.critical(self, get_lang('14'), f'更新安装失败：\n{trace}')
+    # def on_update(self):
+    #     '''更新'''
+    #     try:
+    #         self.close()
+    #         os.rename('updater', 'updater.old')
+    #         self.down_thread = QtThread(download_file, args=(web_data['down_web'].format(latest_version=result[4]), 'updater.old/clickmouse.7z'))
+    #         self.down_thread.finished.connect(self.on_update_finished)
+    #         self.down_thread.start()
+    #     except:
+    #         trace = format_exc()
+    #         logger.exception('更新安装', trace)
+    #         os.rename('updater.old', 'updater')
+    #         MessageBox.critical(self, get_lang('14'), f'更新安装失败：\n{trace}')
             
-    def on_update_finished(self, state):
-        '''更新完成'''
-        global can_update
-        if state[0]:
-            hash_info = result[3]
-            if get_file_hash('updater.old/clickmouse.7z', hash_info[1]) == hash_info[0]:
-                can_update = True
-                update_ok = UpdateOKWindow()
-                update_ok.show()
-            else:
-                logger.exception('更新安装', '文件校验失败')
-                QMessageBox.critical(self, get_lang('14'), '更新包校验失败')
-        else:
-            logger.exception('更新安装', state[1])
-            QMessageBox.critical(self, get_lang('14'), f'更新失败:\n{state[1]}')
+    # def on_update_finished(self, state):
+    #     '''更新完成'''
+    #     global can_update
+    #     if state[0]:
+    #         hash_info = result[3]
+    #         if get_file_hash('updater.old/clickmouse.7z', hash_info[1]) == hash_info[0]:
+    #             can_update = True
+    #             update_ok = UpdateOKWindow()
+    #             update_ok.show()
+    #         else:
+    #             logger.exception('更新安装', '文件校验失败')
+    #             QMessageBox.critical(self, get_lang('14'), '更新包校验失败')
+    #     else:
+    #         logger.exception('更新安装', state[1])
+    #         QMessageBox.critical(self, get_lang('14'), f'更新失败:\n{state[1]}')
 
     def on_open_update_log(self):
         # 打开更新日志
@@ -2261,25 +2257,25 @@ class SettingWindow(SelectUI):
         ) # 设置窗口属性
 
         # 变量
-        self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69')]
+        self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44')]# , get_lang('69')]
         self.last_page = None
         self.now_page = 0
-        self.values = {} if values is None else values
+        # self.values = {} if values is None else values
 
         self.init_ui()
-        self.check_values() # 检查设置值
+        # self.check_values() # 检查设置值
 
         # 连接信号
         clicker.started.connect(self.on_clicker_started)
 
         logger.debug('初始化设置窗口完成')
         
-    def check_values(self):
-        '''检查设置值'''
-        # 热键设置
-        if self.values.get('need_restart', False):
-            self.on_need_restart_setting_changed(lambda: system_lang, 'select_lang')
-        self.values.clear()
+    # def check_values(self):
+    #     '''检查设置值'''
+    #     # 热键设置
+    #     if self.values.get('need_restart', False):
+    #         self.on_need_restart_setting_changed(lambda: system_lang, 'select_lang')
+    #     self.values.clear()
 
     def create_setting_page(self, title):
         logger.debug(f'创建设置页面: {title}')
@@ -2306,14 +2302,14 @@ class SettingWindow(SelectUI):
             line.setFrameShape(UFrame.Shape.HLine)  # 水平线
             return line
         
-        def parse_hotkey(input: UHotkeyLineEdit):
-            return input.text().split('+')
+        # def parse_hotkey(input: UHotkeyLineEdit):
+        #     return input.text().split('+')
 
         self.page_general = self.page_choice_buttons[0] # 默认设置
         self.page_style = self.page_choice_buttons[1] # 样式设置
         self.page_click = self.page_choice_buttons[2] # 连点器设置
         self.page_update = self.page_choice_buttons[3] # 更新设置
-        self.page_hotkey = self.page_choice_buttons[4] # 热键设置
+        # self.page_hotkey = self.page_choice_buttons[4] # 热键设置
 
         # 主程序
         self.app = get_application_instance()
@@ -2376,11 +2372,11 @@ class SettingWindow(SelectUI):
                 set_style(delay_layout_text, 'big_text_16')
                 
                 # 重置所有设置
-                repair_layout = QHBoxLayout() # 重置布局
-                self.repair_button = QPushButton(get_lang('5e'))
+                # repair_layout = QHBoxLayout() # 重置布局
+                # self.repair_button = QPushButton(get_lang('5e'))
 
-                repair_layout.addWidget(self.repair_button)
-                repair_layout.addStretch(1)
+                # repair_layout.addWidget(self.repair_button)
+                # repair_layout.addStretch(1)
 
                 # 布局
                 layout.addLayout(lang_choice_layout)
@@ -2391,7 +2387,7 @@ class SettingWindow(SelectUI):
                 layout.addWidget(delay_layout_text)
                 layout.addWidget(delay_tip_label)
                 layout.addWidget(create_horizontal_line())
-                layout.addLayout(repair_layout)
+                # layout.addLayout(repair_layout)
 
                 # 绑定事件
                 self.lang_choice.currentIndexChanged.connect(lambda: self.on_need_restart_setting_changed(self.lang_choice.currentIndex, 'select_lang'))
@@ -2399,7 +2395,7 @@ class SettingWindow(SelectUI):
                 tray.checkStateChanged.connect(lambda: self.app.setQuitOnLastWindowClosed(not tray.isChecked()))  # 关闭窗口时不退出应用
                 soft_delay.valueChanged.connect(lambda: self.on_setting_changed(lambda: soft_delay.value() * 10 if soft_delay.value() > 0 else 1, 'soft_delay'))
                 soft_delay.valueChanged.connect(lambda: delay_layout_text.setText(f'{get_lang('b0')}: {soft_delay.value() * 10 if soft_delay.value() > 0 else 1}{get_lang("ms", source=unit_lang)}'))
-                self.repair_button.clicked.connect(self.repair_all_settings)
+                # self.repair_button.clicked.connect(self.repair_all_settings)
             case self.page_click:
                 set_content_label(get_lang('84'))
                 # 选择默认连点器延迟
@@ -2521,17 +2517,17 @@ class SettingWindow(SelectUI):
                 style_use_windows_layout.addWidget(style_choice_use_windows)
                 style_use_windows_layout.addStretch(1)
                 
-                theme_layout = QHBoxLayout() # 主题布局
-                theme_tip_window = QLabel(get_lang('4b'))
-                set_style(theme_tip_window, 'dest_small')
-                theme_combo = QComboBox()
-                theme_combo.addItems(QStyleFactory.keys())
-                theme_combo.setCurrentText(settings.get('theme', theme))
+                # theme_layout = QHBoxLayout() # 主题布局
+                # theme_tip_window = QLabel(get_lang('4b'))
+                # set_style(theme_tip_window, 'dest_small')
+                # theme_combo = QComboBox()
+                # theme_combo.addItems(QStyleFactory.keys())
+                # theme_combo.setCurrentText(settings.get('theme', theme))
                 
                 # 布局
-                theme_layout.addWidget(QLabel(get_lang('23')))
-                theme_layout.addWidget(theme_combo)
-                theme_layout.addStretch(1)
+                # theme_layout.addWidget(QLabel(get_lang('23')))
+                # theme_layout.addWidget(theme_combo)
+                # theme_layout.addStretch(1)
 
                 # 布局
                 layout.addLayout(style_layout)
@@ -2539,127 +2535,127 @@ class SettingWindow(SelectUI):
                 layout.addLayout(style_use_windows_layout)
                 layout.addWidget(tip_label)
                 layout.addWidget(create_horizontal_line())
-                layout.addLayout(theme_layout)
-                layout.addWidget(theme_tip_window)
-                layout.addWidget(create_horizontal_line())
+                # layout.addLayout(theme_layout)
+                # layout.addWidget(theme_tip_window)
+                # layout.addWidget(create_horizontal_line())
 
                 # 连接信号
                 self.style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(self.style_choice.currentIndex, 'select_style'))
                 style_choice_use_windows.checkStateChanged.connect(lambda: self.on_setting_changed(style_choice_use_windows.isChecked, 'use_windows_color'))
-                theme_combo.currentIndexChanged.connect(lambda: self.on_setting_changed(theme_combo.currentText, 'theme'))
-                theme_combo.currentIndexChanged.connect(lambda: self.app.setStyle(theme_combo.currentText()))
-            case self.page_hotkey:
-                set_content_label(get_lang('21'))
+                # theme_combo.currentIndexChanged.connect(lambda: self.on_setting_changed(theme_combo.currentText, 'theme'))
+                # theme_combo.currentIndexChanged.connect(lambda: self.app.setStyle(theme_combo.currentText()))
+            # case self.page_hotkey:
+            #     set_content_label(get_lang('21'))
                 
-                # 左键连点
-                left_click_layout = QHBoxLayout() # 左键连点布局
-                left_click_input = UHotkeyLineEdit() # 左键连点输入框
-                left_click_input.setText(format_keys(settings.get('left_click_hotkey', ['F2'])))
-                left_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 左键连点
+            #     left_click_layout = QHBoxLayout() # 左键连点布局
+            #     left_click_input = UHotkeyLineEdit() # 左键连点输入框
+            #     left_click_input.setText(format_keys(settings.get('left_click_hotkey', ['F2'])))
+            #     left_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                # 布局 
-                left_click_layout.addWidget(QLabel(f'{get_lang('0c')}: '), 1) # 左键连点提示
-                left_click_layout.addWidget(left_click_input, 6)
-                left_click_layout.addWidget(left_repair_button, 2)
-                left_click_layout.addStretch()
+            #     # 布局 
+            #     left_click_layout.addWidget(QLabel(f'{get_lang('0c')}: '), 1) # 左键连点提示
+            #     left_click_layout.addWidget(left_click_input, 6)
+            #     left_click_layout.addWidget(left_repair_button, 2)
+            #     left_click_layout.addStretch()
                 
-                # 右键连点
-                right_click_layout = QHBoxLayout() # 右键连点布局
-                right_click_input = UHotkeyLineEdit() # 右键连点输入框
-                right_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 右键连点
+            #     right_click_layout = QHBoxLayout() # 右键连点布局
+            #     right_click_input = UHotkeyLineEdit() # 右键连点输入框
+            #     right_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                right_click_input.setText(format_keys(settings.get('right_click_hotkey', ['F3'])))
+            #     right_click_input.setText(format_keys(settings.get('right_click_hotkey', ['F3'])))
                 
-                # 布局
-                right_click_layout.addWidget(QLabel(f'{get_lang('0d')}: '), 1) # 右键连点提示
-                right_click_layout.addWidget(right_click_input, 6)
-                right_click_layout.addWidget(right_repair_button, 2)
-                right_click_layout.addStretch()
+            #     # 布局
+            #     right_click_layout.addWidget(QLabel(f'{get_lang('0d')}: '), 1) # 右键连点提示
+            #     right_click_layout.addWidget(right_click_input, 6)
+            #     right_click_layout.addWidget(right_repair_button, 2)
+            #     right_click_layout.addStretch()
                 
-                # 暂停/重启连点
-                pause_click_layout = QHBoxLayout() # 暂停/重启连点布局
-                pause_click_input = UHotkeyLineEdit() # 暂停/重启连点输入框
-                pause_click_input.setText(format_keys(settings.get('pause_click_hotkey', ['F4'])))
-                pause_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 暂停/重启连点
+            #     pause_click_layout = QHBoxLayout() # 暂停/重启连点布局
+            #     pause_click_input = UHotkeyLineEdit() # 暂停/重启连点输入框
+            #     pause_click_input.setText(format_keys(settings.get('pause_click_hotkey', ['F4'])))
+            #     pause_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                # 布局
-                pause_click_layout.addWidget(QLabel(f'{get_lang('6b')}: '), 1) # 暂停/重启连点提示
-                pause_click_layout.addWidget(pause_click_input, 6)
-                pause_click_layout.addWidget(pause_repair_button, 2)
-                pause_click_layout.addStretch()
+            #     # 布局
+            #     pause_click_layout.addWidget(QLabel(f'{get_lang('6b')}: '), 1) # 暂停/重启连点提示
+            #     pause_click_layout.addWidget(pause_click_input, 6)
+            #     pause_click_layout.addWidget(pause_repair_button, 2)
+            #     pause_click_layout.addStretch()
                 
-                # 停止连点
-                stop_click_layout = QHBoxLayout() # 停止连点布局
-                stop_click_input = UHotkeyLineEdit() # 停止连点输入框
-                stop_click_input.setText(format_keys(settings.get('stop_click_hotkey', ['F6'])))
-                stop_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 停止连点
+            #     stop_click_layout = QHBoxLayout() # 停止连点布局
+            #     stop_click_input = UHotkeyLineEdit() # 停止连点输入框
+            #     stop_click_input.setText(format_keys(settings.get('stop_click_hotkey', ['F6'])))
+            #     stop_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                # 布局
-                stop_click_layout.addWidget(QLabel(f'{get_lang('6c')}: '), 1) # 停止连点提示
-                stop_click_layout.addWidget(stop_click_input, 6)
-                stop_click_layout.addWidget(stop_repair_button, 2)
-                stop_click_layout.addStretch()
+            #     # 布局
+            #     stop_click_layout.addWidget(QLabel(f'{get_lang('6c')}: '), 1) # 停止连点提示
+            #     stop_click_layout.addWidget(stop_click_input, 6)
+            #     stop_click_layout.addWidget(stop_repair_button, 2)
+            #     stop_click_layout.addStretch()
                 
-                # 连点属性
-                click_attr_layout = QHBoxLayout() # 连点属性布局
-                click_attr_input = UHotkeyLineEdit() # 连点属性输入框
-                click_attr_input.setText(format_keys(settings.get('click_attr_hotkey', ['Ctrl', 'Alt', 'A'])))
-                click_attr_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 连点属性
+            #     click_attr_layout = QHBoxLayout() # 连点属性布局
+            #     click_attr_input = UHotkeyLineEdit() # 连点属性输入框
+            #     click_attr_input.setText(format_keys(settings.get('click_attr_hotkey', ['Ctrl', 'Alt', 'A'])))
+            #     click_attr_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                # 布局
-                click_attr_layout.addWidget(QLabel(f'{get_lang('8c')}: '), 1) # 连点属性提示
-                click_attr_layout.addWidget(click_attr_input, 6)
-                click_attr_layout.addWidget(click_attr_button, 2)
-                click_attr_layout.addStretch()
+            #     # 布局
+            #     click_attr_layout.addWidget(QLabel(f'{get_lang('8c')}: '), 1) # 连点属性提示
+            #     click_attr_layout.addWidget(click_attr_input, 6)
+            #     click_attr_layout.addWidget(click_attr_button, 2)
+            #     click_attr_layout.addStretch()
                 
-                # 快速连点
-                fast_click_layout = QHBoxLayout() # 快速连点布局
-                fast_click_input = UHotkeyLineEdit() # 快速连点输入框
-                fast_click_input.setText(format_keys(settings.get('fast_click_hotkey', ['Ctrl', 'Alt', 'F'])))
-                fast_click_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 快速连点
+            #     fast_click_layout = QHBoxLayout() # 快速连点布局
+            #     fast_click_input = UHotkeyLineEdit() # 快速连点输入框
+            #     fast_click_input.setText(format_keys(settings.get('fast_click_hotkey', ['Ctrl', 'Alt', 'F'])))
+            #     fast_click_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                # 布局
-                fast_click_layout.addWidget(QLabel(f'{get_lang('75')}: '), 1) # 快速连点提示
-                fast_click_layout.addWidget(fast_click_input, 6)
-                fast_click_layout.addWidget(fast_click_button, 2)
-                fast_click_layout.addStretch()
+            #     # 布局
+            #     fast_click_layout.addWidget(QLabel(f'{get_lang('75')}: '), 1) # 快速连点提示
+            #     fast_click_layout.addWidget(fast_click_input, 6)
+            #     fast_click_layout.addWidget(fast_click_button, 2)
+            #     fast_click_layout.addStretch()
                 
-                # 主窗口
-                main_window_layout = QHBoxLayout() # 主窗口布局
-                main_window_input = UHotkeyLineEdit() # 主窗口输入框
-                main_window_input.setText(format_keys(settings.get('main_window_hotkey', ['Ctrl', 'Alt', 'M'])))
-                main_window_button = QPushButton(get_lang('20')) # 还原默认设置按钮
+            #     # 主窗口
+            #     main_window_layout = QHBoxLayout() # 主窗口布局
+            #     main_window_input = UHotkeyLineEdit() # 主窗口输入框
+            #     main_window_input.setText(format_keys(settings.get('main_window_hotkey', ['Ctrl', 'Alt', 'M'])))
+            #     main_window_button = QPushButton(get_lang('20')) # 还原默认设置按钮
 
-                # 布局
-                main_window_layout.addWidget(QLabel(f'{get_lang('76')}: '), 1) # 主窗口提示
-                main_window_layout.addWidget(main_window_input, 6)
-                main_window_layout.addWidget(main_window_button, 2)
-                main_window_layout.addStretch()
+            #     # 布局
+            #     main_window_layout.addWidget(QLabel(f'{get_lang('76')}: '), 1) # 主窗口提示
+            #     main_window_layout.addWidget(main_window_input, 6)
+            #     main_window_layout.addWidget(main_window_button, 2)
+            #     main_window_layout.addStretch()
 
-                # 布局
-                layout.addLayout(left_click_layout)
-                layout.addLayout(right_click_layout)
-                layout.addLayout(pause_click_layout)
-                layout.addLayout(stop_click_layout)
-                layout.addLayout(click_attr_layout)
-                layout.addLayout(fast_click_layout)
-                layout.addLayout(main_window_layout)
+            #     # 布局
+            #     layout.addLayout(left_click_layout)
+            #     layout.addLayout(right_click_layout)
+            #     layout.addLayout(pause_click_layout)
+            #     layout.addLayout(stop_click_layout)
+            #     layout.addLayout(click_attr_layout)
+            #     layout.addLayout(fast_click_layout)
+            #     layout.addLayout(main_window_layout)
                 
-                # 连接信号
-                left_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(left_click_input), 'left_click_hotkey'))
-                right_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(right_click_input), 'right_click_hotkey'))
-                pause_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(pause_click_input), 'pause_click_hotkey'))
-                stop_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(stop_click_input),'stop_click_hotkey'))
-                click_attr_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(click_attr_input), 'click_attr_hotkey'))
-                fast_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(fast_click_input), 'fast_click_hotkey'))
+            #     # 连接信号
+            #     left_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(left_click_input), 'left_click_hotkey'))
+            #     right_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(right_click_input), 'right_click_hotkey'))
+            #     pause_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(pause_click_input), 'pause_click_hotkey'))
+            #     stop_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(stop_click_input),'stop_click_hotkey'))
+            #     click_attr_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(click_attr_input), 'click_attr_hotkey'))
+            #     fast_click_input.textChanged.connect(lambda: self.on_setting_changed(lambda: parse_hotkey(fast_click_input), 'fast_click_hotkey'))
                 
-                left_repair_button.clicked.connect(lambda: self.repair_settings('left_click_hotkey'))
-                right_repair_button.clicked.connect(lambda: self.repair_settings('right_click_hotkey'))
-                pause_repair_button.clicked.connect(lambda: self.repair_settings('pause_click_hotkey'))
-                stop_repair_button.clicked.connect(lambda: self.repair_settings('stop_click_hotkey'))
-                click_attr_button.clicked.connect(lambda: self.repair_settings('click_attr_hotkey'))
-                fast_click_button.clicked.connect(lambda: self.repair_settings('fast_click_hotkey'))
-                main_window_button.clicked.connect(lambda: self.repair_settings('main_window_hotkey'))
+            #     left_repair_button.clicked.connect(lambda: self.repair_settings('left_click_hotkey'))
+            #     right_repair_button.clicked.connect(lambda: self.repair_settings('right_click_hotkey'))
+            #     pause_repair_button.clicked.connect(lambda: self.repair_settings('pause_click_hotkey'))
+            #     stop_repair_button.clicked.connect(lambda: self.repair_settings('stop_click_hotkey'))
+            #     click_attr_button.clicked.connect(lambda: self.repair_settings('click_attr_hotkey'))
+            #     fast_click_button.clicked.connect(lambda: self.repair_settings('fast_click_hotkey'))
+            #     main_window_button.clicked.connect(lambda: self.repair_settings('main_window_hotkey'))
                 
         restart_layout = QHBoxLayout() # 重启提示布局
         self.restart_button = QPushButton(get_lang('7e'))
@@ -2685,26 +2681,26 @@ class SettingWindow(SelectUI):
         new_color_bar(self)
         return super().showEvent(event)
     
-    def repair_settings(self, key: str):
-        '''还原默认设置'''
-        global settings
-        if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
-            return
-        settings[key] = default_setting[key]
-        save_settings(settings)
-        self.window_restarted.emit()
+    # def repair_settings(self, key: str):
+    #     '''还原默认设置'''
+    #     global settings
+    #     if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
+    #         return
+    #     settings[key] = default_setting[key]
+    #     save_settings(settings)
+    #     self.window_restarted.emit()
             
-    def repair_all_settings(self):
-        global settings
-        if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
-            return
-        settings = default_setting.copy()
-        settings['theme'] = default_theme
-        settings['select_lang'] = system_lang
-        save_settings(settings)
-        self.app.setStyle(default_theme)
-        self.values.update({'need_restart': True}) # values 用于存储需要重启后还原的内容
-        self.window_restarted.emit()
+    # def repair_all_settings(self):
+    #     global settings
+    #     if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
+    #         return
+    #     settings = default_setting.copy()
+    #     settings['theme'] = default_theme
+    #     settings['select_lang'] = system_lang
+    #     save_settings(settings)
+    #     self.app.setStyle(default_theme)
+    #     self.values.update({'need_restart': True}) # values 用于存储需要重启后还原的内容
+    #     self.window_restarted.emit()
 
     def on_auto_start_changed(self, state):
         '''自启动复选框状态改变'''
@@ -3092,7 +3088,7 @@ if __name__ == '__main__':
     data_path = Path('data')
     if not((data_path / 'first_run').exists()):
         run_as_admin('install_pack.py', 'install_pack.exe')
-        exit(0)
+        sys.exit(0)
     else:
         import os # 系统库
         import shutil # 用于删除文件夹
@@ -3216,22 +3212,22 @@ if __name__ == '__main__':
         result = (None, None, None, None) # 更新检查结果
 
         # 系统版本
-        windows_version = get_windows_version()
-        if windows_version is None: # 非windows
-            default_theme = 'Fusion'
-        elif windows_version < 10: # 低于win10
-            default_theme = 'Windows'
-        elif windows_version == 10: # win10
-            default_theme = 'Windows10'
-        elif windows_version == 11: # win11
-            default_theme = 'Windows11'
-        else: # 未知
-            default_theme = 'Fusion'
+        # windows_version = get_windows_version()
+        # if windows_version is None: # 非windows
+        #     default_theme = 'Fusion'
+        # elif windows_version < 10: # 低于win10
+        #     default_theme = 'Windows'
+        # elif windows_version == 10: # win10
+        #     default_theme = 'Windows10'
+        # elif windows_version == 11: # win11
+        #     default_theme = 'Windows11'
+        # else: # 未知
+        #     default_theme = 'Fusion'
             
-        with open(get_resource_path('default_setting.json')) as f:
-            default_setting = json.load(f)
+        # with open(get_resource_path('default_setting.json')) as f:
+        #     default_setting = json.load(f)
 
-        theme = settings.get('theme', default_theme)
+        # theme = settings.get('theme', default_theme)
 
         logger.info('定义资源完成')
 
@@ -3259,5 +3255,5 @@ if __name__ == '__main__':
         setting_window.window_restarted.connect(on_update_setting_window)
 
         app = TrayApp()
-        app.app.setStyle(theme)
+        # app.app.setStyle(theme)
         app.run()
