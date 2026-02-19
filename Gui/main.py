@@ -1514,9 +1514,6 @@ class AboutWindow(QDialog):
         # 版本信息
         version_status_text = get_lang('65') if is_pre else ''
         version = QLabel(get_lang('1c').format(__version__, version_status_text))
-        if not dev_config['verify_clickmouse']:
-            not_official_version = QLabel(get_lang('67'))
-            central_layout.addWidget(not_official_version, 1, 1, 1, 2)
         about = QLabel(get_lang('1d'))
 
         # 按钮
@@ -3092,7 +3089,7 @@ if __name__ == '__main__':
     data_path = Path('data')
     if not((data_path / 'first_run').exists()):
         run_as_admin('install_pack.py', 'install_pack.exe')
-        exit(0)
+        sys.exit(0)
     else:
         import os # 系统库
         import shutil # 用于删除文件夹
