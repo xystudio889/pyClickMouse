@@ -92,7 +92,7 @@ class Window(QWidget):
     def __init__(self):
         super().__init__()
 
-def test_umessagebox():
+def umessagebox():
     app = QApplication(sys.argv)
     window = Window()
     msg_box = UMessageBox.question(None, '测试', '你喜欢这个软件吗？', buttons=[CustonMessageButton('好', QMessageBox.YesRole), CustonMessageButton('不喜欢', QMessageBox.NoRole)])
@@ -103,3 +103,6 @@ def test_umessagebox():
     print(msg_box)
     window.show()
     app.exec()
+    
+if __name__ == '__main__':
+    umessagebox()

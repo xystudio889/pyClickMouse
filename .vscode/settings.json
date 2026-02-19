@@ -1,11 +1,37 @@
 {
-    "json.schemas": [
-
+    "git.confirmSync": false,
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
+    "markdown-preview-enhanced.revealjsTheme": "black.css",
+    "markdown-preview-enhanced.previewTheme": "atom-dark.css",
+    "files.associations": {
+        "*.qss": "css"
+    },
+    "gitLineAuthor.colorConfigs": [
+        {
+            "regex": "^✅?feat",
+            "hue": 170
+        },
+        {
+            "regex": "^fix",
+            "hue": 0
+        },
+        {
+            "regex": "^docs",
+            "hue": 100
+        },
+        {
+            "regex": "^refactor",
+            "hue": 60
+        },
+        {
+            "regex": "^test",
+            "hue": 308
+        }
     ],
+    "json.schemas": [],
     "workbench.startupEditor": "none",
     "editor.accessibilitySupport": "off",
     "git.autofetch": true,
-    "git.confirmSync": false,
     "editor.unicodeHighlight.includeStrings": false,
     "editor.unicodeHighlight.nonBasicASCII": false,
     "[json]": {
@@ -18,23 +44,29 @@
         "markdown": false,
         "scminput": false
     },
-    "workbench.secondarySideBar.defaultVisibility": "hidden",
-    "markdown-preview-enhanced.revealjsTheme": "black.css",
-    "markdown-preview-enhanced.previewTheme": "atom-dark.css",
     "python.createEnvironment.trigger": "off",
     "editor.unicodeHighlight.ambiguousCharacters": false,
     "[html]": {
         "editor.defaultFormatter": "vscode.html-language-features"
     },
     "files.autoSave": "afterDelay",
-    "files.associations": {
-        "*.qss": "css"
-    },
     "liveServer.settings.donotShowInfoMsg": false,
     "liveServer.settings.port": 5500,
     "terminal.integrated.initialHint": false,
     "terminal.integrated.suggest.insertTrailingSpace": true,
     "terminal.integrated.suggest.suggestOnTriggerCharacters": true,
     "terminal.integrated.shellIntegration.environmentReporting": false,
-    "terminal.integrated.suggest.quickSuggestions": true,
+    "terminal.integrated.suggest.quickSuggestions": {
+        "commands": "on",
+        "arguments": "on",
+        "unknown": "on"
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": [
+        {
+            "path": "",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        }
+    ]
 }

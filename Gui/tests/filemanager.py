@@ -43,9 +43,12 @@ def remove_old_log(directory_path):
     return True
 
 # 使用示例
-def test_main():
+def main():
     # 执行每日操作
     try:
         remove_old_log('tests/test')
     except:
         pass
+
+if __name__ == '__main__':
+    main()

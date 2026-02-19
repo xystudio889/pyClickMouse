@@ -14,8 +14,8 @@ body:
       > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
 - type: dropdown
   attributes:
-    label: 你想新增任务包含哪些模块？
-    description: 你想新增任务包含哪些模块？
+    label: ☑️新增任务包含的模块
+    description: ☑️你想新增任务包含哪些模块？
     multiple: true
     options:
       - 🖱️连点功能
@@ -39,7 +39,7 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: 🧾请详细描述你想要新增的功能。
+    label: 🧾新增的每个功能描述
     placeholder: |
       新功能1
       新功能2
@@ -50,7 +50,7 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: ❓为什么需要这个功能？
+    label: ❓需要这些功能的原因
     placeholder: |
       解决了什么问题？
       增加了什么功能？
@@ -61,7 +61,7 @@ body:
     required: false
 - type: textarea
   attributes:
-    label: 📄你的实行步骤想法是什么？
+    label: 📄实行步骤想法
     placeholder: |
       - 新功能1:
       - - 实行方案1:

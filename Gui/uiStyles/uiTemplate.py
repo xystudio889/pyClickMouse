@@ -65,7 +65,7 @@ class SelectUI(QMainWindow):
             page = self.create_setting_page(page_title)
             self.stacked_widget.addWidget(page)
             self.pages.append(page)
-        
+            
         # 将堆叠窗口部件设置为右侧滚动区域的内容
         self.right_scroll.setWidget(self.stacked_widget)
     

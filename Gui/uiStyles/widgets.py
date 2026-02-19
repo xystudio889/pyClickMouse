@@ -3,8 +3,6 @@ from sharelibs import get_lang,default_button_text
 
 __all__ = ['UMessageBox', 'VScrollArea', 'HScrollArea', 'UCheckBox', 'UnitInputLayout', 'ULabel', 'MessageButtonTemplate', 'CustonMessageButton']
 
-
-
 class MessageButtonTemplate:
     NOBUTTON = 0b0
     YES = 0b1
