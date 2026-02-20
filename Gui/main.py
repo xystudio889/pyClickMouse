@@ -347,7 +347,7 @@ def revert_update():
     except:
         pass
     try:
-        os.remove('updater.old/clickmouse.7z')
+        os.remove('updater/clickmouse.7z')
     except:
         pass
 
@@ -520,6 +520,20 @@ class UMainWindow(QMainWindow):
         self.setWindowIcon(icon)
         new_color_bar(self)
         
+    def showEvent(self, event):
+        '''窗口显示事件'''
+        new_color_bar(self)
+        return super().showEvent(event)
+    
+class UDialog(QDialog):
+    '''自定义对话框基类'''
+    def __init__(self, parent=None):
+        logger.debug('初始化对话框')
+
+        super().__init__(parent=parent)
+        self.setWindowIcon(icon)
+        new_color_bar(self)
+    
     def showEvent(self, event):
         '''窗口显示事件'''
         new_color_bar(self)
@@ -704,16 +718,17 @@ class Click(QObject):
         self.click_thread = None
         self.right_clicked = False
         self.left_clicked = False
-        self.stop_count = 0  # 连点停止计数器，连续两次停止则恢复默认状态
 
     def mouse_left(self, delay, times):
         logger.info('左键连点')
-        self.mouse_click(button='left', input_delay=delay, times=times)
+        if not self.running:
+            self.mouse_click(button='left', input_delay=delay, times=times)
 
     def mouse_right(self, delay, times):
         # 停止当前运行的点击线程
         logger.info('右键连点')
-        self.mouse_click(button='right', input_delay=delay, times=times)
+        if not self.running:
+            self.mouse_click(button='right', input_delay=delay, times=times)
 
     def set_default_clicked(self):
         self.left_clicked = False
@@ -723,7 +738,6 @@ class Click(QObject):
     def mouse_click(self, button: str, input_delay, times):
         '''鼠标连点'''
         logger.info('开始连点')
-        self.stop_count = 0
         # 重置状态
         if self.click_thread and self.click_thread.isRunning():
             self.running = False
@@ -736,7 +750,7 @@ class Click(QObject):
             self.right_clicked = False
         elif button == 'right':
             self.right_clicked = True
-            self.left_clicked = False
+            self.left_clicked = False 
 
         if is_inf:
             times = float('inf')
@@ -760,12 +774,16 @@ class Click(QObject):
         def click_loop():
             self.pause.emit(False)
             i = 0
-            while i <= times and self.running:
+            while self.running:
+                if i >= times:
+                    self.running = False
+                    self.stopped.emit()
+                    break
                 if not self.paused:
                     try:
                         pyautogui.click(button=button)
                         sleep(delay / 1000)
-                        i += 1
+                        i += 1     
                         if times == float('inf'):
                             self.click_conuter.emit('inf', str(i), str(delay))
                         else:
@@ -780,9 +798,7 @@ class Click(QObject):
                 else:
                     sleep(delay / 1000)  # 暂停
             else:
-                self.stop_count += 1
-                if self.stop_count >= 2:
-                    self.stopped.emit()
+                self.stopped.emit()
 
         # 启动线程
         logger.info(f'启动连点线程')
@@ -1375,13 +1391,17 @@ class MainWindow(UMainWindow):
 
     def on_update(self, judge = False):
         '''显示更新提示'''
-        global update_window
-
         if judge:
             if result[0]: # 检查到需要更新
-                update_window.exec()
+                self.open_update()
             else:
                 MessageBox.information(self, get_lang('16'), get_lang('19'))
+        else:
+            self.open_update()
+            
+    def open_update(self):
+        if can_update:
+            update_ok_window.exec()
         else:
             update_window.exec()
 
@@ -1416,6 +1436,8 @@ class MainWindow(UMainWindow):
         self.input_delay.setEnabled(True)
         self.delay_combo.setEnabled(True)
         self.times_combo.setEnabled(True)
+        self.right_click_button.setEnabled(True)
+        self.left_click_button.setEnabled(True)
 
         # 重置变量
         clicker.running = False
@@ -1448,14 +1470,20 @@ class MainWindow(UMainWindow):
             # 左键点击
             set_style(self.left_click_button, 'selected')
             set_style(self.right_click_button, '')
+            self.right_click_button.setEnabled(False)
+            self.left_click_button.setEnabled(True)
         elif right:
             # 右键点击
             set_style(self.right_click_button, 'selected')
             set_style(self.left_click_button, '')
+            self.right_click_button.setEnabled(True)
+            self.left_click_button.setEnabled(False)
         else:
             # 未点击
             set_style(self.left_click_button, '')
             set_style(self.right_click_button, '')
+            self.right_click_button.setEnabled(True)
+            self.left_click_button.setEnabled(True)
 
     def on_click_counter(self, totel, now, delay):
         '''连点计数器'''
@@ -1484,17 +1512,14 @@ class MainWindow(UMainWindow):
         '''同步输入框'''
         set_handle(dest, get_handle(source))
 
-class AboutWindow(QDialog):
+class AboutWindow(UDialog):
     def __init__(self):
         super().__init__()
         logger.debug('初始化关于窗口')
         self.setWindowTitle(filter_hotkey(get_lang('0a')))
         self.setGeometry(100, 100, 375, 175)
-        self.setWindowIcon(icon)
         self.setFixedSize(self.width(), self.height())
         self.init_ui()
-
-        new_color_bar(self)
 
     def init_ui(self):
         # 创建面板
@@ -1534,12 +1559,11 @@ class AboutWindow(QDialog):
         ok_button.clicked.connect(self.close)
         logger.debug('初始化关于窗口完成')
 
-class CleanCacheWindow(QDialog):
+class CleanCacheWindow(UDialog):
     def __init__(self):
         logger.debug('初始化清理缓存窗口')
         super().__init__()
         self.setWindowTitle(filter_hotkey(get_lang('02')))
-        self.setWindowIcon(icon)
 
         # 加载常量
         logger.debug('加载常量')
@@ -1552,8 +1576,6 @@ class CleanCacheWindow(QDialog):
         self.cache_config[-1]['exclude'] = self.merge_lists_dicts(*self.path_list)
 
         self.init_ui()
-
-        new_color_bar(self)
 
     def init_ui(self):
         logger.debug('加载ui')
@@ -1914,7 +1936,7 @@ class CleanCacheWindow(QDialog):
                 for checkbox in self.checkbox_list:
                     checkbox.setChecked(True)
 
-class UpdateWindow(QDialog):
+class UpdateWindow(UDialog):
     def __init__(self):
         # 初始化
         logger.debug('初始化更新窗口')
@@ -1981,7 +2003,7 @@ class UpdateWindow(QDialog):
         except:
             trace = format_exc()
             logger.exception('更新安装', trace)
-            os.rename('updater.old', 'updater')
+            revert_update()
             MessageBox.critical(self, get_lang('14'), f'更新安装失败：\n{trace}')
             
     def on_update_finished(self, state):
@@ -2012,7 +2034,7 @@ class UpdateWindow(QDialog):
             is_pre = True
         main_window.open_doc(path=f'updatelog/{'beta' if is_pre else 'final'}/{version_start}/{version}')
 
-class UpdateOKWindow(QDialog):
+class UpdateOKWindow(UDialog):
     def __init__(self):
         # 初始化
         logger.debug(get_lang('b3'))
@@ -2020,11 +2042,8 @@ class UpdateOKWindow(QDialog):
         self.setWindowTitle(get_lang('6e'))
         self.setGeometry(100, 100, 400, 100)
         self.setFixedSize(self.width(), self.height())
-        self.setWindowIcon(icon)
 
         self.init_ui()
-
-        new_color_bar(self)
 
     def init_ui(self):
         # 创建面板
@@ -2080,6 +2099,7 @@ class UpdateOKWindow(QDialog):
         global can_update
         logger.info('回滚更新')
         revert_update()
+        self.close()
         can_update = False
         MessageBox.information(self, get_lang('16'), get_lang('b9'))
 
@@ -2087,13 +2107,12 @@ class UpdateOKWindow(QDialog):
         # 打开更新日志
         update_window.on_open_update_log()
 
-class FastSetClickWindow(QDialog):
+class FastSetClickWindow(UDialog):
     def __init__(self):
         logger.debug('初始化快速连点窗口')
 
         super().__init__()
         self.setWindowTitle(get_lang('75'))
-        self.setWindowIcon(icon)
         self.setGeometry(100, 100, 475, 125)
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
@@ -2106,8 +2125,6 @@ class FastSetClickWindow(QDialog):
 
         logger.debug('初始化ui')
         self.init_ui()
-
-        new_color_bar(self)
 
     def init_ui(self):
         # 创建主控件和布局
@@ -2171,12 +2188,11 @@ class FastSetClickWindow(QDialog):
         '''同步输入框'''
         set_handle(dest, get_handle(source))
 
-class ClickAttrWindow(QDialog):
+class ClickAttrWindow(UDialog):
     def __init__(self):
         logger.debug('初始化连点器属性窗口')
         super().__init__()
         self.setWindowTitle(get_lang('8c'))
-        self.setWindowIcon(icon)
 
         # 定义变量
         self.timer = QTimer(self)
@@ -2184,8 +2200,6 @@ class ClickAttrWindow(QDialog):
         self.timer.start(settings.get('soft_delay', 1))
 
         self.init_ui()
-
-        new_color_bar(self)
 
     def init_ui(self):
         # 创建主布局
@@ -2776,7 +2790,7 @@ class SettingWindow(SelectUI):
             MessageBox.critical(self, get_lang('14'), get_lang('aa'))
             return
 
-class SetImportExtensionModeWindow(QDialog):
+class SetImportExtensionModeWindow(UDialog):
     def __init__(self):
         super().__init__()
         logger.debug('初始化管理扩展提示窗口')
@@ -2833,10 +2847,6 @@ class TrayApp:
         # 加载警告
         if not has_packages:
             MessageBox.warning(None, get_lang('15'), get_lang('ae'))
-
-        # 创建设置延迟窗口
-        self.set_dalay_window = FastSetClickWindow()
-        self.click_attr_window = ClickAttrWindow()
 
         # 创建热键监听器
         self.hotkey_listener = get_hotkey_listener_instance()
@@ -3015,7 +3025,7 @@ class TrayApp:
         else:
             self.tray_icon.showMessage(get_lang('6e'), get_lang('b7'), QSystemTrayIcon.MessageIcon.Warning, 1000)
     
-    def show_window(self, window):
+    def show_window(self, window: QMainWindow | QDialog):
         '''显示窗口'''
         if window.isVisible():
             window.hide()
@@ -3032,15 +3042,15 @@ class TrayApp:
             if clicker.running:
                 self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
             else:
-                self.show_window(self.set_dalay_window)
-        elif all_in_list(combination, parse_hotkey('msin_window', ['Ctrl', 'Alt', 'M'])):
+                self.show_window(fast_click_window)
+        elif all_in_list(combination, parse_hotkey('main_window', ['Ctrl', 'Alt', 'M'])):
             # 处理Ctrl+Alt+M组合键
             self.show_window(main_window)
             if not main_window.isVisible():
                 main_window.is_start_from_tray = True
         elif all_in_list(combination, parse_hotkey('click_attr', ['Ctrl', 'Alt', 'A'])):
             # 处理Ctrl+Alt+A组合键
-            self.show_window(self.click_attr_window)
+            self.show_window(click_attr_window)
         elif all_in_list(combination, parse_hotkey('left_click', ['F2'])):
             self.on_start_clicker_tray('left') # 左键
         elif all_in_list(combination, parse_hotkey('right_click', ['F3'])):
@@ -3063,8 +3073,8 @@ class TrayApp:
 
     def on_start(self):
         '''连点器启动事件'''
-        if self.set_dalay_window.isVisible():
-            self.set_dalay_window.hide()
+        if fast_click_window.isVisible():
+            fast_click_window.hide()
             self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
 
 if __name__ == '__main__':
@@ -3250,10 +3260,14 @@ if __name__ == '__main__':
         update_window = UpdateWindow()
         update_ok_window = UpdateOKWindow()
         click_attr_window = ClickAttrWindow()
+        fast_click_window = FastSetClickWindow()
+
         setting_window = SettingWindow()
-        set_import_extension_window = SetImportExtensionModeWindow()
-        setting_window.click_setting_changed.connect(lambda: on_input_change(type='main'))
+        on_input_change(type='setting') # 更新时间估计状态
+        setting_window.click_setting_changed.connect(lambda: on_input_change(type='setting'))
         setting_window.window_restarted.connect(on_update_setting_window)
+        
+        set_import_extension_window = SetImportExtensionModeWindow()
 
         app = TrayApp()
         app.app.setStyle(theme)
