@@ -85,12 +85,14 @@ QCheckBox {
 
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
-    background-color: #303030;
+    background-color: #202020;
+    border: 1px solid #353535;
+    border-radius: 5px;
 }
 
 /* 滚动条角部样式（确保无缝隙） */
 QScrollArea > QWidget > QWidget {
-    background-color: #303030;
+    background-color: #202020;
 }
 
 /* 滚动条样式：白底灰边 */
@@ -206,7 +208,8 @@ QStatusBar {
 }
 
 .frame {
-    border: 3px solid #505050;
+    border: none;
+    border-bottom: 2px solid #505050;
 }
 
 /* 元数据 */

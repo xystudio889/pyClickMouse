@@ -1,8 +1,3 @@
-import os
-from pathlib import Path
-import subprocess
-import shutil
-
 def try_to_delete(path):
     if os.path.isdir(path):
         shutil.rmtree(path, ignore_errors=True)
@@ -107,6 +102,12 @@ def move_contents_to_parent(folder_path):
         return
 
 if __name__ == '__main__':
+    import os
+    from pathlib import Path
+    import subprocess
+    import shutil
+    import sys
+    
     clickmouse_path = Path.cwd()
     shutil.move(clickmouse_path / 'packages.json', clickmouse_path / 'extensions')
     extract_7z('updater.old/clickmouse.7z')
@@ -115,3 +116,4 @@ if __name__ == '__main__':
     try_to_delete(clickmouse_path / 'cache' / 'update_log.md')
     move_contents_to_parent(clickmouse_path / 'clickmouse')
     shutil.move(clickmouse_path / 'extensions' / 'packages.json', clickmouse_path)
+    sys.exit(0)
