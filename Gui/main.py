@@ -69,7 +69,21 @@ def should_check_update():
         return True
     last_check_time_stamp = datetime.fromtimestamp(last_check_time)
     now = datetime.now()
-    if (now - last_check_time_stamp).total_seconds() > 3600 * 24:
+    
+    setting_time = settings.get('update_frequency', 1)
+    time = 9
+    
+    match setting_time:
+        case 0: # 每次打开都启动
+            return True
+        case 1: # 每天检查一次
+            time = 3600 * 24
+        case 2: # 每周检查一次
+            time = 3600 * 24 * 7
+        case 3: # 每月检查一次
+            time = 3600 * 24 * 30
+    
+    if (now - last_check_time_stamp).total_seconds() > time:
         return True
     return False
 
@@ -256,7 +270,6 @@ def on_update_setting_window():
             page = 0
         values = setting_window.values.copy()
         setting_window.close()
-        print(values)
         setting_window = SettingWindow(values)
         setting_window.click_setting_changed.connect(lambda: on_input_change(type='main'))
         setting_window.window_restarted.connect(on_update_setting_window)
@@ -370,7 +383,6 @@ def on_input_change(*, type:str ):
         total = setting_window.total_time_label
         times_combo = setting_window.times_combo
         delay_combo = setting_window.delay_combo
-        setting_window.click_setting_changed.emit()
     input_delay = delay_text.text().strip()
     input_times = delay_times.text().strip()
     is_inf = False
@@ -891,7 +903,7 @@ class ColorGetter(QObject):
         except AttributeError:
             settings['select_style'] = 0
             save_settings(settings)
-            QMessageBox.critical(None, get_lang('14'), get_lang('12'))
+            MessageBox.critical(None, get_lang('14'), get_lang('12'))
             logger.critical('设置的样式索引超出范围，已恢复默认样式设置。')
             run_software('main.py', 'main.exe')
             sys.exit(0)
@@ -1237,12 +1249,20 @@ class MainWindow(UMainWindow):
     def open_doc(self, *, path: str=''):
         '''打开文档'''
         lang_name = langs[select_lang]['lang_system_name']
-        with open(get_resource_path('vars', 'supported_doc_lang.json'), 'r', encoding='utf-8') as f:
-            supported_doc_lang = json.load(f)
-        if lang_name in supported_doc_lang: # 受支持的语言包
-            open_url(f'https://xystudiocode.github.io/clickmouse_docs/{lang_name}/{path}')
-        else:
-            open_url(f'https://xystudiocode.github.io/clickmouse_docs/en/path')
+        supported_doc_lang = [i['lang_system_name'] for i in langs if i['supported']]
+            
+        doc_choice = settings.get('lang_doc', 0)
+        if doc_choice == 0: # 软件语言
+            doc_choice_lang = lang_name
+        elif doc_choice == 1: # 系统语言
+            doc_choice_lang = langs[system_lang]['lang_system_name']
+        else: # 大于等于2的数字，表示语言包
+            doc_choice_lang = supported_doc_lang[doc_choice-2]
+            
+        if doc_choice_lang not in supported_doc_lang: # 不受支持的语言包
+            doc_choice_lang = 'en' # 默认英文
+
+        open_url(settings.get('default_doc_link', 'https://xystudiocode.github.io/clickmouse_docs/{lang}/{path}').format(lang=doc_choice_lang, path=path))
 
     def do_extension(self, index):
         '''执行扩展'''
@@ -1327,7 +1347,7 @@ class MainWindow(UMainWindow):
     def show_update_log(self):
         '''显示更新日志'''
         logger.info('打开更新日志窗口')
-        self.open_doc(path='updatelog')
+        self.open_doc(path=settings.get('update_log_path', 'updatelog'))
 
     def show_clean_cache(self):
         '''清理缓存'''
@@ -1341,14 +1361,15 @@ class MainWindow(UMainWindow):
 
     def on_check_update(self):
         # 检查更新
-        self.update_checked = True
-        if should_check_update_res:
-            self.check_update_thread = QtThread(check_update, args=(False,))
-            self.check_update_thread.finished.connect(self.on_check_update_result)
-            self.check_update_thread.start()
-        else:
-            logger.info('使用缓存检查更新')
-            self.on_check_update_result(update_cache)
+        if settings.get('update_enabled', True):
+            self.update_checked = True
+            if should_check_update_res:
+                self.check_update_thread = QtThread(check_update, args=(False,))
+                self.check_update_thread.finished.connect(self.on_check_update_result)
+                self.check_update_thread.start()
+            else:
+                logger.info('使用缓存检查更新')
+                self.on_check_update_result(update_cache)
             
     def save(self):
         '''保存更新缓存'''
@@ -1371,7 +1392,7 @@ class MainWindow(UMainWindow):
             return
 
         # 检查结果处理
-        if settings.get('update_notify', 0) in {0}: # 判断是否需要弹出通知
+        if settings.get('update_notify', True):
             if result[1] != -1:  # -1表示函数出错
                 self.save()
                 if result[0]:  # 检查到需要更新
@@ -1385,17 +1406,17 @@ class MainWindow(UMainWindow):
                 if self.check_update_thread.isFinished():
                     logger.error(f'检查更新错误:\n{result[0]}')
                     MessageBox.critical(self, get_lang('14'), f'{get_lang('18')}\n{result[0]}')
-        else:
-            if result[1] != -1:
-                self.save()
 
-    def on_update(self, judge = False):
+    def on_update(self, judge=False):
         '''显示更新提示'''
         if judge:
-            if result[0]: # 检查到需要更新
-                self.open_update()
+            if settings.get('update_enabled', True):
+                if result[0]: # 检查到需要更新
+                    self.open_update()
+                else:
+                    MessageBox.information(self, get_lang('16'), get_lang('19'))
             else:
-                MessageBox.information(self, get_lang('16'), get_lang('19'))
+                MessageBox.critical(self, get_lang('14'), get_lang('4e'))
         else:
             self.open_update()
             
@@ -1750,9 +1771,7 @@ class CleanCacheWindow(UDialog):
             return 0
 
     def delete_empty_folders(self, root_path):
-        '''
-        删除所有空文件夹（包括嵌套的空文件夹）
-        '''
+        '''删除所有空文件夹（包括嵌套的空文件夹）'''
         if not os.path.exists(root_path) or not os.path.isdir(root_path):
             return
 
@@ -1992,19 +2011,29 @@ class UpdateWindow(UDialog):
 
         logger.debug('初始化更新窗口完成')
 
+    def exec(self):
+        if settings.get('quiet_update', False):
+            self.close()
+            self.on_update()
+        else:
+            return super().exec()
+
     def on_update(self):
         '''更新'''
-        try:
-            self.close()
-            os.rename('updater', 'updater.old')
-            self.down_thread = QtThread(download_file, args=(web_data['down_web'].format(latest_version=result[4]), 'updater.old/clickmouse.7z'))
-            self.down_thread.finished.connect(self.on_update_finished)
-            self.down_thread.start()
-        except:
-            trace = format_exc()
-            logger.exception('更新安装', trace)
-            revert_update()
-            MessageBox.critical(self, get_lang('14'), f'更新安装失败：\n{trace}')
+        if self.down_thread is None:
+            try:
+                self.close()
+                os.rename('updater', 'updater.old')
+                self.down_thread = QtThread(download_file, args=(web_data['down_web'].format(latest_version=result[4]), 'updater.old/clickmouse.7z'))
+                self.down_thread.finished.connect(self.on_update_finished)
+                self.down_thread.start()
+            except:
+                trace = format_exc()
+                logger.exception('更新安装', trace)
+                revert_update()
+                MessageBox.critical(self, get_lang('14'), f'{get_lang('bb')}：\n{trace}')
+        else:
+            MessageBox.critical(self, get_lang('14'), get_lang('4d'))
             
     def on_update_finished(self, state):
         '''更新完成'''
@@ -2013,14 +2042,14 @@ class UpdateWindow(UDialog):
             hash_info = result[3]
             if get_file_hash('updater.old/clickmouse.7z', hash_info[1]) == hash_info[0]:
                 can_update = True
-                update_ok = UpdateOKWindow()
-                update_ok.show()
+                if settings.get('update_ok_notify', True):
+                    update_ok_window.show()
             else:
                 logger.exception('更新安装', '文件校验失败')
-                QMessageBox.critical(self, get_lang('14'), '更新包校验失败')
+                MessageBox.critical(self, get_lang('14'), get_lang('bc'))
         else:
             logger.exception('更新安装', state[1])
-            QMessageBox.critical(self, get_lang('14'), f'更新失败:\n{state[1]}')
+            MessageBox.critical(self, get_lang('14'), f'{get_lang('bb')}:\n{state[1]}')
 
     def on_open_update_log(self):
         # 打开更新日志
@@ -2272,7 +2301,7 @@ class SettingWindow(SelectUI):
         ) # 设置窗口属性
 
         # 变量
-        self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69')]
+        self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f'))]
         self.last_page = None
         self.now_page = 0
         self.values = {} if values is None else values
@@ -2297,16 +2326,6 @@ class SettingWindow(SelectUI):
         page = QWidget()
         layout = QVBoxLayout(page)
 
-        # 标题标签
-        title_label = QLabel(title)
-        set_style(title_label, 'big_text_24')
-        layout.addWidget(title_label)
-
-        # 内容标签
-        content_label = QLabel(get_lang('7d'))
-        set_style(content_label, 'dest')
-        layout.addWidget(content_label)
-
         def set_content_label(text):
             logger.debug(f'设置内容标签')
             content_label.setText(text)
@@ -2325,6 +2344,20 @@ class SettingWindow(SelectUI):
         self.page_click = self.page_choice_buttons[2] # 连点器设置
         self.page_update = self.page_choice_buttons[3] # 更新设置
         self.page_hotkey = self.page_choice_buttons[4] # 热键设置
+        self.page_doc = self.page_choice_buttons[5] # 文档设置
+        
+        # 标题标签
+        title_label = QLabel(title)
+        set_style(title_label, 'big_text_24')
+
+        # 内容标签
+        content_label = QLabel(get_lang('7d'))
+        set_style(content_label, 'dest')
+        
+        # 布局
+        layout.addWidget(title_label)
+        layout.addWidget(content_label)
+        layout.addWidget(create_horizontal_line())
 
         # 主程序
         self.app = get_application_instance()
@@ -2489,23 +2522,41 @@ class SettingWindow(SelectUI):
             case self.page_update:
                 set_content_label(get_lang('87'))
                 # 选择更新检查提示
-                check_update_layout = QHBoxLayout() # 窗口风格布局
+                self.enable_update = UCheckBox(get_lang('48')) # 开启更新
+                self.enable_update.setChecked(settings.get('update_enabled', True))
+                
+                self.update_notify = UCheckBox(get_lang('4a')) # 更新提示
+                self.update_notify.setChecked(settings.get('update_notify', True))
+                
+                self.quiet_install = UCheckBox(get_lang('49')) # 静默安装
+                self.quiet_install.setChecked(settings.get('quiet_update', False))
+                
+                self.update_ok = UCheckBox(get_lang('4c')) # 更新完成弹出提示
+                self.update_ok.setChecked(settings.get('update_ok_notify', True))
+                
+                update_frequency_layout = QHBoxLayout() # 更新频率布局
+                self.update_frequency = QComboBox() # 更新频率
+                self.update_frequency.addItems([get_lang('bd'), get_lang('be'), get_lang('bf'), get_lang('c0')])
+                self.update_frequency.setCurrentIndex(settings.get('update_frequency', 1))
+                update_frequency_layout.addWidget(QLabel(get_lang('c1')))
+                update_frequency_layout.addWidget(self.update_frequency)
+                update_frequency_layout.addStretch(1)
 
-                check_update_notify_text = QLabel(get_lang('48')) # 选择更新检查提示
-                check_update_notify = QComboBox()
-                check_update_notify.addItems([get_lang('49'), get_lang('4a')])
-                check_update_notify.setCurrentIndex(settings.get('update_notify', 0))
+                self.on_enable_update(self.enable_update.isChecked())
 
                 # 布局
-                check_update_layout.addWidget(check_update_notify_text)
-                check_update_layout.addWidget(check_update_notify)
-                check_update_layout.addStretch(1)
-
-                # 布局
-                layout.addLayout(check_update_layout)
+                layout.addWidget(self.enable_update)
+                layout.addWidget(self.update_notify)
+                layout.addWidget(self.quiet_install)
+                layout.addWidget(self.update_ok)
+                layout.addLayout(update_frequency_layout)
 
                 # 连接信号
-                check_update_notify.currentIndexChanged.connect(lambda: self.on_setting_changed(check_update_notify.currentIndex, 'update_notify'))
+                self.enable_update.checkStateChanged.connect(self.on_enable_update_changed)
+                self.update_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.update_notify.isChecked, 'update_notify'))
+                self.quiet_install.checkStateChanged.connect(lambda: self.on_setting_changed(self.quiet_install.isChecked, 'quiet_update'))
+                self.update_ok.checkStateChanged.connect(lambda: self.on_setting_changed(self.update_ok.isChecked, 'update_ok_notify'))
+                self.update_frequency.currentIndexChanged.connect(lambda: self.on_setting_changed(self.update_frequency.currentIndex, 'update_frequency'))
             case self.page_style:
                 set_content_label(get_lang('a7'))
                 # 选择窗口风格
@@ -2671,6 +2722,52 @@ class SettingWindow(SelectUI):
                 click_attr_button.clicked.connect(lambda: self.repair_settings('click_attr_hotkey'))
                 fast_click_button.clicked.connect(lambda: self.repair_settings('fast_click_hotkey'))
                 main_window_button.clicked.connect(lambda: self.repair_settings('main_window_hotkey'))
+            case self.page_doc:
+                set_content_label('控制文档打开时候的行为。')
+                
+                default_doc_layout = QHBoxLayout() # 默认打开文档布局
+                
+                default_doc_link = QLineEdit() # 默认打开文档链接
+                default_doc_link.setText(settings.get('default_doc_link', 'https://xystudiocode.github.io/clickmouse_docs/{lang}'))
+                
+                # 布局
+                default_doc_layout.addWidget(QLabel(get_lang('c2'))) # 默认打开文档提示
+                default_doc_layout.addWidget(default_doc_link)
+                
+                default_lang_layout = QHBoxLayout() # 默认文档语言布局
+                lang_choice = QComboBox() # 语言选择框
+                lang_choice.addItems([get_lang('c3'), get_lang('c4')] + [i['lang_name'] for i in langs if i['supported']])
+                lang_choice.setCurrentIndex(settings.get('lang_doc', 0))
+                
+                # 布局
+                default_lang_layout.addWidget(QLabel(get_lang('c5'))) # 默认文档语言提示
+                default_lang_layout.addWidget(lang_choice)
+                default_lang_layout.addStretch()
+                
+                uppdate_log_path_layout = QHBoxLayout() # 更新日志路径布局
+                uppdate_log_path_input = QLineEdit() # 更新日志路径输入框
+                uppdate_log_path_input.setText(settings.get('update_log_path', 'updatelog'))
+                
+                # 布局
+                uppdate_log_path_layout.addWidget(QLabel(get_lang('c6'))) # 更新日志路径提示
+                uppdate_log_path_layout.addWidget(uppdate_log_path_input)
+                uppdate_log_path_layout.addStretch()
+                
+                label = QLabel(get_lang('c7'))
+                # 布局
+                set_style(label, 'dest_small')
+                
+                layout.addLayout(default_doc_layout)
+                layout.addLayout(default_lang_layout)
+                layout.addWidget(create_horizontal_line())
+                layout.addLayout(uppdate_log_path_layout)
+                layout.addWidget(create_horizontal_line())
+                layout.addWidget(label)
+                
+                # 链接信号
+                default_doc_link.textChanged.connect(lambda: self.on_setting_changed(default_doc_link.text, 'default_doc_link'))
+                lang_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(self.lang_choice.currentIndex, 'lang_doc'))
+                uppdate_log_path_input.textChanged.connect(lambda: self.on_setting_changed(uppdate_log_path_input.text, 'update_log_path'))
                 
         restart_layout = QHBoxLayout() # 重启提示布局
         self.restart_button = QPushButton(get_lang('7e'))
@@ -2690,6 +2787,27 @@ class SettingWindow(SelectUI):
         layout.addStretch()
 
         return page
+    
+    def on_enable_update_changed(self, state):
+        '''更新提示复选框状态改变'''
+        global should_check_update_res
+
+        self.on_enable_update(state)
+        if not state:
+            if MessageBox.warning(self, get_lang('15'), get_lang('c8'), MessageButtonTemplate.YESNO) == 3:
+                self.enable_update.setCheckState(Qt.Checked)
+                return
+        else:
+            should_check_update_res = should_check_update()
+            main_window.on_check_update()
+        self.on_setting_changed(self.enable_update.isChecked, 'update_enabled')
+        
+    def on_enable_update(self, state):
+        '''更新提示复选框状态改变'''
+        self.update_notify.setEnabled(state)
+        self.quiet_install.setEnabled(state)
+        self.update_ok.setEnabled(state)
+        self.update_frequency.setEnabled(state)
 
     def showEvent(self, event):
         '''窗口显示事件'''
@@ -2701,7 +2819,7 @@ class SettingWindow(SelectUI):
         global settings
         if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
             return
-        settings[key] = default_setting[key]
+        del settings[key]
         save_settings(settings)
         self.window_restarted.emit()
             
@@ -2709,7 +2827,7 @@ class SettingWindow(SelectUI):
         global settings
         if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
             return
-        settings = default_setting.copy()
+        settings = {}
         settings['theme'] = default_theme
         settings['select_lang'] = system_lang
         save_settings(settings)
@@ -3207,7 +3325,7 @@ if __name__ == '__main__':
 
         # 创建资源
         update_cache = load_update_cache()
-        should_check_update_res = should_check_update()
+        should_check_update_res = should_check_update() if settings.get('update_enabled', True) else False
         icon = get_icon('icon')
 
         settings_need_restart = False
@@ -3234,9 +3352,6 @@ if __name__ == '__main__':
             default_theme = 'Windows11'
         else: # 未知
             default_theme = 'Fusion'
-            
-        with open(get_resource_path('default_setting.json')) as f:
-            default_setting = json.load(f)
 
         theme = settings.get('theme', default_theme)
 
@@ -3257,8 +3372,8 @@ if __name__ == '__main__':
 
         about_window = AboutWindow()
         clean_cache_window = CleanCacheWindow()
-        update_window = UpdateWindow()
         update_ok_window = UpdateOKWindow()
+        update_window = UpdateWindow()
         click_attr_window = ClickAttrWindow()
         fast_click_window = FastSetClickWindow()
 
