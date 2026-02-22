@@ -845,7 +845,7 @@ if __name__ == '__main__':
         for i in package_name:
             packages_source.append(import_package(i))
     except FileNotFoundError:
-        if os.path.exists('first_run'):
+        if os.path.exists('data/first_run'):
             os.remove(Path('data', 'first_run'))
     
     packages = get_packages()

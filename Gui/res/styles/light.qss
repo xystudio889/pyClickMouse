@@ -29,7 +29,20 @@ QPushButton:disabled {
 }
 
 QComboBox {
+    background-color: white;
+}
+
+QComboBox:disabled {
     background-color: #f0f0f0;
+    color: #d0d0d0;
+}
+
+QComboBox:hover {
+    background-color: lightgray;
+}
+
+QComboBox:pressed {
+    background-color: gray;
 }
 
 QComboBox QAbstractItemView {
@@ -77,7 +90,7 @@ QCheckBox {
 
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
-    background-color: #f9f9f9;
+    background-color: #f3f3f3;
     border: 1px solid #e0e0e0;
     border-radius: 5px /* 圆角 */
 }
@@ -110,7 +123,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
 
 /* 滚动条角部样式（确保无缝隙） */
 QScrollArea > QWidget > QWidget {
-    background-color: #f9f9f9;
+    background-color: #f3f3f3;
 }
 
 /* 横向滚动条样式 */
@@ -200,7 +213,8 @@ QStatusBar {
 }
 
 .frame {
-    border: 5px solid #e0e0e0;
+    border: none;
+    border-bottom: 2px solid #e0e0e0;
 }
 
 /* 元数据 */
