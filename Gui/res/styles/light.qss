@@ -41,10 +41,6 @@ QComboBox:hover {
     background-color: lightgray;
 }
 
-QComboBox:pressed {
-    background-color: gray;
-}
-
 QComboBox QAbstractItemView {
     background-color: white;
 }
