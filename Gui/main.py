@@ -70,7 +70,7 @@ def should_check_update():
     last_check_time_stamp = datetime.fromtimestamp(last_check_time)
     now = datetime.now()
     
-    setting_time = settings.get('update_frequency', 1)
+    setting_time = setting_value.update_frequency
     time = 9
     
     match setting_time:
@@ -348,10 +348,6 @@ def get_hotkey_listener_instance():
         hotkey_thread.start()
     return get_hotkey_listener_instance.instance
 
-def parse_hotkey(hotkey_str: str, default_keys):
-    '''解析热键字符串'''
-    return settings.get(hotkey_str + '_hotkey', default_keys)
-
 def revert_update():
     '''回滚更新'''
     logger.info('回滚更新')
@@ -374,8 +370,8 @@ def on_input_change(*, type:str ):
         times_combo = main_window.times_combo
         delay_combo = main_window.delay_combo
         total = main_window.total_time_label
-        delay_num = settings.get('click_delay', '')
-        time_num = settings.get('click_times', '')
+        delay_num = setting_value.click_delay
+        time_num = setting_value.click_times
         is_error = False
     elif type =='setting':
         delay_text = setting_window.default_delay
@@ -388,11 +384,11 @@ def on_input_change(*, type:str ):
     is_inf = False
     delay = 0
 
-    delay_times.setEnabled(not(times_combo.currentIndex() == latest_index or (settings.get('times_unit', 0) == latest_index) and type == 'main'))
+    delay_times.setEnabled(not(times_combo.currentIndex() == latest_index or (setting_value.times_unit == latest_index) and type == 'main'))
 
     if times_combo.currentIndex() == latest_index or input_times == '0': 
         is_inf = True
-    if settings.get('times_unit', 0) == latest_index and type == 'main':
+    if setting_value.times_unit == latest_index and type == 'main':
         is_inf = True
         
     def on_delay_error(error_text=get_lang('14')):
@@ -426,15 +422,15 @@ def on_input_change(*, type:str ):
         if delay < 1:
             raise ValueError
     except ValueError:
-        if not settings.get('click_delay', '') == '':
+        if not setting_value.click_delay == '':
             if input_delay == '':
                 if check_default_var('delay'):
-                    delay = int(settings.get('click_delay', ''))
+                    delay = int(setting_value.click_delay)
                 else:
                     return
-            elif settings.get('failed_use_default', False):
+            elif setting_value.delay_error_use_default:
                 if check_default_var('delay'):
-                    delay = int(settings.get('click_delay', ''))
+                    delay = int(setting_value.click_delay)
                 else:
                     return
             else:
@@ -450,18 +446,18 @@ def on_input_change(*, type:str ):
             if times < 1:
                 raise ValueError
         except ValueError:
-            if settings.get('click_times', '') == '' and settings.get('click_delay', '') == '':
+            if setting_value.click_times == '' and setting_value.click_delay == '':
                 on_delay_error(get_lang('61'))
                 return
             else:
                 if input_times == '':
                     if check_default_var('times'):
-                        times = int(settings.get('click_times', ''))
+                        times = int(setting_value.click_times)
                     else:
                         return
-                elif settings.get('times_failed_use_default', False):
+                elif setting_value.times_error_use_default:
                     if check_default_var('times'):
-                        times = int(settings.get('click_times', ''))
+                        times = int(setting_value.click_times)
                     else:
                         return
                 else:
@@ -476,8 +472,8 @@ def on_input_change(*, type:str ):
         main_window.left_click_button.setEnabled(True)
         is_error = False
 
-    if settings.get('click_delay', '') != '' and input_delay == '':
-        match settings.get('delay_unit', 0):
+    if setting_value.click_delay != '' and input_delay == '':
+        match setting_value.delay_unit:
             case 0:
                 delay_num = delay
             case 1:
@@ -499,8 +495,8 @@ def on_input_change(*, type:str ):
             if delay_num == 0:
                 on_delay_error()
     else:
-        if settings.get('click_times', '') != '' and input_times == '':
-            match settings.get('times_unit', 0):
+        if setting_value.click_times != '' and input_times == '':
+            match setting_value.times_unit:
                 case 0:
                     time_num = times
                 case 1:
@@ -563,7 +559,7 @@ class StartManager(QObject):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_value)
-        self.timer.start(settings.get('soft_delay', 1))
+        self.timer.start(setting_value.soft_delay)
 
     def create_reg(self):
         '''检查是否已启用开机自启动'''
@@ -848,7 +844,7 @@ class Refresh:
                 logger.error(f'步骤{code.__name__}执行失败:{e}')
 
     def refresh_title(self):
-        QTimer.singleShot(settings.get('soft_delay', 100), color_getter.style_changed.emit)
+        QTimer.singleShot(setting_value.soft_delay, color_getter.style_changed.emit)
 
     def left_check(self):
         if clicker.left_clicked:
@@ -895,7 +891,7 @@ class ColorGetter(QObject):
         super().__init__()
 
         # 记录当前主题
-        self.style = settings.get('select_style', 0)
+        self.style = setting_value.select_style
 
         self.current_theme, self.windows_theme, self.windows_color, self.use_windows_color = self.load_theme()
         try:
@@ -917,7 +913,7 @@ class ColorGetter(QObject):
         # 使用定时器定期检测主题变化
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_and_apply_theme)
-        self.timer.start(settings.get('soft_delay', 1))
+        self.timer.start(setting_value.soft_delay)
 
     def load_theme(self):
         logger.debug('获取最新的主题')
@@ -941,10 +937,10 @@ class ColorGetter(QObject):
             windows_theme = 'light'
 
         windows_color = get_windows_accent_color()
-        use_windows_color = settings.get('use_windows_color', True)
+        use_windows_color = setting_value.use_windows_color
 
         for k, v in maps.items():
-            if v == settings.get('select_style', 0):
+            if v == setting_value.select_style:
                 theme = k
 
         return theme, windows_theme, windows_color, use_windows_color
@@ -953,7 +949,7 @@ class ColorGetter(QObject):
         '''检查主题是否变化，变化则重新应用'''
         logger.debug('检查主题是否变化')
 
-        self.style = settings.get('select_style', 0)
+        self.style = setting_value.select_style
 
         new_theme, new_windows_theme, new_windows_color, new_use_windows_color = self.load_theme()
 
@@ -1023,6 +1019,161 @@ class ColorGetter(QObject):
 
         app.setStyleSheet(select_styles.css_text)  # 全局应用
         self.refresh()
+        
+class SettingText:
+    select_lang = 'select_lang'
+    show_tray_icon ='show_tray_icon'
+    soft_delay ='soft_delay'
+    click_delay = 'click_delay'
+    click_times = 'click_times'
+    delay_unit = 'delay_unit'
+    times_unit = 'times_unit'
+    delay_error_use_default = 'failed_use_default'
+    times_error_use_default = 'times_failed_use_default'
+    update_enabled = 'update_enabled'
+    update_notify = 'update_notify'
+    quiet_update = 'quiet_update'
+    update_ok_notify = 'update_ok_notify'
+    update_frequency = 'update_frequency'
+    select_style = 'select_style'
+    use_windows_color = 'use_windows_color'
+    theme = 'theme'
+    left_click_hotkey = 'left_click_hotkey'
+    right_click_hotkey = 'right_click_hotkey'
+    pause_click_hotkey = 'pause_click_hotkey'
+    stop_click_hotkey ='stop_click_hotkey'
+    click_attr_hotkey = 'click_attr_hotkey'
+    fast_click_hotkey = 'fast_click_hotkey'
+    main_window_hotkey = 'main_window_hotkey'
+    default_doc_link = 'default_doc_link'
+    lang_doc = 'lang_doc'
+    update_log_path = 'update_log_path'
+   
+class SettingValue:
+    def get(self, value):
+        default_value = default_settings.get(value, None)
+        if isinstance(default_value, str):
+            if default_value.startswith('!var '): # 需要加载变量
+                var_name = default_value[5:]
+                default_value = eval(var_name)
+        return settings.get(value, default_value)
+    
+    def __getitem__(self, key):
+        return self.get(key)
+    
+    def __setitem__(self, key, value):
+        raise ValueError('SettingValue is readonly')
+    
+    def __delitem__(self, key):
+        raise ValueError('SettingValue is readonly')
+
+    @property
+    def select_lang(self):
+        return self[SettingText.select_lang]
+    
+    @property
+    def show_tray_icon(self):
+        return self[SettingText.show_tray_icon]
+    
+    @property
+    def soft_delay(self):
+        return self[SettingText.soft_delay]
+    
+    @property
+    def click_delay(self):
+        return self[SettingText.click_delay]
+    
+    @property
+    def click_times(self):
+        return self[SettingText.click_times]
+    
+    @property
+    def delay_unit(self):
+        return self[SettingText.delay_unit]
+    
+    @property
+    def times_unit(self):
+        return self[SettingText.times_unit]
+    
+    @property
+    def delay_error_use_default(self):
+        return self[SettingText.delay_error_use_default]
+    
+    @property
+    def times_error_use_default(self):
+        return self[SettingText.times_error_use_default]
+    
+    @property
+    def update_enabled(self):
+        return self[SettingText.update_enabled]
+    
+    @property
+    def update_notify(self):
+        return self[SettingText.update_notify]
+    
+    @property
+    def quiet_update(self):
+        return self[SettingText.quiet_update]
+    
+    @property
+    def update_ok_notify(self):
+        return self[SettingText.update_ok_notify]
+    
+    @property
+    def update_frequency(self):
+        return self[SettingText.update_frequency]
+    
+    @property
+    def select_style(self):
+        return self[SettingText.select_style]
+    
+    @property
+    def use_windows_color(self):
+        return self[SettingText.use_windows_color]
+    
+    @property
+    def theme(self):
+        return self[SettingText.theme]
+    
+    @property
+    def left_click_hotkey(self):
+        return self[SettingText.left_click_hotkey]
+    
+    @property
+    def right_click_hotkey(self):
+        return self[SettingText.right_click_hotkey]
+    
+    @property
+    def pause_click_hotkey(self):
+        return self[SettingText.pause_click_hotkey]
+    
+    @property
+    def stop_click_hotkey(self):
+        return self[SettingText.stop_click_hotkey]
+    
+    @property
+    def click_attr_hotkey(self):
+        return self[SettingText.click_attr_hotkey]
+    
+    @property
+    def fast_click_hotkey(self):
+        return self[SettingText.fast_click_hotkey]
+    
+    @property
+    def main_window_hotkey(self):
+        return self[SettingText.main_window_hotkey]
+    
+    @property
+    def default_doc_link(self):
+        return self[SettingText.default_doc_link]
+    
+    @property
+    def lang_doc(self):
+        return self[SettingText.lang_doc]
+    
+    @property
+    def update_log_path(self):
+        return self[SettingText.update_log_path]
 
 class MainWindow(UMainWindow):
     def __init__(self):
@@ -1251,7 +1402,7 @@ class MainWindow(UMainWindow):
         lang_name = langs[select_lang]['lang_system_name']
         supported_doc_lang = [i['lang_system_name'] for i in langs if i['supported']]
             
-        doc_choice = settings.get('lang_doc', 0)
+        doc_choice = setting_value.lang_doc
         if doc_choice == 0: # 软件语言
             doc_choice_lang = lang_name
         elif doc_choice == 1: # 系统语言
@@ -1262,7 +1413,7 @@ class MainWindow(UMainWindow):
         if doc_choice_lang not in supported_doc_lang: # 不受支持的语言包
             doc_choice_lang = 'en' # 默认英文
 
-        open_url(settings.get('default_doc_link', 'https://xystudiocode.github.io/clickmouse_docs/{lang}/{path}').format(lang=doc_choice_lang, path=path))
+        open_url(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang))
 
     def do_extension(self, index):
         '''执行扩展'''
@@ -1347,7 +1498,7 @@ class MainWindow(UMainWindow):
     def show_update_log(self):
         '''显示更新日志'''
         logger.info('打开更新日志窗口')
-        self.open_doc(path=settings.get('update_log_path', 'updatelog'))
+        self.open_doc(path=setting_value.update_log_path)
 
     def show_clean_cache(self):
         '''清理缓存'''
@@ -1361,7 +1512,7 @@ class MainWindow(UMainWindow):
 
     def on_check_update(self):
         # 检查更新
-        if settings.get('update_enabled', True):
+        if setting_value.update_enabled:
             self.update_checked = True
             if should_check_update_res:
                 self.check_update_thread = QtThread(check_update, args=(False,))
@@ -1392,7 +1543,7 @@ class MainWindow(UMainWindow):
             return
 
         # 检查结果处理
-        if settings.get('update_notify', True):
+        if setting_value.update_notify:
             if result[1] != -1:  # -1表示函数出错
                 self.save()
                 if result[0]:  # 检查到需要更新
@@ -1410,7 +1561,7 @@ class MainWindow(UMainWindow):
     def on_update(self, judge=False):
         '''显示更新提示'''
         if judge:
-            if settings.get('update_enabled', True):
+            if setting_value.update_enabled:
                 if result[0]: # 检查到需要更新
                     self.open_update()
                 else:
@@ -2012,7 +2163,7 @@ class UpdateWindow(UDialog):
         logger.debug('初始化更新窗口完成')
 
     def exec(self):
-        if settings.get('quiet_update', False):
+        if setting_value.quiet_update:
             self.close()
             self.on_update()
         else:
@@ -2042,7 +2193,7 @@ class UpdateWindow(UDialog):
             hash_info = result[3]
             if get_file_hash('updater.old/clickmouse.7z', hash_info[1]) == hash_info[0]:
                 can_update = True
-                if settings.get('update_ok_notify', True):
+                if setting_value.update_ok_notify:
                     update_ok_window.show()
             else:
                 logger.exception('更新安装', '文件校验失败')
@@ -2226,7 +2377,7 @@ class ClickAttrWindow(UDialog):
         # 定义变量
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_attr)
-        self.timer.start(settings.get('soft_delay', 1))
+        self.timer.start(setting_value.soft_delay)
 
         self.init_ui()
 
@@ -2370,7 +2521,7 @@ class SettingWindow(SelectUI):
                 lang_choice_layout = QHBoxLayout() # 语言选择布局
                 self.lang_choice = QComboBox()
                 self.lang_choice.addItems([i['lang_name'] for i in langs])
-                self.lang_choice.setCurrentIndex(settings.get('select_lang', 0))
+                self.lang_choice.setCurrentIndex(setting_value.select_lang)
 
                 # 布局
                 lang_choice_layout.addWidget(QLabel(f'{get_lang('45')}{get_lang('b5')}:')) # 选择语言提示
@@ -2380,7 +2531,7 @@ class SettingWindow(SelectUI):
                 # 显示托盘图标
                 tray_layout = QHBoxLayout() # 窗口风格布局
                 tray = UCheckBox(get_lang('80'))
-                tray.setChecked(settings.get('show_tray_icon', True))
+                tray.setChecked(setting_value.show_tray_icon)
 
                 tray_layout.addWidget(tray)
                 tray_layout.addStretch(1)
@@ -2398,7 +2549,7 @@ class SettingWindow(SelectUI):
 
                 # 延迟
                 soft_delay_layout = QHBoxLayout() # 颜色延迟布局
-                soft_delay_setting = settings.get('soft_delay', 100)
+                soft_delay_setting = setting_value.soft_delay
 
                 soft_delay = QSlider(Qt.Horizontal)
                 soft_delay.setMinimum(0)
@@ -2450,10 +2601,10 @@ class SettingWindow(SelectUI):
                 layout_delay = QVBoxLayout() # 延迟布局
                 unit_delay_layout = QHBoxLayout() # 窗口风格布局
                 self.default_delay = QLineEdit()
-                self.default_delay.setText(str(settings.get('click_delay', '')))
+                self.default_delay.setText(setting_value.click_delay)
                 self.delay_combo = QComboBox()
                 self.delay_combo.addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
-                self.delay_combo.setCurrentIndex(settings.get('delay_unit', 0))
+                self.delay_combo.setCurrentIndex(setting_value.delay_unit)
 
                 unit_delay_layout.addWidget(QLabel(get_lang('46') + ': '))
                 unit_delay_layout.addWidget(self.default_delay)
@@ -2462,7 +2613,7 @@ class SettingWindow(SelectUI):
 
                 # 连点出错时使用默认值
                 use_default_delay = UCheckBox(get_lang('47'))
-                use_default_delay.setChecked(settings.get('failed_use_default', False))
+                use_default_delay.setChecked(setting_value.delay_error_use_default)
                 if not self.default_delay.text():
                     use_default_delay.setEnabled(False)
 
@@ -2476,10 +2627,10 @@ class SettingWindow(SelectUI):
                 layout_time = QVBoxLayout() # 次数布局
                 unit_time_layout = QHBoxLayout() # 窗口风格布局
                 self.default_time = QLineEdit()
-                self.default_time.setText(str(settings.get('click_times', '')))
+                self.default_time.setText(str(setting_value.click_times))
                 self.times_combo = QComboBox()
                 self.times_combo.addItems([get_lang('66'), get_lang('2a'), get_lang('2b')])
-                self.times_combo.setCurrentIndex(settings.get('times_unit', 0))
+                self.times_combo.setCurrentIndex(setting_value.times_unit)
 
                 unit_time_layout.addWidget(QLabel(get_lang('85') + ': '))
                 unit_time_layout.addWidget(self.default_time)
@@ -2488,7 +2639,7 @@ class SettingWindow(SelectUI):
 
                 # 连点出错时使用默认值
                 use_default_time = UCheckBox(get_lang('86'))
-                use_default_time.setChecked(settings.get('times_failed_use_default', False))
+                use_default_time.setChecked(setting_value.times_error_use_default)
                 if not self.default_time.text():
                     use_default_time.setEnabled(False)
 
@@ -2523,21 +2674,21 @@ class SettingWindow(SelectUI):
                 set_content_label(get_lang('87'))
                 # 选择更新检查提示
                 self.enable_update = UCheckBox(get_lang('48')) # 开启更新
-                self.enable_update.setChecked(settings.get('update_enabled', True))
+                self.enable_update.setChecked(setting_value.update_enabled)
                 
                 self.update_notify = UCheckBox(get_lang('4a')) # 更新提示
-                self.update_notify.setChecked(settings.get('update_notify', True))
+                self.update_notify.setChecked(setting_value.update_notify)
                 
                 self.quiet_install = UCheckBox(get_lang('49')) # 静默安装
-                self.quiet_install.setChecked(settings.get('quiet_update', False))
+                self.quiet_install.setChecked(setting_value.quiet_update)
                 
                 self.update_ok = UCheckBox(get_lang('4c')) # 更新完成弹出提示
-                self.update_ok.setChecked(settings.get('update_ok_notify', True))
+                self.update_ok.setChecked(setting_value.update_ok_notify)
                 
                 update_frequency_layout = QHBoxLayout() # 更新频率布局
                 self.update_frequency = QComboBox() # 更新频率
                 self.update_frequency.addItems([get_lang('bd'), get_lang('be'), get_lang('bf'), get_lang('c0')])
-                self.update_frequency.setCurrentIndex(settings.get('update_frequency', 1))
+                self.update_frequency.setCurrentIndex(setting_value.update_frequency)
                 update_frequency_layout.addWidget(QLabel(get_lang('c1')))
                 update_frequency_layout.addWidget(self.update_frequency)
                 update_frequency_layout.addStretch(1)
@@ -2566,7 +2717,7 @@ class SettingWindow(SelectUI):
                 items = list(style_indexes[select_lang]['lang_package'].values())
 
                 self.style_choice.addItems([get_lang('82')] + items)
-                self.style_choice.setCurrentIndex(settings.get('select_style', 0))
+                self.style_choice.setCurrentIndex(setting_value.select_style)
 
                 # 布局
                 style_layout.addWidget(QLabel(get_lang('81'))) # 选择窗口风格提示
@@ -2577,7 +2728,7 @@ class SettingWindow(SelectUI):
                 style_choice_use_windows = UCheckBox(get_lang('a8'))
                 tip_label = QLabel(get_lang('b4'))
                 set_style(tip_label, 'dest_small')
-                style_choice_use_windows.setChecked(settings.get('use_windows_color', True))
+                style_choice_use_windows.setChecked(setting_value.use_windows_color)
 
                 # 布局
                 style_use_windows_layout.addWidget(style_choice_use_windows)
@@ -2588,7 +2739,7 @@ class SettingWindow(SelectUI):
                 set_style(theme_tip_window, 'dest_small')
                 theme_combo = QComboBox()
                 theme_combo.addItems(QStyleFactory.keys())
-                theme_combo.setCurrentText(settings.get('theme', theme))
+                theme_combo.setCurrentText(setting_value.theme)
                 
                 # 布局
                 theme_layout.addWidget(QLabel(get_lang('23')))
@@ -2616,7 +2767,7 @@ class SettingWindow(SelectUI):
                 # 左键连点
                 left_click_layout = QHBoxLayout() # 左键连点布局
                 left_click_input = UHotkeyLineEdit() # 左键连点输入框
-                left_click_input.setText(format_keys(settings.get('left_click_hotkey', ['F2'])))
+                left_click_input.setText(format_keys(setting_value.left_click_hotkey))
                 left_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
                 # 布局 
@@ -2630,7 +2781,7 @@ class SettingWindow(SelectUI):
                 right_click_input = UHotkeyLineEdit() # 右键连点输入框
                 right_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
-                right_click_input.setText(format_keys(settings.get('right_click_hotkey', ['F3'])))
+                right_click_input.setText(format_keys(setting_value.right_click_hotkey))
                 
                 # 布局
                 right_click_layout.addWidget(QLabel(f'{get_lang('0d')}: '), 1) # 右键连点提示
@@ -2641,7 +2792,7 @@ class SettingWindow(SelectUI):
                 # 暂停/重启连点
                 pause_click_layout = QHBoxLayout() # 暂停/重启连点布局
                 pause_click_input = UHotkeyLineEdit() # 暂停/重启连点输入框
-                pause_click_input.setText(format_keys(settings.get('pause_click_hotkey', ['F4'])))
+                pause_click_input.setText(format_keys(setting_value.pause_click_hotkey))
                 pause_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
                 # 布局
@@ -2653,7 +2804,7 @@ class SettingWindow(SelectUI):
                 # 停止连点
                 stop_click_layout = QHBoxLayout() # 停止连点布局
                 stop_click_input = UHotkeyLineEdit() # 停止连点输入框
-                stop_click_input.setText(format_keys(settings.get('stop_click_hotkey', ['F6'])))
+                stop_click_input.setText(format_keys(setting_value.stop_click_hotkey))
                 stop_repair_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
                 # 布局
@@ -2665,7 +2816,7 @@ class SettingWindow(SelectUI):
                 # 连点属性
                 click_attr_layout = QHBoxLayout() # 连点属性布局
                 click_attr_input = UHotkeyLineEdit() # 连点属性输入框
-                click_attr_input.setText(format_keys(settings.get('click_attr_hotkey', ['Ctrl', 'Alt', 'A'])))
+                click_attr_input.setText(format_keys(setting_value.click_attr_hotkey))
                 click_attr_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
                 # 布局
@@ -2677,7 +2828,7 @@ class SettingWindow(SelectUI):
                 # 快速连点
                 fast_click_layout = QHBoxLayout() # 快速连点布局
                 fast_click_input = UHotkeyLineEdit() # 快速连点输入框
-                fast_click_input.setText(format_keys(settings.get('fast_click_hotkey', ['Ctrl', 'Alt', 'F'])))
+                fast_click_input.setText(format_keys(setting_value.fast_click_hotkey))
                 fast_click_button = QPushButton(get_lang('20')) # 还原默认设置按钮
                 
                 # 布局
@@ -2689,7 +2840,7 @@ class SettingWindow(SelectUI):
                 # 主窗口
                 main_window_layout = QHBoxLayout() # 主窗口布局
                 main_window_input = UHotkeyLineEdit() # 主窗口输入框
-                main_window_input.setText(format_keys(settings.get('main_window_hotkey', ['Ctrl', 'Alt', 'M'])))
+                main_window_input.setText(format_keys(setting_value.main_window_hotkey))
                 main_window_button = QPushButton(get_lang('20')) # 还原默认设置按钮
 
                 # 布局
@@ -2728,7 +2879,7 @@ class SettingWindow(SelectUI):
                 default_doc_layout = QHBoxLayout() # 默认打开文档布局
                 
                 default_doc_link = QLineEdit() # 默认打开文档链接
-                default_doc_link.setText(settings.get('default_doc_link', 'https://xystudiocode.github.io/clickmouse_docs/{lang}'))
+                default_doc_link.setText(setting_value.default_doc_link)
                 
                 # 布局
                 default_doc_layout.addWidget(QLabel(get_lang('c2'))) # 默认打开文档提示
@@ -2737,7 +2888,7 @@ class SettingWindow(SelectUI):
                 default_lang_layout = QHBoxLayout() # 默认文档语言布局
                 lang_choice = QComboBox() # 语言选择框
                 lang_choice.addItems([get_lang('c3'), get_lang('c4')] + [i['lang_name'] for i in langs if i['supported']])
-                lang_choice.setCurrentIndex(settings.get('lang_doc', 0))
+                lang_choice.setCurrentIndex(setting_value.lang_doc)
                 
                 # 布局
                 default_lang_layout.addWidget(QLabel(get_lang('c5'))) # 默认文档语言提示
@@ -2746,7 +2897,7 @@ class SettingWindow(SelectUI):
                 
                 uppdate_log_path_layout = QHBoxLayout() # 更新日志路径布局
                 uppdate_log_path_input = QLineEdit() # 更新日志路径输入框
-                uppdate_log_path_input.setText(settings.get('update_log_path', 'updatelog'))
+                uppdate_log_path_input.setText(setting_value.update_log_path)
                 
                 # 布局
                 uppdate_log_path_layout.addWidget(QLabel(get_lang('c6'))) # 更新日志路径提示
@@ -2819,7 +2970,10 @@ class SettingWindow(SelectUI):
         global settings
         if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
             return
-        del settings[key]
+        try:
+            del settings[key]
+        except KeyError:
+            pass
         save_settings(settings)
         self.window_restarted.emit()
             
@@ -2828,8 +2982,6 @@ class SettingWindow(SelectUI):
         if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
             return
         settings = {}
-        settings['theme'] = default_theme
-        settings['select_lang'] = system_lang
         save_settings(settings)
         self.app.setStyle(default_theme)
         self.values.update({'need_restart': True}) # values 用于存储需要重启后还原的内容
@@ -2955,7 +3107,7 @@ class TrayApp:
         logger.info('加载托盘程序')
         self.app = get_application_instance()
 
-        show_tray_icon = settings.get('show_tray_icon', True)
+        show_tray_icon = setting_value.show_tray_icon
         if show_tray_icon:
             self.app.setQuitOnLastWindowClosed(False)  # 关闭窗口时不退出应用
 
@@ -3155,25 +3307,25 @@ class TrayApp:
         '''处理组合键事件'''
         combination = format_keys(combination, source=True)
 
-        if all_in_list(combination, parse_hotkey('fast_click', ['F', 'Ctrl', 'Alt'])):
+        if all_in_list(combination, setting_value.fast_click_hotkey):
             # 处理Ctrl+Alt+F组合键
             if clicker.running:
                 self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
             else:
                 self.show_window(fast_click_window)
-        elif all_in_list(combination, parse_hotkey('main_window', ['Ctrl', 'Alt', 'M'])):
+        elif all_in_list(combination, setting_value.main_window_hotkey):
             # 处理Ctrl+Alt+M组合键
             self.show_window(main_window)
             if not main_window.isVisible():
                 main_window.is_start_from_tray = True
-        elif all_in_list(combination, parse_hotkey('click_attr', ['Ctrl', 'Alt', 'A'])):
+        elif all_in_list(combination, setting_value.click_attr_hotkey):
             # 处理Ctrl+Alt+A组合键
             self.show_window(click_attr_window)
-        elif all_in_list(combination, parse_hotkey('left_click', ['F2'])):
+        elif all_in_list(combination, setting_value.left_click_hotkey):
             self.on_start_clicker_tray('left') # 左键
-        elif all_in_list(combination, parse_hotkey('right_click', ['F3'])):
+        elif all_in_list(combination, setting_value.right_click_hotkey):
             self.on_start_clicker_tray('right') # 右键
-        elif all_in_list(combination, parse_hotkey('pause_click', ['F4'])):
+        elif all_in_list(combination, setting_value.pause_click_hotkey):
             if clicker.running:
                 clicker.pause_click()
                 if clicker.paused:
@@ -3182,7 +3334,7 @@ class TrayApp:
                     self.tray_icon.showMessage(get_lang('6e'), get_lang('72'), QSystemTrayIcon.MessageIcon.Information, 1000)
             else:
                 self.tray_icon.showMessage(get_lang('6e'), get_lang('74'), QSystemTrayIcon.MessageIcon.Warning, 1000)
-        elif all_in_list(combination, parse_hotkey('stop_click', ['F6'])):
+        elif all_in_list(combination, setting_value.stop_click_hotkey):
             if clicker.running:
                 main_window.on_stop()
                 self.tray_icon.showMessage(get_lang('6e'), get_lang('73'), QSystemTrayIcon.MessageIcon.Information, 1000)
@@ -3303,8 +3455,11 @@ if __name__ == '__main__':
 
         logger.info('加载设置')
         settings = load_settings()
+        with open(get_resource_path('defaultsetting.json'), 'r', encoding='utf-8') as f:
+            default_settings: dict = json.load(f)
 
         logger.info('加载服务程序')
+        setting_value = SettingValue()
         clicker = Click()
         auto_start_manager = StartManager()
         color_getter = ColorGetter()
@@ -3325,15 +3480,15 @@ if __name__ == '__main__':
 
         # 创建资源
         update_cache = load_update_cache()
-        should_check_update_res = should_check_update() if settings.get('update_enabled', True) else False
+        should_check_update_res = should_check_update() if setting_value.update_enabled else False
         icon = get_icon('icon')
-
+        
         settings_need_restart = False
         can_update = False
 
         # 单位控制
         latest_index = 2
-        select_lang = settings.get('select_lang', 0)
+        select_lang = setting_value.select_lang
 
         # 其他
         dev_config = parse_dev.parse() # 开发者模式配置
@@ -3352,8 +3507,6 @@ if __name__ == '__main__':
             default_theme = 'Windows11'
         else: # 未知
             default_theme = 'Fusion'
-
-        theme = settings.get('theme', default_theme)
 
         logger.info('定义资源完成')
 
@@ -3385,5 +3538,5 @@ if __name__ == '__main__':
         set_import_extension_window = SetImportExtensionModeWindow()
 
         app = TrayApp()
-        app.app.setStyle(theme)
+        app.app.setStyle(setting_value.theme)
         app.run()

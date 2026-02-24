@@ -33,10 +33,6 @@ QComboBox:hover {
     background-color: #505050;
 }
 
-QComboBox:pressed {
-    background-color: #353535;
-}
-
 QComboBox:disabled {
     background-color: #252525;
     color: #505050;
