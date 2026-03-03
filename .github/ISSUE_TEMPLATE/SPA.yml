@@ -1,0 +1,51 @@
+name: 🗒️新的标准立项
+description: 将会建议、建立或修改一个标准。
+title: "🗒️[SPA]"
+labels: enhancement
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > [!NOTE]
+        > 为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的立项。[检查是否存在重复](https://github.com/xystudiocode/pyclickmouse/issues)😊
+        
+        > [!IMPORTANT]
+        > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
+  - type: textarea
+    attributes:
+      label: 🧾新增的立项
+      placeholder: |
+        请在这里输入立项内容。。。
+      description: 🧾请详细描述你想要立项的标准。
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: ℹ️立项施行的clickmouse版本
+      placeholder: |
+        >=X.X.X 或 >=X.X.X.X
+      description: 🔠反馈大于等于一个三位或四位版本号
+      value: |
+        下一个clickmouse正式版
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: ❓需要这些功能的原因
+      placeholder: |
+        解决了什么问题？
+        增加了什么功能？
+        改进了什么？
+        其他原因...
+      description: ❓为什么需要这个功能？
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: ➕其他相关信息
+      description: ✉️你了解到的更多内容
+      placeholder: |
+        更多信息。
+    validations:
+      required: false
