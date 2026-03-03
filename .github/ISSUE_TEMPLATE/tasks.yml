@@ -34,6 +34,7 @@ body:
       - 💠其他扩展
       - ♻️清理缓存
       - 📄文档
+      - 🏳️‍🌈主题/样式
       - ❓其他/未知
   validations:
     required: true
