@@ -2280,7 +2280,7 @@ class SettingWindow(SelectUI):
         if dev_flags.get('new_settings', False):
             self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
         else:
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
+            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f'))]#, get_lang('d3')]
         self.last_page = None
         self.now_page = 0
         self.values = {} if values is None else values
@@ -2329,7 +2329,7 @@ class SettingWindow(SelectUI):
             self.page_flags = self.page_choice_buttons[7] # 实验室
         else:
             self.page_notify = ''
-            self.page_flags = self.page_choice_buttons[6] # 实验室
+            #self.page_flags = self.page_choice_buttons[6] # 实验室
         
         # 标题标签
         title_label = QLabel(title)
@@ -2576,8 +2576,11 @@ class SettingWindow(SelectUI):
                 self.quiet_install.checkStateChanged.connect(lambda: self.on_setting_changed(self.quiet_install.isChecked, SettingText.quiet_update))
                 self.update_ok.checkStateChanged.connect(lambda: self.on_setting_changed(self.update_ok.isChecked, SettingText.update_ok_notify))
                 self.update_frequency.currentIndexChanged.connect(lambda: self.on_setting_changed(self.update_frequency.currentIndex, SettingText.update_frequency))
-                self.update_notify.checkStateChanged.connect(self.on_sync_notice)
-                self.update_ok.checkStateChanged.connect(self.on_sync_ok_notice)
+                if dev_flags.get('new_settings', False):
+                    self.update_notify.checkStateChanged.connect(self.on_sync_notice)
+                    self.update_ok.checkStateChanged.connect(self.on_sync_ok_notice)
+                else:
+                    self.on_enable_update(self.enable_update.isChecked())
             case self.page_style:
                 set_content_label(get_lang('a7'))
                 # 选择窗口风格
@@ -3488,6 +3491,7 @@ if __name__ == '__main__':
         can_update = False
         
         try:
+            raise FileNotFoundError('Disable dev flags')
             with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
                 dev_flags = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
