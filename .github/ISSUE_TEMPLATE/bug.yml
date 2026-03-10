@@ -1,4 +1,4 @@
-name: "🐛Bug report"
+name: "🐛Bug"
 title: "🐛[BUG]"
 description: 报告一个bug。
 labels: 
@@ -37,8 +37,8 @@ body:
 - id: modules
   type: dropdown
   attributes:
-    label: 🐛你运行出现bug的是什么模块？
-    description: 🐛你运行出现bug的是什么模块？
+    label: 🐛你运行出现bug的模块
+    description: 🐛请选择你运行出现bug的模块，可以多选。
     multiple: true
     options:
       - 🖱️连点功能
@@ -66,7 +66,7 @@ body:
     label: 🐍bug描述
     placeholder: |
       请在这描述
-    description: 🐍描述你的bug
+    description: 🐍描述你的bug。
   validations:
     required: true
 - type: textarea
@@ -74,7 +74,7 @@ body:
     label: 🔦这个bug的影响
     placeholder: |
       请在这描述
-    description: 🔦描述这个bug的影响
+    description: 🔦描述这个bug的影响。
   validations:
     required: false
 - type: textarea
@@ -85,7 +85,7 @@ body:
       2. 步骤2
       3. 步骤3
       4. 步骤...
-    description: 🔧描述如何重现这个bug
+    description: 🔧描述如何重现这个bug。
   validations:
     required: false
 - type: input
@@ -93,7 +93,7 @@ body:
     label: ℹ️你预估的受影响的Clickmouse版本
     placeholder: |
       >=X.X.X 或 >=X.X.X.X
-    description: 🔠反馈大于等于一个三位或四位版本号
+    description: 🔠反馈大于等于一个三位或四位版本号。
   validations:
     required: false
 - type: textarea

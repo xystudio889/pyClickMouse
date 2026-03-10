@@ -242,6 +242,8 @@ class InstallWindow(PagesUI):
         
         new_color_bar(self)
         self.install_status = ''
+        self.total_progress = 0
+        self.current_progress = 0
         
     def init_ui(self):
         '''初始化UI'''
@@ -301,6 +303,7 @@ class InstallWindow(PagesUI):
         self.next_btn = QPushButton(get_ipk_lang('03'))
         self.next_btn.clicked.connect(self.on_next)
         self.next_error_layout.addWidget(self.next_btn)
+        self.next_btn.setProperty('class', StyleClass.selected)  # 设置样式类名
         
         # 错误重叠容器
         self.copy_error_btn = QPushButton(get_ipk_lang('04'))
@@ -320,6 +323,7 @@ class InstallWindow(PagesUI):
         self.finish_btn = QPushButton(get_ipk_lang('06'))
         self.finish_btn.clicked.connect(self.close)
         self.action_button_layout.addWidget(self.finish_btn)
+        self.finish_btn.setProperty('class', StyleClass.selected)  # 设置样式类名
         
         self.button_layout.addWidget(self.next_error_container)
         self.button_layout.addWidget(self.action_button_container)
@@ -460,7 +464,13 @@ class InstallWindow(PagesUI):
                 self.template_combo.currentTextChanged.connect(self.apply_template)
             case self.PAGE_install:
                 # 第五页：安装
-                pass
+                self.status_label = QLabel(get_ipk_lang('30'))
+                self.progress = QProgressBar()
+                self.progress.setRange(0, 100)
+                self.progress.setValue(0)
+                
+                page_layout.addWidget(self.status_label)
+                page_layout.addWidget(self.progress)
             case self.PAGE_finish:
                 # 第六页：完成
                 if is_ipk:
@@ -604,6 +614,9 @@ class InstallWindow(PagesUI):
                 self.install_ipk()
             else:
                 self.install()
+                
+            command = self.install_ipk if is_ipk else self.install
+            self.install_thread = QtThread(command)
         
         if is_ipk:
             if self.PAGE_read_license <= self.current_page <= self.PAGE_set_link: # ipk模式跳过这些步骤
@@ -615,12 +628,16 @@ class InstallWindow(PagesUI):
     def set_status(self, status):
         '''设置状态栏'''
         self.install_status = status
+        self.current_progress += 1
+        self.progress.setValue((self.total_progress / self.current_progress) * 100)
+        self.status_label.setText(get_ipk_lang('30') + format(self.install_status))
         
     def install_ipk(self):
         '''ipk模式安装'''
         global package_name
 
         try:
+            self.total_progress = 4
             self.set_status(get_ipk_lang('2b'))
             if not self.changes:
                 self.set_page(self.PAGE_finish_nochanges)
@@ -659,6 +676,8 @@ class InstallWindow(PagesUI):
         try:
             self.set_status(get_ipk_lang('2b'))
             install_path = Path.cwd()
+            
+            self.total_progress = 7 if has_package else 6
             
             if has_package:
                 self.set_status(get_ipk_lang('26'))
@@ -806,7 +825,7 @@ if __name__ == '__main__':
         sys.exit(2)
 
     import pyperclip
-    from sharelibs import (get_lang, settings, get_inst_lang, get_icon, system_lang, parse_system_language_to_lang_id, run_software, get_resource_path, is_admin, get_init_lang, run_as_admin)
+    from sharelibs import (get_lang, settings, get_inst_lang, get_icon, system_lang, parse_system_language_to_lang_id, run_software, get_resource_path, is_admin, get_init_lang, QtThread)
     import win32com.client
     import winreg
     import zipfile
@@ -816,6 +835,7 @@ if __name__ == '__main__':
     import os
     from pathlib import Path
     import json
+    from txtinfo import StyleClass
     
     # 系统api
     import ctypes

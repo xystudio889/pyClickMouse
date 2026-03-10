@@ -5,7 +5,7 @@
     },
     {
         "check_index": 1,
-        "path": {"dirs": [], "files": ["update.json", "update_log.md"]}
+        "path": {"dirs": [], "files": ["update.json"]}
     },
     {
         "check_index": 2,

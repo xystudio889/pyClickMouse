@@ -49,7 +49,8 @@
             "2c": "\nDesktop shortcut",
             "2d": "\nStart menu shortcut",
             "2e": "Checking for update files...",
-            "2f": "No package change"
+            "2f": "No package change",
+            "30": "Current status:"
         }
     },
     {
@@ -102,7 +103,8 @@
             "2c": "\n桌面快捷方式",
             "2d": "\n开始菜单快捷方式",
             "2e": "检查需要更新的文件...",
-            "2f": "没有包变动"
+            "2f": "没有包变动",
+            "30": "当前状态:"
         }
     }
 ]

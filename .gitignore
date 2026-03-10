@@ -414,7 +414,7 @@ gui/dev_list/*
 !gui/dev_list/in_dev
 res/packages/
 Gui/packages.json
-extensions/
+
 dev.dat
 *.zip
 *.7z
