@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QIcon
+from PySide6.QtCore import QThread, Signal
 import os
 import subprocess
 import winreg
@@ -67,6 +68,9 @@ def load_settings():
         return {}
     
 settings = load_settings()
+with open(get_resource_path('defaultsetting.json'), 'r', encoding='utf-8') as f:
+    default_settings: dict = json.load(f)
+
 with open(get_resource_path('vars', 'mem_id.json'), 'r') as f:
     mem_id = json.load(f)
 
@@ -266,3 +270,18 @@ def get_file_hash(file_path, algorithm):
     except Exception as e:
         print(f'计算哈希时出错: {e}')
         return None
+    
+class QtThread(QThread):
+    '''检查更新工作线程'''
+    finished = Signal(object) # 爬取完成信号
+
+    def __init__(self, func, args=(), kwargs={}, parent=None):
+        super().__init__(parent)
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        '''线程执行函数'''
+        result = self.func(*self.args, **self.kwargs)
+        self.finished.emit(result)

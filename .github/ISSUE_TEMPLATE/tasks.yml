@@ -1,4 +1,4 @@
-name: ☑️Tasks
+name: ☑️任务单
 description: 一些任务单，可以用来起草新版本规划等。
 title: "☑️[TASK]"
 labels: enhancement
@@ -34,6 +34,7 @@ body:
       - 💠其他扩展
       - ♻️清理缓存
       - 📄文档
+      - 🏳️‍🌈主题/样式
       - ❓其他/未知
   validations:
     required: true
@@ -53,7 +54,6 @@ body:
     label: ❓需要这些功能的原因
     placeholder: |
       解决了什么问题？
-      增加了什么功能？
       改进了什么？
       其他原因...
     description: ❓为什么需要这个功能？
