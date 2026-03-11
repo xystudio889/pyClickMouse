@@ -112,44 +112,8 @@ clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间�
 ClickMouse.exe /h # 查看帮助
 ```
 ## 💻再次编译方法
-请先`cd`到这个项目的根目录
-### C/C++
-#### 🥴头文件
-仅需修改头文件，就可以被调用
-#### ⚙️dll调用
-使用visual studio修改`./dll/dll.sln`里的`源文件/dllmain.cpp`
-#### 🟥gui旧版本
->[!NOTE]
->gui旧版本的再编译不接受pull request
-使用visual studio修改`./ClickMouse-old/ClickMouse.sln`里的`源文件/clickmouse.cpp`
-### 🐍python
-建议先执行`pip install -r requirements.txt`
-#### 🔦python库调用
-修改`clickmouse/`下的代码，运行`pip install .`安装
-#### ⚙️pyd调用
-修改`cython/main.py`的代码，然后执行
-```python cython-setup.py build_ext --inplace```
-编译结束后，该目录下应该会有个以`.pyd`结尾的文件。
-#### 🟥gui版本
-使用python打包工具打包，注意需要添加`res/`目录。
-
-## 🔨功能
-- 鼠标连点
-- 自定义连点间隔
-
-## ⬇️下载
-前往[releases](https://github.com/xystudio889/pyClickMouse/releases)下载
-
-## 💊使用方法
-鼠标连点，目前支持左键和右键。
-下方的输入框输入间隔，再选择想要点击的类型即可开始连点。
-
+见[协作文档](./CONTRIBUTING.md)，找到`## ⬇️配置仓库`这一段，按照说明配置仓库。
 ### 📊使用优先级
-普通用户：
-```mermaid
-graph LR
-A[exe] --> B[交互式命令行]
-```
 开发人员：
 ```mermaid
 graph LR
@@ -160,10 +124,9 @@ C[C/C++] --> E[dll调用] --> D
 目前支持暂停和停止功能。
 
 ## 🖥️Clickmouse 软件
-### 🔠版本
-clickmouse版本格式为：`A.B.C.D[alpha E][beta F]`
-#### 😊正式版本
-正式版不带alpha或beta后缀。
+clickmouse版本格式为：`A.B.C.D[(alpha | beta |.dev | rc) E]`
+## 😊正式版本
+正式版不带.dev、alpha、beta或rc后缀。
 
 A位代表有重大更新，有代码级的变动。如1.0升级到2.0就重构了代码。
 
@@ -173,26 +136,19 @@ C位代表有修复更新，通常会更新一些小功能和一些bug。
 
 D位代表版本代号，通常每A, B, C位有变动时候+1。也有可能A, B, C位没有变动，D位+1，这代表紧急更新，通常是修复几个重大影响的bug。
 
-#### 🅱️测试版本
-测试版本带alpha或beta后缀。
+## 🅱️测试版本
+测试版本带.dev、alpha、beta或rc后缀。
 
 通常前面的`A.B.C.D`在一个测试周期内不变，代表下一个版本。
 
-`alpha`代表开发更新，功能不完善，bug较多，不会发布release。
+`.dev`代表早期开发更新，功能不稳定，bug很多，位于版本项目初期。这阶段新增的功能将会被放到实验室中，并默认关闭。
 
-`beta`代表发布预备更新，功能完善，bug较少，将不会更新功能，会发布release，但无法被更新工具捕获。
+`alpha`代表晚期开发更新，功能不完善，bug较多，位于版本项目早期。这阶段新增的功能将会被放到实验室中，并默认关闭。
 
-## 📃内容展望
-- [x] 连点功能
-- [x] 输入间隔
-- [x] 热键启动
-- [x] 输入次数
-- [x] 自动检查更新
-- [x] 自动下载和安装更新
-- [x] 设置
-- [ ] 命令行参数
-- [ ] 扩展
-- [x] 官方安装助手
-- [x] 包管理
-- [x] 后台运行
-- [ ] 第三方api工具
+`beta`代表发布测试更新，功能完善，bug较少，不会再新增功能，位于版本项目中期。并且会逐步合并实验室中的feature。
+
+`rc`代表预备发布版本，功能完善，bug较少，会修复一些重要安全问题或bug，最接近正式版，即将发布正式版，位于版本项目末期。
+
+::: tip 提示
+rc最后一个版本将直接合并到测试版，不再单独发布；功能完全一样。
+:::
