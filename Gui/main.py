@@ -2280,7 +2280,7 @@ class SettingWindow(SelectUI):
         if dev_flags.get('new_settings', False):
             self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
         else:
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f'))]#, get_lang('d3')]
+            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
         self.last_page = None
         self.now_page = 0
         self.values = {} if values is None else values
@@ -2329,7 +2329,7 @@ class SettingWindow(SelectUI):
             self.page_flags = self.page_choice_buttons[7] # 实验室
         else:
             self.page_notify = ''
-            #self.page_flags = self.page_choice_buttons[6] # 实验室
+            self.page_flags = self.page_choice_buttons[6] # 实验室
         
         # 标题标签
         title_label = QLabel(title)
@@ -3491,7 +3491,6 @@ if __name__ == '__main__':
         can_update = False
         
         try:
-            raise FileNotFoundError('Disable dev flags')
             with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
                 dev_flags = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
