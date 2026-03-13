@@ -1,4 +1,4 @@
-name: 🗒️新的标准立项
+name: 🗒️新标准
 description: 将会建议、建立或修改一个标准。
 title: "🗒️[SPA]"
 labels: enhancement
@@ -12,11 +12,14 @@ body:
         
         > [!IMPORTANT]
         > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
+
+        > [!TIP]
+        > 请一次只报告1个立项。😀
   - type: textarea
     attributes:
       label: 🧾新增的立项
       placeholder: |
-        请在这里输入立项内容。。。
+        请在这里输入立项内容。
       description: 🧾请详细描述你想要立项的标准。
     validations:
       required: true
@@ -25,26 +28,25 @@ body:
       label: ℹ️立项施行的clickmouse版本
       placeholder: |
         >=X.X.X 或 >=X.X.X.X
-      description: 🔠反馈大于等于一个三位或四位版本号
+      description: 🔠反馈一个三位或四位版本号。
       value: |
         下一个clickmouse正式版
     validations:
-      required: false
+      required: true
   - type: textarea
     attributes:
-      label: ❓需要这些功能的原因
+      label: ❓需要这些立项的原因
       placeholder: |
         解决了什么问题？
-        增加了什么功能？
         改进了什么？
         其他原因...
-      description: ❓为什么需要这个功能？
+      description: ❓为什么需要这个立项？
     validations:
       required: false
   - type: textarea
     attributes:
       label: ➕其他相关信息
-      description: ✉️你了解到的更多内容
+      description: ✉️你了解到的更多内容。
       placeholder: |
         更多信息。
     validations:
