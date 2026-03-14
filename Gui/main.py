@@ -2281,6 +2281,9 @@ class SettingWindow(SelectUI):
             self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
         else:
             self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
+
+        self.create_setting_page_value()
+
         self.last_page = None
         self.now_page = 0
         self.values = {} if values is None else values
@@ -2292,6 +2295,23 @@ class SettingWindow(SelectUI):
         clicker.started.connect(self.on_clicker_started)
 
         logger.debug('初始化设置窗口完成')
+        
+    def create_setting_page_value(self):
+        self.page_general = self.page_choice_buttons[0] # 默认设置
+        self.page_style = self.page_choice_buttons[1] # 样式设置
+        self.page_click = self.page_choice_buttons[2] # 连点器设置
+        self.page_update = self.page_choice_buttons[3] # 更新设置
+        self.page_hotkey = self.page_choice_buttons[4] # 热键设置
+        self.page_doc = self.page_choice_buttons[5] # 文档设置
+        if dev_flags.get('new_settings', False):
+            self.page_notify = self.page_choice_buttons[6] # 提示设置
+            self.page_flags = self.page_choice_buttons[7] # 实验室
+        else:
+            self.page_notify = ''
+            self.page_flags = self.page_choice_buttons[6] # 实验室
+            
+        if (setting_value.hide_flags and len(dev_settings) == 0):
+            del self.page_choice_buttons[self.page_choice_buttons.index(self.page_flags)]
         
     def check_values(self):
         '''检查设置值'''
@@ -2318,19 +2338,6 @@ class SettingWindow(SelectUI):
         def parse_hotkey(input: UHotkeyLineEdit):
             return input.text().split('+')
 
-        self.page_general = self.page_choice_buttons[0] # 默认设置
-        self.page_style = self.page_choice_buttons[1] # 样式设置
-        self.page_click = self.page_choice_buttons[2] # 连点器设置
-        self.page_update = self.page_choice_buttons[3] # 更新设置
-        self.page_hotkey = self.page_choice_buttons[4] # 热键设置
-        self.page_doc = self.page_choice_buttons[5] # 文档设置
-        if dev_flags.get('new_settings', False):
-            self.page_notify = self.page_choice_buttons[6] # 提示设置
-            self.page_flags = self.page_choice_buttons[7] # 实验室
-        else:
-            self.page_notify = ''
-            self.page_flags = self.page_choice_buttons[6] # 实验室
-        
         # 标题标签
         title_label = QLabel(title)
         set_style(title_label, StyleClass.big_24)
@@ -2434,6 +2441,10 @@ class SettingWindow(SelectUI):
 
                 repair_layout.addWidget(self.repair_button)
                 repair_layout.addStretch(1)
+                
+                # 无实验项时自动隐藏实验室
+                hide_flags_checkbox = UCheckBox(get_lang('d5'))
+                hide_flags_checkbox.setChecked(setting_value.hide_flags)
 
                 # 布局
                 layout.addLayout(lang_choice_layout)
@@ -2450,6 +2461,9 @@ class SettingWindow(SelectUI):
                 layout.addWidget(delay_layout_text)
                 layout.addWidget(delay_tip_label)
                 layout.addWidget(create_horizontal_line())
+                if dev_flags.get('new_settings', False):
+                    layout.addWidget(hide_flags_checkbox)
+                    layout.addWidget(create_horizontal_line())
                 layout.addLayout(repair_layout)
 
                 # 绑定事件
@@ -2462,6 +2476,8 @@ class SettingWindow(SelectUI):
                 feedback_input.textChanged.connect(lambda: self.on_setting_changed(feedback_input.text, SettingText.feedback))
                 repair_feedback_link_button.clicked.connect(lambda: self.repair_settings(SettingText.feedback))
                 repair_start_button.clicked.connect(self.repair_auto_start)
+                hide_flags_checkbox.checkStateChanged.connect(lambda: self.on_setting_changed(hide_flags_checkbox.isChecked, SettingText.hide_flags))
+                hide_flags_checkbox.checkStateChanged.connect(lambda: self.restart_window())
             case self.page_click:
                 set_content_label(get_lang('84'))
                 # 选择默认连点器延迟
