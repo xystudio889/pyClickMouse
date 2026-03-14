@@ -34,6 +34,7 @@ class SettingText:
     show_warning = 'show_warning'
     show_package_warning ='show_package_warning'
     feedback = 'feedback'
+    hide_flags = 'hide_flags'
    
 class SettingValue:
     def get(self, value):
@@ -176,6 +177,10 @@ class SettingValue:
     @property
     def feedback(self):
         return self[SettingText.feedback]
+    
+    @property
+    def hide_flags(self):
+        return self[SettingText.hide_flags]
     
 class StyleClass:
     big_16 = 'big_text_16'

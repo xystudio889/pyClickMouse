@@ -179,7 +179,7 @@
             "b2": "res/key.json file not found. Please configure res/key.json and recompile.",
             "b3": "Install the update successfully",
             "b4": "Note: This operation will not completely change the component style.\nComponents such as selection boxes will still use the system accent color.",
-            "b5": "(Restart the program to take effect.)",
+            "b5": "(Restart program to effect.)",
             "b6": "Auto startup",
             "b7": "Clicker is running, please stop it first.",
             "b8": "Close the clickmouse to update.",
@@ -210,7 +210,8 @@
             "d1": "If your startup is not working, or startup opened the clickmouse\nwindow, you can try to click to fix it.",
             "d2": "Repair successfully.",
             "d3": "Lab",
-            "d4": "To test some experimental features, which may not be stable."
+            "d4": "To test some experimental features, which may not be stable.",
+            "d5": "Hide \"lab\" when no experimental features"
         }
     },
     {
@@ -424,7 +425,8 @@
             "d1": "如果你的开机自启动出现问题，或打开了clickmouse窗口，可尝试点击\n它来修复。",
             "d2": "修复成功。",
             "d3": "实验室",
-            "d4": "用于测试一些功能，可能不稳定。"
+            "d4": "用于测试一些功能，可能不稳定。",
+            "d5": "无实验项时候隐藏\"实验室\"设置项"
         }
     }
 ]
