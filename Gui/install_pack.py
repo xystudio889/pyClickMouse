@@ -742,6 +742,7 @@ class InstallWindow(PagesUI):
                 create_shortcut(os.path.join(start_menu_path, 'ClickMouse.lnk'), fr'{install_path}\main.exe', 'Clickmouse')
                 create_shortcut(os.path.join(start_menu_path, 'Uninstall clickmouse.lnk'), fr'{install_path}\uninstall.exe', 'Uninstall clickmouse')
                 create_shortcut(os.path.join(start_menu_path, 'Repair clickmouse.lnk'), fr'{install_path}\repair.exe', 'Repair clickmouse')
+                create_shortcut(os.path.join(start_menu_path, 'Repair clickmouse.lnk'), fr'{install_path}\install_pack.exe', 'Modify clickmouse')
             if self.create_desktop_shortcut:
                 create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\main.exe', 'clickmouse')
             self.set_page(self.PAGE_finish)
