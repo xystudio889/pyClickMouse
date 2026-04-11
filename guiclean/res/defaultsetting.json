@@ -1,0 +1,1 @@
+{"select_lang": "!var system_lang", "show_tray_icon": true, "click_delay": "", "click_times": "", "delay_unit": 0, "times_unit": 0, "failed_use_default": false, "times_failed_use_default": false, "hotkey_enabled": true, "left_click_hotkey": ["F2"], "right_click_hotkey": ["F3"], "pause_click_hotkey": ["F4"], "stop_click_hotkey": ["F6"], "main_window_hotkey": ["Ctrl", "Alt", "M"]}

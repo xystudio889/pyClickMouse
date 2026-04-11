@@ -133,6 +133,7 @@ pip install -r requirements.txt
 ```powershell
 make clickmouse # 编译clickmouse
 make extension # 编译扩展
+make clickclean # 如果你要编译精简版，请用这个。
 ```
 7. 运行`dist/clickmouse/clickmouse/main.exe`就可以加载clickmouse了。
 ### 🥴头文件

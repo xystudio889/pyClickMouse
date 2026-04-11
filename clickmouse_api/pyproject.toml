@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/xystudio889/pyClickMouse"
+Homepage = "https://github.com/xystudiocode/pyClickMouse"
 
 [project.scripts]
 clickmouse = "clickmouse.__main__:main"
