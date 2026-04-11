@@ -37,4 +37,4 @@ import clickmouse
 print(clickmouse.__version__)
 ```
 
-更多测试的代码请查阅[readme](https://github.com/xystudio889/pyClickMouse/blob/main/README.md)
+更多测试的代码请查阅[readme](https://github.com/xystudiocode/pyClickMouse/blob/main/README.md)

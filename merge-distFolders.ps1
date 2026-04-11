@@ -59,7 +59,7 @@ if (-not (Test-Path -Path $targetDir)) {
 foreach ($folder in $distFolders) {
     Write-Host "Process folder: $($folder.FullName)"
 
-    # 特殊处理 2.dist
+    # 特殊处理 updater.dist
     if ($folder.Name -eq "updater.dist") {
         $destPath = Join-Path -Path $targetDir -ChildPath "updater"
         if (Test-Path -Path $destPath) {

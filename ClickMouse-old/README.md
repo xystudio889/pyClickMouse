@@ -1,6 +1,6 @@
 # Clickmouse
 >[!IMPORTANT]
-> 本库已经停止更新，请转移到[pyClickMouse](https://github.com/xystudio889/pyClickMouse),C++代码写不动QAQ，转为python了
+> 本库已经停止更新，请转移到[pyClickMouse](https://github.com/xystudiocode/pyClickMouse)来获取最新版本。
 
 [更新日志](./updates.md)
 
