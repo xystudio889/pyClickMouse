@@ -3,7 +3,23 @@ from PySide6.QtWidgets import QApplication
 import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
-from uiStyles import PagesUI, UMessageBox, MessageButtonTemplate
+
+from uiStyles import PagesUI, UMessageBox, MessageButtonTemplate, styles, maps, UCheckBox
+import pyperclip
+from sharelibs import (get_lang, settings, get_inst_lang, get_icon, system_lang, parse_system_language_to_lang_id, run_software, get_resource_path, is_admin, get_init_lang, QtThread, mem_id)
+import win32com.client
+import winreg
+import zipfile
+from shutil import rmtree
+import traceback
+import os
+from pathlib import Path
+import json
+from txtinfo import StyleClass
+
+# 系统api
+import ctypes
+from ctypes import wintypes
     
 def import_package(package_id: str):
     for i in packages_info:
@@ -742,6 +758,7 @@ class InstallWindow(PagesUI):
                 create_shortcut(os.path.join(start_menu_path, 'ClickMouse.lnk'), fr'{install_path}\main.exe', 'Clickmouse')
                 create_shortcut(os.path.join(start_menu_path, 'Uninstall clickmouse.lnk'), fr'{install_path}\uninstall.exe', 'Uninstall clickmouse')
                 create_shortcut(os.path.join(start_menu_path, 'Repair clickmouse.lnk'), fr'{install_path}\repair.exe', 'Repair clickmouse')
+                create_shortcut(os.path.join(start_menu_path, 'Repair clickmouse.lnk'), fr'{install_path}\install_pack.exe', 'Modify clickmouse')
             if self.create_desktop_shortcut:
                 create_shortcut(fr'{os.path.expanduser('~')}\Desktop\clickmouse.lnk', fr'{install_path}\main.exe', 'clickmouse')
             self.set_page(self.PAGE_finish)
@@ -812,7 +829,6 @@ class InstallWindow(PagesUI):
             event.accept()
 
 if __name__ == '__main__':
-    from sharelibs import mem_id
     shared_memory = QSharedMemory(mem_id[2])
     if shared_memory.attach():
         # 已经有一个实例在运行
@@ -823,23 +839,6 @@ if __name__ == '__main__':
     if is_running:
         # 已经有一个实例在运行
         sys.exit(2)
-
-    import pyperclip
-    from sharelibs import (get_lang, settings, get_inst_lang, get_icon, system_lang, parse_system_language_to_lang_id, run_software, get_resource_path, is_admin, get_init_lang, QtThread)
-    import win32com.client
-    import winreg
-    import zipfile
-    from shutil import rmtree
-    import traceback
-    from uiStyles import styles, maps, UCheckBox
-    import os
-    from pathlib import Path
-    import json
-    from txtinfo import StyleClass
-    
-    # 系统api
-    import ctypes
-    from ctypes import wintypes
         
     is_ipk = '--ipk' in app.arguments()
     get_ipk_lang = get_inst_lang if is_ipk else get_init_lang

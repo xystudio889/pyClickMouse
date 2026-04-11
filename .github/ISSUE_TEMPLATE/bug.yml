@@ -58,6 +58,7 @@ body:
       - ♻️清理缓存
       - 🏳️‍🌈主题/样式
       - 📄文档
+      - 🟦clickClean
       - ❓其他/未知
   validations:
     required: true

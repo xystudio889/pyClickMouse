@@ -1,0 +1,26 @@
+[
+    {
+        "lang_name": "English",
+        "lang_id": 0,
+        "lang_system_name": "en",
+        "has_plural": true,
+        "lang_package": {
+            "01": "Yes",
+            "02": "No",
+            "03": "OK",
+            "04": "Cancel"
+        }
+    },
+    {
+        "lang_name": "简体中文",
+        "lang_id": 1,
+        "lang_system_name": "zh-CN",
+        "has_plural": false,
+        "lang_package": {
+            "01": "是",
+            "02": "否",
+            "03": "确定",
+            "04": "取消"
+        }
+    }
+]
