@@ -2,7 +2,7 @@
     {
         "website_name": "github",
         "down_web": "https://github.com/xystudiocode/pyclickmouse/releases/download/{latest_version}/clickmouse.7z",
-        "open_web": "https://github.com/xystudio889/pyclickmouse/releases/latest",
+        "open_web": "https://github.com/xystudiocode/pyClickMouse/releases/latest",
         "api_web": "https://api.github.com/repos/xystudiocode/pyclickmouse/releases",
         "header": {"Authorization": "token {0}"},
         "addtional_info": {"verify": false},

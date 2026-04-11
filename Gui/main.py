@@ -1,13 +1,41 @@
 # 加载ui框架
 from PySide6.QtWidgets import QApplication
 import sys
+from logger import Logger
 app = QApplication(sys.argv)
+logger = Logger('Main')
 from uiStyles.QUI import *
 
+# 加载框架
 from datetime import datetime # 检查时间
-from uiStyles import (SelectUI, UCheckBox, UMessageBox, MessageButtonTemplate) # 软件界面样式
 from pynput import keyboard # 热键功能库
-from txtinfo import SettingValue as BaseSettingValue # 字段值
+import pyautogui # 鼠标操作库
+from time import sleep, time # 延迟
+from webbrowser import open as open_url # 关于作者
+from check_update import check_update, web_data, download_file # 更新检查
+from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel, CustonMessageButton, SelectUI, UCheckBox, UMessageBox, MessageButtonTemplate) # 软件界面样式
+from uiStyles import indexes as style_indexes # 界面组件样式索引
+from sharelibs import (run_software, langs, create_shortcut, __version__, is_pre, get_icon, default_button_text, 
+                        get_unit_value, unit_lang, get_size_text, get_file_hash, system_lang, settings, QtThread, 
+                        default_settings, mem_id, get_resource_path, run_as_admin, get_lang, multi_replace) # 共享库
+import parse_dev # 解析开发固件配置
+import winreg # 注册表库
+import math # 数学库
+import colorsys # 颜色库
+import struct # 字节处理库
+import pytz # 时区库
+from traceback import format_exc # 异常格式化
+from itertools import chain # 迭代器库
+import platform # 系统信息
+from txtinfo import *
+import os # 系统库
+import shutil # 用于删除文件夹
+import json # 用于读取json文件
+from pathlib import Path # 路径库
+
+# 系统api
+import ctypes
+from ctypes import wintypes
 
 # TODO: 添加更多更新设置，使用hashlib.algorithms_available获取支持的hash算法
 
@@ -36,20 +64,20 @@ def load_update_cache():
     '''
     加载更新缓存文件
     '''
-    logger.info('加载更新缓存')
+    logger.info('Load update cache.')
     if update_cache_path.exists():
         with open(update_cache_path, 'r', encoding='utf-8') as f:
             cache = json.load(f)
         return cache
     else:
-        logger.warning('缓存文件不存在，创建默认缓存文件')
+        logger.warning('Update cache file not found, will create a new one.')
         with open(update_cache_path, 'w', encoding='utf-8') as f:
             f.write('{}')
         return {}
 
 def save_update_cache(**kwargs):
     '''写入更新缓存文件'''
-    logger.info('写入缓存文件')
+    logger.info('Save update cache')
 
     cache_data = {
         'last_check_time': time(),
@@ -63,7 +91,7 @@ def should_check_update():
     '''
     检查是否应该检查更新
     '''
-    logger.info('检查是否应该检查更新')
+    logger.info('Checking update.')
     last_check_time = update_cache.get('last_check_time')
     if not last_check_time:
         return True
@@ -91,7 +119,7 @@ def save_settings():
     '''
     保存设置
     '''
-    logger.info('保存设置')
+    logger.info('Saving settings.')
     with open(data_path / 'settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
 
@@ -328,7 +356,7 @@ def get_hotkey_listener_instance():
     if not hasattr(get_hotkey_listener_instance, "instance"):
         global hotkey_thread # 驻留线程，防止自动销毁
         get_hotkey_listener_instance.instance = HotkeyListener()
-        logger.info('启动热键监听器')
+        logger.info('Starting hotkey listener.')
         # 在后台线程中启动热键监听
         hotkey_thread = QtThread(get_hotkey_listener_instance.instance.start_listening)
         hotkey_thread.start()
@@ -336,7 +364,7 @@ def get_hotkey_listener_instance():
 
 def revert_update():
     '''回滚更新'''
-    logger.info('回滚更新')
+    logger.info('Revert update.')
     try:
         os.rename('updater.old', 'updater')
     except:
@@ -508,7 +536,7 @@ def on_input_change(*, type:str ):
 class UMainWindow(QMainWindow):
     '''自定义窗口基类'''
     def __init__(self, parent=None):
-        logger.debug('初始化主窗口')
+        logger.debug('Initializing window.')
 
         super().__init__(parent=parent)
         self.setWindowIcon(icon)
@@ -522,7 +550,7 @@ class UMainWindow(QMainWindow):
 class UDialog(QDialog):
     '''自定义对话框基类'''
     def __init__(self, parent=None):
-        logger.debug('初始化对话框')
+        logger.debug('Initializing window.')
 
         super().__init__(parent=parent)
         self.setWindowIcon(icon)
@@ -699,13 +727,13 @@ class Click(QObject):
         self.left_clicked = False
 
     def mouse_left(self, delay, times):
-        logger.info('左键连点')
+        logger.info('Left click')
         if not self.running:
             self.mouse_click(button='left', input_delay=delay, times=times)
 
     def mouse_right(self, delay, times):
         # 停止当前运行的点击线程
-        logger.info('右键连点')
+        logger.info('Right click')
         if not self.running:
             self.mouse_click(button='right', input_delay=delay, times=times)
 
@@ -716,7 +744,7 @@ class Click(QObject):
 
     def mouse_click(self, button: str, input_delay, times):
         '''鼠标连点'''
-        logger.info('开始连点')
+        logger.info('Start click')
         # 重置状态
         if self.click_thread and self.click_thread.isRunning():
             self.running = False
@@ -746,7 +774,7 @@ class Click(QObject):
         except Exception:
             trace = format_exc()
             MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')}\n{trace}')
-            logger.exception('连点服务', trace)
+            logger.exception('Clicker', trace)
             return
 
         # 创建独立线程避免阻塞GUI
@@ -770,7 +798,7 @@ class Click(QObject):
                     except Exception:
                         trace = format_exc()
                         MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')}\n{trace}')
-                        logger.exception('连点服务', trace)
+                        logger.exception('Clicker', trace)
 
                         self.stopped.emit()
                         break
@@ -780,13 +808,16 @@ class Click(QObject):
                 self.stopped.emit()
 
         # 启动线程
-        logger.info(f'启动连点线程')
+        logger.info(f'Starting click thread')
         self.started.emit()
         self.click_thread = QtThread(click_loop)
         self.click_thread.start()
 
     def pause_click(self):
-        logger.info('连点器暂停或重启')
+        if self.paused:
+            logger.info('Clicker resumed')
+        else:
+            logger.info('Clicker paused')
         self.paused = not self.paused
         self.pause.emit(self.paused)
 
@@ -799,20 +830,20 @@ class Refresh:
         ]
 
     def run(self):
-        logger.info('运行刷新服务')
+        logger.info('Running refresh service')
         self.do_step(self.steps)
 
     def do_step(self, codes):
         # 尝试执行代码
         for code in codes:
-            logger.debug(f'执行步骤{code.__name__}')
+            logger.debug(f'Running step {code.__name__}')
             try:
                 code()
-                logger.debug(f'步骤{code.__name__}执行成功')
+                logger.debug(f'Step {code.__name__} running successfully.')
             except NameError as e:
-                logger.warning(f'步骤{code.__name__}操作存在未定义:{e}')
+                logger.warning(f'Step {code.__name__} not defined: {e}')
             except Exception as e:
-                logger.error(f'步骤{code.__name__}执行失败:{e}')
+                logger.error(f'Step {code.__name__} Running failed: {e}')
 
     def refresh_title(self):
         QTimer.singleShot(setting_value.soft_delay, color_getter.style_changed.emit)
@@ -821,14 +852,14 @@ class Refresh:
         if clicker.left_clicked:
             set_style(main_window.left_click_button, StyleClass.selected)
         else:
-            logger.debug('左键未连点')
+            logger.warning('Left click is not enabled.')
             set_style(main_window.left_click_button, StyleClass.none)
 
     def right_check(self):
         if clicker.right_clicked:
             set_style(main_window.right_click_button,StyleClass.selected)
         else:
-            logger.debug('右键未连点')
+            logger.warning('Right click is not enabled.')
             set_style(main_window.right_click_button, StyleClass.none)
 
 class RunAfter:
@@ -836,17 +867,17 @@ class RunAfter:
         self.program_list = {}
 
     def add(self, name, python_path, exe_path, run_as_admin=False):
-        logger.debug('添加计划')
+        logger.info('Add run-after plan')
         self.program_list[name] = (python_path, exe_path, run_as_admin)
         MessageBox.information(main_window, get_lang('59'), get_lang('5a'))
 
     def remove(self, name):
-        logger.debug('移除计划')
+        logger.info('Remove run-after plan')
         del self.program_list[name]
         MessageBox.information(main_window, get_lang('59'), get_lang('88'))
 
     def run(self):
-        logger.info('运行运行计划')
+        logger.info('Running run-after plan')
         for python_path, exe_path, use_admin in self.program_list.values():
             if use_admin:
                 run_as_admin(python_path, exe_path)
@@ -871,7 +902,7 @@ class ColorGetter(QObject):
             settings['select_style'] = 0
             save_settings()
             MessageBox.critical(None, get_lang('14'), get_lang('12'))
-            logger.critical('设置的样式索引超出范围，已恢复默认样式设置。')
+            logger.critical('Setting style index is out of range, will reset to default.')
             run_software('main.py', 'main.exe')
             sys.exit(0)
 
@@ -887,7 +918,7 @@ class ColorGetter(QObject):
         self.timer.start(setting_value.soft_delay)
 
     def load_theme(self):
-        logger.debug('获取最新的主题')
+        logger.debug('Get latest theme')
 
         theme = None
         windows_theme = None
@@ -918,7 +949,7 @@ class ColorGetter(QObject):
 
     def check_and_apply_theme(self):
         '''检查主题是否变化，变化则重新应用'''
-        logger.debug('检查主题是否变化')
+        logger.debug('Check theme')
 
         self.style = setting_value.select_style
 
@@ -945,7 +976,7 @@ class ColorGetter(QObject):
 
     def apply_titleBar(self, window: QMainWindow | QDialog):
         '''应用标题栏样式'''
-        logger.debug('应用标题栏样式')
+        logger.debug('Apply titleBar style')
 
         hwnd = window.winId().__int__()
 
@@ -966,7 +997,7 @@ class ColorGetter(QObject):
         '''根据当前主题，为整个应用设置全局样式表'''
         global select_styles
 
-        logger.info('应用全局样式表')
+        logger.info('Use style')
 
         app = get_application_instance()
         self.style_changed.emit()
@@ -976,22 +1007,30 @@ class ColorGetter(QObject):
         select_styles = styles[current_theme]
         
         if self.use_windows_color:
+            steps = [
+                [['.selected:pressed', 'background-color'], lighten_color_hex(self.windows_color, -0.165)]
+            ]
             if select_styles.css_data['.meta']['mode'] == 'dark':
-                select_styles = select_styles.replace(['.selected', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.4), output_json=False)
-                select_styles = select_styles.replace(['.selected:hover', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.45), output_json=False)
-                select_styles = select_styles.replace(['.selected', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
-                select_styles = select_styles.replace(['.selected:hover', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
-                select_styles = select_styles.replace(['.selected:pressed', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
-                select_styles = select_styles.replace(['QCheckBox', 'color'], StyleReplaceMode.ALL, 'black', output_json=False)
+                steps.extend([
+                    [['.selected', 'background-color'], lighten_color_hex(self.windows_color, 0.4)],
+                    [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.45)],
+                    [['.selected', 'color'], 'black'],
+                    [['.selected:hover', 'color'], 'black'],
+                    [['.selected:pressed', 'color'], 'black'],
+                    [['QCheckBox', 'color'], 'black'],
+                ])
             else:
-                select_styles = select_styles.replace(['.selected', 'background-color'], StyleReplaceMode.ALL, self.windows_color, output_json=False)
-                select_styles = select_styles.replace(['.selected:hover', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, 0.4), output_json=False)
-            select_styles = select_styles.replace(['.selected:pressed', 'background-color'], StyleReplaceMode.ALL, lighten_color_hex(self.windows_color, -0.165), output_json=False)
+                steps.extend([
+                    [['.selected', 'background-color'], self.windows_color],
+                    [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.4)],
+                ])
+            for step in steps:
+                select_styles = select_styles.replace(step[0], StyleReplaceMode.ALL, step[1], output_json=False)
         
         app.setStyleSheet(select_styles.css_text)  # 全局应用
         self.refresh()
         
-class SettingValue(BaseSettingValue):
+class SettingValue(SettingValue):
     def get(self, value):
         default_value = default_settings.get(value, None)
         if isinstance(default_value, str):
@@ -1002,8 +1041,6 @@ class SettingValue(BaseSettingValue):
         
 class MainWindow(UMainWindow):
     def __init__(self):
-        logger.debug('初始化主窗口')
-
         super().__init__()
         self.setWindowTitle('ClickMouse')
         self.setGeometry(100, 100, 500, 375)
@@ -1013,16 +1050,16 @@ class MainWindow(UMainWindow):
 
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
-        logger.debug('初始化状态控制变量')
+        logger.debug('Initializing value')
         self.show_update_in_start = False # 是否在启动时显示更新提示
         self.total_run_time = 0  # 总运行时间
         self.is_ready = True  # 是否状态栏为“就绪”
         self.is_start_from_tray = False # 是否从托盘启动
 
-        logger.debug('初始化ui')
+        logger.debug('Initializing clicker')
         self.init_ui()
 
-        logger.debug('检查更新')
+        logger.debug('Check updates')
         self.on_check_update()
 
     def init_ui(self):
@@ -1058,7 +1095,7 @@ class MainWindow(UMainWindow):
         self.stop_button.setFixedSize(100, 40)
         self.stop_button.setEnabled(False)
 
-        logger.debug('初始化布局')
+        logger.debug('Initializing layout')
 
         # 单位输入框
         unit_layout = UnitInputLayout()
@@ -1097,7 +1134,7 @@ class MainWindow(UMainWindow):
         self.status_bar.showMessage(get_lang('5d'))
 
         # 创建布局
-        logger.debug('创建按钮布局')
+        logger.debug('Setting layout')
         grid_layout.addWidget(self.left_click_button, 0, 0)
         grid_layout.addWidget(self.right_click_button, 0, 2)
         grid_layout.addWidget(self.pause_button, 1, 1)
@@ -1110,7 +1147,7 @@ class MainWindow(UMainWindow):
         self.setLayout(central_layout)
 
         # 按钮信号连接
-        logger.debug('信号连接')
+        logger.debug('Singnal connection')
         self.left_click_button.clicked.connect(lambda:clicker.mouse_left(delay_num, time_num))
         self.right_click_button.clicked.connect(lambda:clicker.mouse_right(delay_num, time_num))
 
@@ -1125,13 +1162,12 @@ class MainWindow(UMainWindow):
         self.status_bar.messageChanged.connect(self.reload_status)
 
         # 创建菜单栏
-        logger.debug('创建菜单栏')
+        logger.debug('Creating menu bar')
         self.create_menu_bar()
 
         # 刷新按钮状态
-        logger.debug('刷新按钮状态')
 
-        logger.debug('初始化完成')
+        logger.debug('Initializing color successd.')
 
     def reload_status(self):
         '''刷新状态栏'''
@@ -1168,7 +1204,7 @@ class MainWindow(UMainWindow):
         help_menu = menu_bar.addMenu(get_lang('09'))
         about_action = help_menu.addAction(get_lang('0a'))
 
-        # 热键帮助
+        # 发送反馈
         create_issue_action = help_menu.addAction(get_lang('ba'))
 
         # 文档菜单
@@ -1239,6 +1275,8 @@ class MainWindow(UMainWindow):
             doc_choice_lang = 'en' # 默认英文
 
         open_url(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang))
+        
+        logger.info(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang))
 
     def do_extension(self, index):
         '''执行扩展'''
@@ -1255,22 +1293,22 @@ class MainWindow(UMainWindow):
         except Exception:
             trace = format_exc()
             MessageBox.critical(self, get_lang('14'), get_lang('9c').format(trace))
-            logger.exception('扩展运行服务', trace)
+            logger.exception('Extension runner', trace)
 
     def show_manage_extension(self):
         '''管理扩展'''
-        logger.info('打开扩展管理窗口')
+        logger.info('Open extension management window')
 
         run_software('install_pack.py' ,'install_pack.exe', ['--ipk'])
 
     def show_import_extension_mode(self):
         '''导入扩展模式'''
-        logger.info('打开导入扩展窗口')
+        logger.info('Open extension import window')
         set_import_extension_window.exec()
 
     def show_import_extension(self, mode):
         '''导入扩展'''
-        logger.info('导入扩展')
+        logger.info('Import extension')
         if mode == 1:
             file_name, _ = QFileDialog.getOpenFileName(self, get_lang('9e'), '', get_lang('9f'))
         else :
@@ -1286,20 +1324,20 @@ class MainWindow(UMainWindow):
             except Exception:
                 trace = format_exc()
                 MessageBox.critical(self, get_lang('a1'), get_lang('a5').format(trace))
-                logger.exception('导入扩展', trace)
+                logger.exception('Import extension', trace)
                 return
         else:
             return
 
     def show_manage_not_official_extension(self):
         '''管理第三方扩展'''
-        logger.info('打开第三方扩展管理窗口')
+        logger.info('Opening threerd-party extension management window')
 
         MessageBox.information(self, get_lang('a1'), get_lang('a4'))
 
     def show_import_macro(self):
         '''导入宏'''
-        logger.info('导入宏')
+        logger.info('Import macro')
 
         file_name, _ = QFileDialog.getOpenFileName(self, get_lang('9e'), '', get_lang('9f').split(';;')[2])
 
@@ -1309,7 +1347,7 @@ class MainWindow(UMainWindow):
                 MessageBox.information(self, get_lang('a1'), get_lang('a4'))
             except Exception:
                 trace = format_exc()
-                logger.exception('导入扩展', trace)
+                logger.exception('Import macro', trace)
                 MessageBox.critical(self, get_lang('a1'), get_lang('a5').format(trace))
                 return
         else:
@@ -1317,22 +1355,21 @@ class MainWindow(UMainWindow):
 
     def show_about(self):
         '''显示关于窗口'''
-        logger.info('打开关于窗口')
+        logger.info('Opening about window')
         about_window.exec()
 
     def show_update_log(self):
         '''显示更新日志'''
-        logger.info('打开更新日志窗口')
+        logger.info('Opening update log')
         self.open_doc(path=setting_value.update_log_path)
 
     def show_clean_cache(self):
-        '''清理缓存'''
-        logger.info('打开清理缓存窗口')
+        logger.info('Opening clean cache window')
         clean_cache_window.exec()
 
     def show_setting(self):
         '''显示设置窗口'''
-        logger.info('打开设置窗口')
+        logger.info('Opening setting window')
         setting_window.show()
 
     def on_check_update(self):
@@ -1344,7 +1381,7 @@ class MainWindow(UMainWindow):
                 self.check_update_thread.finished.connect(self.on_check_update_result)
                 self.check_update_thread.start()
             else:
-                logger.info('使用缓存检查更新')
+                logger.info('Checking update by cache')
                 self.on_check_update_result(update_cache)
             
     def save(self):
@@ -1355,6 +1392,8 @@ class MainWindow(UMainWindow):
     def on_check_update_result(self, check_data):
         '''检查更新结果'''
         global result
+        
+        logger.info('Checking update result')
 
         # 判断是否需要缓存
         if should_check_update_res:
@@ -1372,7 +1411,7 @@ class MainWindow(UMainWindow):
             if result[1] != -1:  # -1表示函数出错
                 self.save()
                 if result[0]:  # 检查到需要更新
-                    logger.info('检查到更新')
+                    logger.info('Check update result: need update')
                     # 弹出更新窗口
                     self.show_update_in_start = True
                     if should_check_update_res:
@@ -1380,11 +1419,12 @@ class MainWindow(UMainWindow):
                         self.on_update()
             else:
                 if self.check_update_thread.isFinished():
-                    logger.error(f'检查更新错误:\n{result[0]}')
+                    logger.critical(f'Check update failed:\n{result[0]}')
                     MessageBox.critical(self, get_lang('14'), f'{get_lang('18')}\n{result[0]}')
 
     def on_update(self, judge=False):
         '''显示更新提示'''
+        logger.info('Showing update window')
         if judge:
             if setting_value.update_enabled:
                 if result[0]: # 检查到需要更新
@@ -1422,7 +1462,7 @@ class MainWindow(UMainWindow):
 
     def on_stop(self):
         '''停止连点'''
-        logger.info('停止连点')
+        logger.info('Stopping clicker')
 
         # 禁用按钮
         self.pause_button.setEnabled(False)
@@ -1453,7 +1493,7 @@ class MainWindow(UMainWindow):
 
     def on_start(self):
         '''开始连点'''
-        logger.info('开始连点')
+        logger.info('Starting clicker')
 
         # 禁用按钮
         self.input_times.setEnabled(False)
@@ -1484,6 +1524,7 @@ class MainWindow(UMainWindow):
 
     def on_click_counter(self, totel, now, delay):
         '''连点计数器'''
+        logger.debug('Update click counter')
         self.is_ready = False
         now = int(now)
         delay = int(delay)
@@ -1512,7 +1553,7 @@ class MainWindow(UMainWindow):
 class AboutWindow(UDialog):
     def __init__(self):
         super().__init__()
-        logger.debug('初始化关于窗口')
+        logger.debug('Initizing about window')
         self.setWindowTitle(filter_hotkey(get_lang('0a')))
         self.setGeometry(100, 100, 375, 175)
         self.setFixedSize(self.width(), self.height())
@@ -1520,14 +1561,11 @@ class AboutWindow(UDialog):
 
     def init_ui(self):
         # 创建面板
-        logger.debug('创建面板')
+        logger.debug('Create panel')
         central_layout = QGridLayout()
 
-        # 面板控件
-        logger.debug('创建组件')
-
         # 绘制内容
-        logger.debug('绘制内容')
+        logger.debug('Draw content')
 
         self.image_label = QLabel()
         # 加载图片
@@ -1539,7 +1577,7 @@ class AboutWindow(UDialog):
         about = QLabel(get_lang('1d'))
 
         # 按钮
-        logger.debug('创建按钮')
+        logger.debug('Create Button')
         ok_button = QPushButton(get_lang('1e'))
         set_style(ok_button, StyleClass.selected)
 
@@ -1552,21 +1590,21 @@ class AboutWindow(UDialog):
         self.setLayout(central_layout)
 
         # 绑定事件
-        logger.debug('绑定事件')
+        logger.debug('Singal connection')
         ok_button.clicked.connect(self.close)
-        logger.debug('初始化关于窗口完成')
+        logger.debug('Initializing about window')
 
 class CleanCacheWindow(UDialog):
     def __init__(self):
-        logger.debug('初始化清理缓存窗口')
+        logger.debug('Initizing clean cache window')
         super().__init__()
         self.setWindowTitle(filter_hotkey(get_lang('02')))
 
         # 加载常量
-        logger.debug('加载常量')
+        logger.debug('Loading values')
         self.locked_checkbox = False # 锁定选择框模式，按下后将不会产生来自非手动操作的更新选择框
         # 清理缓存
-        logger.debug('加载清理项')
+        logger.debug('Loading cache config')
         with open(get_resource_path('vars', 'caches.json'), 'r', encoding='utf-8') as f:
             self.cache_config = json.load(f)
         self.path_list = [i['path'] for i in self.cache_config if i['path']]
@@ -1575,13 +1613,11 @@ class CleanCacheWindow(UDialog):
         self.init_ui()
 
     def init_ui(self):
-        logger.debug('加载ui')
+        logger.debug('Loading ui')
         # 创建面板
         layout = QGridLayout()
 
-        # 面板控件
-        logger.debug('加载ui')
-        logger.debug('加载列表标题')
+        logger.debug('Loading title')
 
         title = QLabel(get_lang('3d'))
         set_style(title, StyleClass.big_20)
@@ -1590,11 +1626,8 @@ class CleanCacheWindow(UDialog):
         set_style(dest, StyleClass.dest)
 
         # 布局1
-        logger.debug('加载布局-1')
         layout.addWidget(title, 0, 0, 1, 4)
         layout.addWidget(dest, 1, 0, 1, 4)
-
-        logger.debug('加载动态数据')
 
         # 加载ui
         file = QLabel(get_lang('33'))
@@ -1606,14 +1639,15 @@ class CleanCacheWindow(UDialog):
         set_style(path, StyleClass.b)
         set_style(dest, StyleClass.b)
         set_style(size, StyleClass.b)
+
         # 布局2
-        logger.debug('加载布局-2')
         layout.addWidget(file, 2, 0)
         layout.addWidget(path, 2, 1)
         layout.addWidget(dest, 2, 2)
         layout.addWidget(size, 2, 3)
 
         # 从json读取缓存列表
+        logger.info('Loading cache list.')
         cache_list = {}
 
         with open(get_resource_path('vars', 'cleancache.json'), 'r', encoding='utf-8') as f:
@@ -1638,6 +1672,8 @@ class CleanCacheWindow(UDialog):
                         cache_list[get_lang(k[1:])].append(value)
                     else:
                         cache_list[k].append(value)
+                        
+        logger.info('Load cache list successful.')
 
         self.cache_dir_list = {'logs'} # 缓存文件路径的列表
         self.cache_file_list = {'update.json'} # 缓存文件列表
@@ -1658,7 +1694,7 @@ class CleanCacheWindow(UDialog):
         self.checkbox_list: list[UCheckBox] = [] # 缓存文件选择框的列表
         self.cache_path_list: list[QLabel] = [] # 文件路径字符的列表
         self.cache_size_list: list[QLabel] = [] # 缓存文件大小字符的列表
-        logger.debug('加载动态内容')
+        logger.debug('Loading cache list')
         for i, d in enumerate(cache_list.items()): # 遍历缓存列表
             k = d[0]
             v = d[1]
@@ -1679,14 +1715,12 @@ class CleanCacheWindow(UDialog):
             layout.addWidget(size, line, 3)
 
         # 按钮
-        logger.debug('创建按钮')
         scan_cache = QPushButton(get_lang('38'))
         ok = QPushButton(get_lang('1f'))
         clean_cache = QPushButton(get_lang('39'))
         set_style(clean_cache, StyleClass.selected)
 
-        # 布局4
-        logger.debug('加载布局-4')        
+        # 布局4      
         bottom_layout = QHBoxLayout()
         bottom_layout.addStretch(1)
         bottom_layout.addWidget(scan_cache)
@@ -1696,20 +1730,20 @@ class CleanCacheWindow(UDialog):
         layout.addLayout(bottom_layout, line + 1, 2)
 
         # 绑定事件
+        logger.debug('Singal connection')
         self.all_checkbox.stateChanged.connect(self.on_check)
         scan_cache.clicked.connect(self.on_scan_cache)
-        clean_cache.clicked.connect(self.on_clean_cache)
+        clean_cache.clicked.connect(lambda: self.on_control_cache(clean=True))
         ok.clicked.connect(self.close)
 
         for checkbox in self.checkbox_list:
             checkbox.checkStateChanged.connect(self.update_all_check_status)
 
         # 设置布局
-        logger.debug('设置布局')
-
+        logger.debug('Set layout')
         self.setLayout(layout)
 
-        logger.debug('清理缓存窗口初始化完成')
+        logger.debug('Initializing clean cache window successful.')
 
     def update_all_check_status(self):
         '''当任何复选框状态变化时自动更新全选按钮状态'''
@@ -1727,8 +1761,8 @@ class CleanCacheWindow(UDialog):
 
     def on_scan_cache(self):
         '''扫描缓存'''
-        logger.info('扫描缓存')
-        cache_size = self.calc_cache_size()
+        logger.info('Scaning cache')
+        cache_size = self.on_control_cache(clean=False)
         total_size = 0
         for text, cache in zip(self.cache_size_list, cache_size):
             if cache is not None:
@@ -1740,10 +1774,20 @@ class CleanCacheWindow(UDialog):
     def try_to_remove_file(self, file_path: str):
         '''尝试删除文件'''
         try:
-            size = self.get_dir_or_file_size(file_path)
-            os.remove(file_path)
+            size = 0
+            if os.path.isfile(file_path):
+                size = self.get_dir_or_file_size(file_path)
+                os.remove(file_path)
+            elif os.path.isdir(file_path):
+                for root, dirs, files in os.walk(file_path):
+                    for file in files:
+                        size += self.try_to_remove_file(os.path.join(root, file))
+            else:
+                raise OSError('Not a file or directory')
+            logger.info(f'Remove {file_path} successful.')
             return size
-        except:
+        except OSError as e:
+            logger.warning(f'Remove {file_path} failed: {e}.')
             return 0
 
     def delete_empty_folders(self, root_path):
@@ -1759,52 +1803,78 @@ class CleanCacheWindow(UDialog):
             item_path = os.path.join(root_path, item)
             if os.path.isdir(item_path):
                 if self.delete_empty_folders(item_path):
+                    logger.debug(f'Add remove empty folder list: {item_path}')
                     deleted_any = True
 
         # 检查当前文件夹是否为空
         try:
+            logger.debug(f'Checking {root_path}')
             items = os.listdir(root_path)
         except PermissionError:
+            logger.warning(f'Permission denied when listing {root_path}')
             return deleted_any
 
         # 如果为空则删除
         if len(items) == 0:
             try:
+                logger.info(f'Remove empty folder {root_path}')
                 os.rmdir(root_path)
                 return True
             except OSError:
+                logger.warning(f'Remove empty folder {root_path} failed')
                 pass
 
         return deleted_any
 
-    def on_clean_cache(self):
-        '''清理缓存'''
-        logger.info('清理缓存')
+    def on_control_cache(self, clean: bool):
+        '''清理或计算缓存'''
+        logger.info('Calcuate cache cache')
 
         cache_clicked = list(map(lambda x: x.isChecked(), self.checkbox_list))
-        cache_size = 0
+        if clean:
+            cache_size = 0
+        else:
+            cache_size = [None for _ in cache_clicked]
 
         for i in self.cache_config:
             if cache_clicked[i['check_index']]: # 选择了该项
                 if i['path'] is not None: # 是否全选
                     for items in chain(i['path']['dirs'], i['path']['files']):
-                        cache_size += self.try_to_remove_file(cache_path / items)  
+                        if clean:
+                            logger.info(f'Remove: {cache_path / items}')
+                            cache_size += self.try_to_remove_file(cache_path / items)  
+                        else:
+                            logger.info(f'Calculate size: {cache_path / items}')
+                            cache_size[i['check_index']] = self.get_dir_or_file_size(cache_path / items)
                 else:
+                    size = 0
                     for root, dirs, files in os.walk(cache_path):
                         for file in files:
                             if file in i['exclude']['files'] or self.contains_substring(i['exclude']['dirs'], root):
+                                logger.info(f'Exclude: {os.path.join(root, file)}')
                                 continue
-                            cache_size += self.try_to_remove_file(os.path.join(root, file))
-        # 清理空文件夹
-        for root, dirs, files in os.walk(cache_path):
-            for dir in dirs:
-                self.delete_empty_folders(os.path.join(root, dir))
+                            if clean:
+                                cache_size += self.try_to_remove_file(os.path.join(root, file))
+                            else:
+                                size += self.get_dir_or_file_size(os.path.join(root, file))
+                    if not clean:
+                        cache_size[i['check_index']] = size
+                        
+        if clean:
+            # 清理空文件夹
+            for root, dirs, files in os.walk(cache_path):
+                for dir in dirs:
+                    logger.info(f'Try toemove empty folder: {os.path.join(root, dir)}')
+                    self.delete_empty_folders(os.path.join(root, dir))
 
-        # 弹出提示窗口
-        MessageBox.information(self, get_lang('16'), get_lang('3b').format(get_size_text(cache_size)))
+            # 弹出提示窗口
+            MessageBox.information(self, get_lang('16'), get_lang('3b').format(get_size_text(cache_size)))
+        else:
+            return cache_size
 
     def get_dir_or_file_size(self, dir_or_file_path: str) -> int:
         '''获取目录或文件大小'''
+        logger.info('Calculate size of directory or file')
         if os.path.isfile(dir_or_file_path):
             # 是文件的情况
             size = os.path.getsize(dir_or_file_path)
@@ -1894,31 +1964,9 @@ class CleanCacheWindow(UDialog):
         '''
         return any(substring in target_str for substring in str_list)
 
-    def calc_cache_size(self) -> list:
-        '''扫描缓存'''
-        logger.info('计算缓存大小')
-
-        cache_clicked = list(map(lambda x: x.isChecked(), self.checkbox_list))
-        every_cache_size = [None for _ in cache_clicked]
-
-        for i in self.cache_config:
-            if cache_clicked[i['check_index']]: # 选择了该项
-                if i['path'] is not None: # 是否全选
-                    for items in chain(i['path']['dirs'], i['path']['files']):
-                        every_cache_size[i['check_index']] = self.get_dir_or_file_size(cache_path / items)
-                else:
-                    size = 0
-                    for root, dirs, files in os.walk(cache_path):
-                        for file in files:
-                            if file in i['exclude']['files'] or self.contains_substring(i['exclude']['dirs'], root):
-                                continue
-                            size += self.get_dir_or_file_size(os.path.join(root, file))
-                    every_cache_size[i['check_index']] = size
-
-        return every_cache_size
-
     def on_check(self, state):
         '''全选按钮点击事件'''
+        logger.info('All check box updated.')
         if state == Qt.CheckState.Unchecked: # 未选中
             if not self.locked_checkbox: # 非手动操作
                 for checkbox in self.checkbox_list:
@@ -1934,7 +1982,7 @@ class CleanCacheWindow(UDialog):
 class UpdateWindow(UDialog):
     def __init__(self):
         # 初始化
-        logger.debug('初始化更新窗口')
+        logger.debug('Initizalizing update window')
         super().__init__()
         self.setWindowTitle(get_lang('29'))
         self.setGeometry(100, 100, 300, 110)
@@ -1948,11 +1996,11 @@ class UpdateWindow(UDialog):
 
     def init_ui(self):
         # 创建面板
-        logger.debug('创建面板')
+        logger.debug('Create layout')
         layout = QVBoxLayout()
 
         # 面板控件
-        logger.debug('创建面板控件')
+        logger.debug('Create widget')
         title = QLabel(get_lang('24'))
         version = QLabel(get_lang('25').format(__version__, result[1]))
 
@@ -1966,13 +2014,13 @@ class UpdateWindow(UDialog):
 
         bottom_layout = QHBoxLayout()
         # 绑定事件
-        logger.debug('绑定事件')
+        logger.debug('Signal connection')
         update.clicked.connect(self.on_update)
         update_log.clicked.connect(self.on_open_update_log)
         cancel.clicked.connect(self.close)
 
         # 布局
-        logger.debug('布局')
+        logger.debug('Layout')
         layout.addWidget(title)
         layout.addWidget(version)
 
@@ -1985,7 +2033,7 @@ class UpdateWindow(UDialog):
 
         self.setLayout(layout)
 
-        logger.debug('初始化更新窗口完成')
+        logger.debug('Initizalizing update window successful.')
 
     def exec(self):
         if setting_value.quiet_update:
@@ -2005,7 +2053,7 @@ class UpdateWindow(UDialog):
                 self.down_thread.start()
             except:
                 trace = format_exc()
-                logger.exception('更新安装', trace)
+                logger.exception('update failed', trace)
                 revert_update()
                 MessageBox.critical(self, get_lang('14'), f'{get_lang('bb')}：\n{trace}')
         else:
@@ -2021,15 +2069,15 @@ class UpdateWindow(UDialog):
                 if setting_value.update_ok_notify:
                     update_ok_window.show()
             else:
-                logger.exception('更新安装', '文件校验失败')
+                logger.exception('Update install', 'Update file hash check failed')
                 MessageBox.critical(self, get_lang('14'), get_lang('bc'))
         else:
-            logger.exception('更新安装', state[1])
+            logger.exception('Update install', state[1])
             MessageBox.critical(self, get_lang('14'), f'{get_lang('bb')}:\n{state[1]}')
 
     def on_open_update_log(self):
         # 打开更新日志
-        logger.debug('打开更新日志')
+        logger.debug('Open update log')
 
         version = result[1]
         version = version.replace('.', '').replace('beta', 'b').replace('alpha', 'a')
@@ -2052,11 +2100,11 @@ class UpdateOKWindow(UDialog):
 
     def init_ui(self):
         # 创建面板
-        logger.debug('创建面板')
+        logger.debug('Create layout')
         layout = QVBoxLayout()
 
         # 面板控件
-        logger.debug('创建面板控件')
+        logger.debug('Create widget')
         title = QLabel(get_lang('b3'))
         tip = QLabel(get_lang('b8'))
 
@@ -2071,14 +2119,14 @@ class UpdateOKWindow(UDialog):
 
         bottom_layout = QHBoxLayout()
         # 绑定事件
-        logger.debug('绑定事件')
+        logger.debug('Signal connection')
         update.clicked.connect(self.on_update)
         revert.clicked.connect(self.on_revert)
         update_log.clicked.connect(self.on_open_update_log)
         cancel.clicked.connect(self.close)
 
         # 布局
-        logger.debug('布局')
+        logger.debug('Layout')
         layout.addWidget(title)
         layout.addWidget(tip)
 
@@ -2092,7 +2140,7 @@ class UpdateOKWindow(UDialog):
 
         self.setLayout(layout)
 
-        logger.debug('初始化更新窗口完成')
+        logger.debug('Initizalizing update window successful.')
 
     def on_update(self):
         '''更新'''
@@ -2102,7 +2150,7 @@ class UpdateOKWindow(UDialog):
     def on_revert(self):
         '''回滚'''
         global can_update
-        logger.info('回滚更新')
+        logger.info('Revert update')
         revert_update()
         self.close()
         can_update = False
@@ -2114,7 +2162,7 @@ class UpdateOKWindow(UDialog):
 
 class FastSetClickWindow(UDialog):
     def __init__(self):
-        logger.debug('初始化快速连点窗口')
+        logger.debug('Initizalizing fast set click window')
 
         super().__init__()
         self.setWindowTitle(get_lang('75'))
@@ -2125,10 +2173,10 @@ class FastSetClickWindow(UDialog):
 
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
-        logger.debug('初始化状态控制变量')
+        logger.debug('Initizalizing value')
         self.total_run_time = 0  # 总运行时间
 
-        logger.debug('初始化ui')
+        logger.debug('Initizalizing ui')
         self.init_ui()
 
     def init_ui(self):
@@ -2164,14 +2212,14 @@ class FastSetClickWindow(UDialog):
         set_style(self.total_time_label, StyleClass.big_16)
 
         # 创建布局
-        logger.debug('创建按钮布局')
+        logger.debug('Create button layout')
 
         central_layout.addLayout(unit_layout)
         central_layout.addWidget(self.total_time_label)
         self.setLayout(central_layout)
 
         # 按钮信号连接
-        logger.debug('信号连接')
+        logger.debug('Signal connection')
 
         # 双向同步
         # 主窗口同步
@@ -2187,7 +2235,7 @@ class FastSetClickWindow(UDialog):
         self.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.delay_combo, main_window.delay_combo))
         self.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.times_combo, main_window.times_combo))
 
-        logger.debug('初始化快速连点窗口完成')
+        logger.debug('Initizalizing fast set click window successful.')
 
     def sync_input(self, get_handle, set_handle, source, dest):
         '''同步输入框'''
@@ -2195,7 +2243,7 @@ class FastSetClickWindow(UDialog):
 
 class ClickAttrWindow(UDialog):
     def __init__(self):
-        logger.debug('初始化连点器属性窗口')
+        logger.debug('Initizalizing click attribute window')
         super().__init__()
         self.setWindowTitle(get_lang('8c'))
 
@@ -2240,10 +2288,11 @@ class ClickAttrWindow(UDialog):
 
         self.setLayout(central_layout)
 
-        logger.debug('初始化连点器属性窗口完成')
+        logger.debug('Initizalizing click attribute window successful.')
 
     def update_attr(self):
         '''更新属性'''
+        logger.debug('update attribute')
         self.left_clicked.setText(f'{get_lang('0c')}: {get_lang('7b') if clicker.left_clicked else get_lang('7c')}')
         self.right_clicked.setText(f'{get_lang('0d')}: {get_lang('7b') if clicker.right_clicked else get_lang('7c')}')
         self.click_delay.setText(f'{get_lang('78')}: {delay_num}{get_lang('ms', source=unit_lang)}')
@@ -2266,7 +2315,7 @@ class SettingWindow(SelectUI):
     def __init__(self, values:dict | None = None):
         super().__init__()
 
-        logger.debug('初始化设置窗口')
+        logger.debug('Initizalizing setting window')
         self.setGeometry(300, 300, 625, 400)
         self.setFixedSize(self.width(), self.height())
         self.setWindowTitle(filter_hotkey(get_lang('04')))
@@ -2280,7 +2329,10 @@ class SettingWindow(SelectUI):
         if dev_flags.get('new_settings', False):
             self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
         else:
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f'))]#, get_lang('d3')]
+            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
+
+        self.create_setting_page_value()
+
         self.last_page = None
         self.now_page = 0
         self.values = {} if values is None else values
@@ -2291,33 +2343,9 @@ class SettingWindow(SelectUI):
         # 连接信号
         clicker.started.connect(self.on_clicker_started)
 
-        logger.debug('初始化设置窗口完成')
+        logger.debug('Initizalizing setting window successful.')
         
-    def check_values(self):
-        '''检查设置值'''
-        # 热键设置
-        if self.values.get('need_restart', False):
-            self.on_need_restart_setting_changed(lambda: system_lang, 'select_lang')
-        self.values.clear()
-
-    def create_setting_page(self, title):
-        logger.debug(f'创建设置页面: {title}')
-        page = QWidget()
-        layout = QVBoxLayout(page)
-
-        def set_content_label(text):
-            logger.debug(f'设置内容标签')
-            content_label.setText(text)
-
-        def create_horizontal_line():
-            logger.debug(f'创建水平线')
-            line = UFrame()
-            line.setFrameShape(UFrame.Shape.HLine)  # 水平线
-            return line
-        
-        def parse_hotkey(input: UHotkeyLineEdit):
-            return input.text().split('+')
-
+    def create_setting_page_value(self):
         self.page_general = self.page_choice_buttons[0] # 默认设置
         self.page_style = self.page_choice_buttons[1] # 样式设置
         self.page_click = self.page_choice_buttons[2] # 连点器设置
@@ -2329,8 +2357,36 @@ class SettingWindow(SelectUI):
             self.page_flags = self.page_choice_buttons[7] # 实验室
         else:
             self.page_notify = ''
-            #self.page_flags = self.page_choice_buttons[6] # 实验室
+            self.page_flags = self.page_choice_buttons[6] # 实验室
+            
+        if (setting_value.hide_flags and len(dev_settings) == 0):
+            del self.page_choice_buttons[self.page_choice_buttons.index(self.page_flags)]
         
+    def check_values(self):
+        '''检查设置值'''
+        # 热键设置
+        if self.values.get('need_restart', False):
+            self.on_need_restart_setting_changed(lambda: system_lang, 'select_lang')
+        self.values.clear()
+
+    def create_setting_page(self, title):
+        logger.info(f'Loading setting page: {title}')
+        page = QWidget()
+        layout = QVBoxLayout(page)
+
+        def set_content_label(text):
+            logger.debug(f'Set content label: {text}')
+            content_label.setText(text)
+
+        def create_horizontal_line():
+            logger.debug('Create horizontal line')
+            line = UFrame()
+            line.setFrameShape(UFrame.Shape.HLine)  # 水平线
+            return line
+        
+        def parse_hotkey(input: UHotkeyLineEdit):
+            return input.text().split('+')
+
         # 标题标签
         title_label = QLabel(title)
         set_style(title_label, StyleClass.big_24)
@@ -2434,6 +2490,10 @@ class SettingWindow(SelectUI):
 
                 repair_layout.addWidget(self.repair_button)
                 repair_layout.addStretch(1)
+                
+                # 无实验项时自动隐藏实验室
+                hide_flags_checkbox = UCheckBox(get_lang('d5'))
+                hide_flags_checkbox.setChecked(setting_value.hide_flags)
 
                 # 布局
                 layout.addLayout(lang_choice_layout)
@@ -2450,6 +2510,9 @@ class SettingWindow(SelectUI):
                 layout.addWidget(delay_layout_text)
                 layout.addWidget(delay_tip_label)
                 layout.addWidget(create_horizontal_line())
+                if dev_flags.get('new_settings', False):
+                    layout.addWidget(hide_flags_checkbox)
+                    layout.addWidget(create_horizontal_line())
                 layout.addLayout(repair_layout)
 
                 # 绑定事件
@@ -2462,6 +2525,8 @@ class SettingWindow(SelectUI):
                 feedback_input.textChanged.connect(lambda: self.on_setting_changed(feedback_input.text, SettingText.feedback))
                 repair_feedback_link_button.clicked.connect(lambda: self.repair_settings(SettingText.feedback))
                 repair_start_button.clicked.connect(self.repair_auto_start)
+                hide_flags_checkbox.checkStateChanged.connect(lambda: self.on_setting_changed(hide_flags_checkbox.isChecked, SettingText.hide_flags))
+                hide_flags_checkbox.checkStateChanged.connect(lambda: self.restart_window())
             case self.page_click:
                 set_content_label(get_lang('84'))
                 # 选择默认连点器延迟
@@ -2964,6 +3029,7 @@ class SettingWindow(SelectUI):
             self.notice_update_ok_notify.setEnabled(state)
         
     def repair_auto_start(self):
+        logger.info('Repair auto start')
         os.remove(Path(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'Clickmouse.lnk'))
         auto_start_manager.create_reg()
         MessageBox.information(self, get_lang('16'), get_lang('d2'))
@@ -2986,6 +3052,7 @@ class SettingWindow(SelectUI):
         self.window_restarted.emit()
             
     def repair_all_settings(self):
+        logger.info('Reset all settings')
         global settings
         if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButtonTemplate.YESNO) != 2: # 不确认重置
             return
@@ -3026,6 +3093,7 @@ class SettingWindow(SelectUI):
 
     def on_setting_changed(self, handle, key, *args):
         '''更新检查提示选择事件'''
+        logger.info(f'Setting changed: {key}')
         settings[key] = handle(*args)
         save_settings()
 
@@ -3071,7 +3139,7 @@ class SettingWindow(SelectUI):
 class SetImportExtensionModeWindow(UDialog):
     def __init__(self):
         super().__init__()
-        logger.debug('初始化管理扩展提示窗口')
+        logger.debug('Initializing import extension mode window')
         self.setWindowTitle(filter_hotkey(get_lang('92')))
         self.setGeometry(100, 100, 200, 125)
         self.setWindowIcon(icon)
@@ -3104,7 +3172,7 @@ class SetImportExtensionModeWindow(UDialog):
         # 连接信号
         mode_button.clicked.connect(self.on_mode_button_clicked)
 
-        logger.debug('管理扩展提示窗口初始化完成')
+        logger.debug('Init import extension mode window finished')
 
     def on_mode_button_clicked(self):
         self.close()
@@ -3112,7 +3180,7 @@ class SetImportExtensionModeWindow(UDialog):
 
 class TrayApp:
     def __init__(self):
-        logger.info('加载托盘程序')
+        logger.info('Loading tray app framework')
         self.app = get_application_instance()
 
         show_tray_icon = setting_value.show_tray_icon
@@ -3142,11 +3210,12 @@ class TrayApp:
         clicker.started.connect(self.on_start)
         clicker.started.connect(main_window.on_start)
 
-        logger.info('托盘程序框架加载完成')
+        logger.info('Initializing tray app finished')
+        logger.info('Start finished.')
 
     def setup_tray_icon(self):
         '''设置系统托盘图标'''
-        logger.info('设置系统托盘图标')
+        logger.info('Setting up tray icon')
         self.tray_icon = QSystemTrayIcon()
         self.tray_icon.setIcon(icon)
 
@@ -3163,7 +3232,7 @@ class TrayApp:
         self.tray_icon.show()
 
     def create_menu(self):
-        logger.info('创建右键菜单')
+        logger.info('Creatting tray icon menu')
         tray_menu = QMenu()
 
         # 添加'打开应用'菜单项
@@ -3209,7 +3278,7 @@ class TrayApp:
 
     def start_hotkey_listener(self):
         '''启动热键监听器''' 
-        logger.info('启动热键监听器')
+        logger.info('Starting hotkey listener')
         # 在后台线程中启动热键监听
         self.hotkey_thread = QtThread(self.hotkey_listener.start_listening)
         self.hotkey_thread.start()
@@ -3226,7 +3295,7 @@ class TrayApp:
         except Exception:
             trace = format_exc()
             MessageBox.critical(main_window, get_lang('13'), f'{get_lang('ae')}\n{trace}')
-            logger.exception('延迟处理', trace)
+            logger.exception('Delay control', trace)
             return False
         return True
 
@@ -3238,15 +3307,15 @@ class TrayApp:
 
     def run(self):
         '''运行应用程序'''
-        logger.info('运行托盘程序')
+        logger.info('Running tray app')
         code = self.app.exec()
         if can_update:
             run_software('updater.old/updater.py', 'updater.old/updater.exe')
         else:
             # 进行清理
             run_after.run()
+            logger.info(f'Main program exited with {code}')
             self.quit()
-        logger.info('主程序退出')
         sys.exit(code)
 
     def refresh(self):
@@ -3254,10 +3323,12 @@ class TrayApp:
         
     def quit(self, code=lambda: None):
         if update_window.down_thread is not None:
+            logger.info('Waiting for update thread to exit')
             if update_window.down_thread.isRunning():
                 update_window.down_thread.quit()
                 update_window.down_thread.wait(1000)  # 等待一段时间
                 if update_window.down_thread.isRunning(): # 仍然运行，强制退出
+                    logger.warning('Update thread is still running, force quit')
                     update_window.down_thread.terminate()  # 作为最后手段
                     update_window.down_thread.wait()
                 revert_update()
@@ -3275,22 +3346,22 @@ class TrayApp:
     def on_start_clicker_tray(self, direction):
         '''启动托盘连点'''
         if direction == 'left': # 左键
-            warn_text = '左'
+            warn_text = 'left'
             button = main_window.left_click_button
             start_lang_id = '6f'
             func = clicker.mouse_left
         elif direction == 'right': # 右键
-            warn_text = '右'
+            warn_text = 'right'
             button = main_window.right_click_button
             start_lang_id = '70'
             func = clicker.mouse_right
         else:
-            logger.critical('未知的方向，代码退出')
+            logger.critical('Invalid direction')
             return
 
         # 判断参数有效性
         if not button.isEnabled():
-            logger.warning(f'{warn_text}键未启用')
+            logger.warning(f'{warn_text} click is not enabled.')
             self.tray_icon.showMessage(get_lang('14'), get_lang('1a'), QSystemTrayIcon.MessageIcon.Critical, 1000)
             return
 
@@ -3356,10 +3427,6 @@ class TrayApp:
             self.tray_icon.showMessage(get_lang('14'), get_lang('af'), QSystemTrayIcon.MessageIcon.Critical, 1000)
 
 if __name__ == '__main__':
-    from sharelibs import (mem_id, get_resource_path, run_as_admin, get_lang) # 共享库
-    import json # 用于读取json文件
-    from pathlib import Path # 路径库
-
     shared_memory = QSharedMemory(mem_id[0])
     if shared_memory.attach():
         # 已经有一个实例在运行
@@ -3379,12 +3446,6 @@ if __name__ == '__main__':
         run_as_admin('install_pack.py', 'install_pack.exe')
         sys.exit(0)
     else:
-        import os # 系统库
-        import shutil # 用于删除文件夹
-        from logger import Logger
-
-        logger = Logger('主程序日志')
-
         with open(get_resource_path('package_info.json')) as f:
             packages_info = json.load(f)
         try:
@@ -3396,7 +3457,7 @@ if __name__ == '__main__':
                 try:
                     packages.append(import_package(i))
                 except ValueError as e:
-                    logger.warning(f'扩展{i}已过期，自动清除')
+                    logger.warning(f'Extension {i} is deprecated. Auto delete.')
                     shutil.rmtree(f'extensions/{i}', ignore_errors=True)
                     del packages_name[packages_name.index(i)]
             for file in os.listdir('extensions'):
@@ -3405,10 +3466,10 @@ if __name__ == '__main__':
                 if os.path.isfile(full_path):
                     if file != 'packages.json':
                         os.remove(full_path)
-                        logger.warning(f'错误文件{file}自动清除')
+                        logger.warning(f'Invalid extension {file} found. Auto delete.')
                 elif os.path.isdir(full_path):
                     if file not in packages_name:
-                        logger.warning(f'扩展{file}已过期，自动清除')
+                        logger.warning(f'Extension {file} is deprecated. Auto delete.')
                         shutil.rmtree(full_path, ignore_errors=True)
             if (os.path.exists('packages.json')) and (os.path.exists('extensions/packages.json')):
                 os.remove('extensions/packages.json')
@@ -3425,44 +3486,20 @@ if __name__ == '__main__':
                 shutil.rmtree('extensions')
             pass
 
-        # 加载框架
-        import pyautogui # 鼠标操作库
-        from time import sleep, time # 延迟
-        from webbrowser import open as open_url # 关于作者
-        from check_update import check_update, web_data, download_file # 更新检查
-        from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel, CustonMessageButton) # 软件界面样式
-        from uiStyles import indexes as style_indexes # 界面组件样式索引
-        from sharelibs import (run_software, langs, create_shortcut, __version__, is_pre, get_icon, default_button_text, 
-                               get_unit_value, unit_lang, get_size_text, get_file_hash, system_lang, settings, QtThread, default_settings) # 共享库
-        import parse_dev # 解析开发固件配置
-        import winreg # 注册表库
-        import math # 数学库
-        import colorsys # 颜色库
-        import struct # 字节处理库
-        import pytz # 时区库
-        from traceback import format_exc # 异常格式化
-        from itertools import chain # 迭代器库
-        import platform # 系统信息
-        from txtinfo import *
-
-        # 系统api
-        import ctypes
-        from ctypes import wintypes
-
-        logger.info('加载变量')
-        logger.debug('定义常量')
+        logger.info('Loading value')
+        logger.debug('Loading const value')
         has_packages = os.path.exists(get_resource_path('packages'))
         package_names, show_list, package_ids = get_packages()
 
         # Windows API常量
-        logger.debug('定义Windows API常量')
+        logger.debug('sSetting WinAPI const value')
         DWMWA_USE_IMMERSIVE = 20
         DWMWA_USE_IMMERSIVE_DARK_MODE = 20
         DWM_WINDOW_CORNER_PREFERENCE = 33
         DWMWCP_ROUND = 2
         DWMNCRP_ENABLED = 1
 
-        logger.info('加载服务程序')
+        logger.info('Loading services')
         setting_value = SettingValue()
         clicker = Click()
         auto_start_manager = StartManager()
@@ -3470,7 +3507,7 @@ if __name__ == '__main__':
         run_after = RunAfter()
 
         # 变量
-        logger.info('定义数据路径')
+        logger.info('Define pathes')
 
         # 定义数据路径
         cache_path = Path('cache')
@@ -3491,7 +3528,6 @@ if __name__ == '__main__':
         can_update = False
         
         try:
-            raise FileNotFoundError('Disable dev flags')
             with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
                 dev_flags = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
@@ -3512,7 +3548,6 @@ if __name__ == '__main__':
         with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
             json.dump(dev_flags, f)
 
-        
         # 单位控制
         latest_index = 2
         select_lang = setting_value.select_lang
@@ -3535,9 +3570,9 @@ if __name__ == '__main__':
         else: # 未知
             default_theme = 'Fusion'
 
-        logger.info('定义资源完成')
+        logger.info('Loading data successed')
 
-        logger.info('检查更新注册表')
+        logger.info('Check and update registry version.')
 
         # 检查版本号与注册表是否一致,不一样就修改注册表
         run_software('check_reg_ver.py', 'check_reg_ver.exe')
@@ -3546,7 +3581,7 @@ if __name__ == '__main__':
         shutil.rmtree('updater.old', ignore_errors=True)
         
         # 加载窗口
-        logger.info('加载ui')
+        logger.info('Loading ui')
         main_window = MainWindow()
         on_input_change(type=InputChange.main_window) # 更新时间估计状态
 

@@ -11,7 +11,7 @@
     <a href="https://github.com/gaogaotiantian/viztracer/blob/master/LICENSE">
         <img src="https://img.shields.io/github/license/xystudio889/pyclickmouse" alt="license">
     </a>
-    <a href="https://github.com/xystudio889/pyclickmouse/commits/master">
+    <a href="https://github.com/xystudiocode/pyClickMouse/commits/master">
         <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
     </a>
     <!-- <a href="https://github.com/sponsors/xystudio889">
@@ -72,15 +72,15 @@
 输入`pip install -r requirements.txt`安装
 
 ## 🛠️支持调用的工具
-- [x] C/C++头文件调用 使用原本C++版本的clickMouse改装而来 速度最快，兼容性最好，但是使用失效的可能性最大。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
-- [x] 使用原本C++版本的clickMouse 速度最快，兼容性最好，但是使用失效的可能性最大，已经停止更新，可以从[releases](https://github.com/xystudio889/pyClickMouse)下载，[之前的clickmouse项目](https://github.com/xystudio889/ClickMouse)
-- [x] 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
+- [x] C/C++头文件调用 使用原本C++版本的clickMouse改装而来 速度最快，兼容性最好，但是使用失效的可能性最大。可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载
+- [x] 使用原本C++版本的clickMouse 速度最快，兼容性最好，但是使用失效的可能性最大，已经停止更新，可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载，[之前的clickmouse项目](https://github.com/xystudio889/ClickMouse)
+- [x] 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载
 - [x] (开发人员推荐)python调用 速度中等，兼容性最好，使用失效的可能性最小。可以使用`pip install clickmouse`下载
-- [x] 使用.pyd调用 基于python语言，速度较快，兼容性较差（不同版本的python可能不兼容），使用失效的可能性较小。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载(单独编译仅需编译cython/目录)
-- [x] (普通用户推荐)使用exe 使用 基于交互式命令行添加了gui。可以从[releases](https://github.com/xystudio889/pyClickMouse)下载
-- [ ] 使用交互式命令行 使用 基于python语言，比gui轻便。~~可以从[releases](https://github.com/xystudio889/pyClickMouse)下载~~ 暂时没有该版本，敬请期待
+- [x] 使用.pyd调用 基于python语言，速度较快，兼容性较差（不同版本的python可能不兼容），使用失效的可能性较小。可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载(单独编译仅需编译cython/目录)
+- [x] (普通用户推荐)使用exe 使用 基于交互式命令行添加了gui。可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载
+- [ ] 使用交互式命令行 使用 基于python语言，比gui轻便。~~可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载~~ 暂时没有该版本，敬请期待
 - [ ] 使用标准命令行 使用 基于python语言。~~将会自带在gui版本和pip安装版本中~~ 暂时没有该版本，敬请期待
-
+- [x] 精简版(ClickClean) 比exe gui版本更加精简，告别臃肿的无用功能。可以从[releases](https://github.com/xystudiocode/pyClickMouse)
 
 ## ⚒️安装和调用
 Gui版本和~~命令行交互版本~~无需安装，直接运行即可。

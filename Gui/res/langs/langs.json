@@ -102,7 +102,7 @@
             "64": "Total {0} clicks, {1} clicks completed, {2} clicks remaining; Total {3} seconds spent, {4} seconds spent, {5} seconds remaining, click interval {6}",
             "65": "preview",
             "66": "times",
-            "67": "This clickmouse is not an official version",
+            "67": null,
             "68": "Open Application",
             "69": "Hotkey",
             "6a": "Revert",
@@ -179,7 +179,7 @@
             "b2": "res/key.json file not found. Please configure res/key.json and recompile.",
             "b3": "Install the update successfully",
             "b4": "Note: This operation will not completely change the component style.\nComponents such as selection boxes will still use the system accent color.",
-            "b5": "(Restart the program to take effect.)",
+            "b5": "(Restart program to effect.)",
             "b6": "Auto startup",
             "b7": "Clicker is running, please stop it first.",
             "b8": "Close the clickmouse to update.",
@@ -210,7 +210,8 @@
             "d1": "If your startup is not working, or startup opened the clickmouse\nwindow, you can try to click to fix it.",
             "d2": "Repair successfully.",
             "d3": "Lab",
-            "d4": "To test some experimental features, which may not be stable."
+            "d4": "To test some experimental features, which may not be stable.",
+            "d5": "Hide \"lab\" when no experimental features"
         }
     },
     {
@@ -316,7 +317,7 @@
             "64": "共{0}次连点,已完成{1}次,剩余{2}次;共花费{3},已花费{4},剩余{5},连点间隔{6}",
             "65": "预览版",
             "66": "次",
-            "67": "此clickmouse不是官方版本",
+            "67": null,
             "68": "打开应用",
             "69": "热键",
             "6a": "回滚",
@@ -424,7 +425,8 @@
             "d1": "如果你的开机自启动出现问题，或打开了clickmouse窗口，可尝试点击\n它来修复。",
             "d2": "修复成功。",
             "d3": "实验室",
-            "d4": "用于测试一些功能，可能不稳定。"
+            "d4": "用于测试一些功能，可能不稳定。",
+            "d5": "无实验项时候隐藏\"实验室\"设置项"
         }
     }
 ]

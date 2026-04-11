@@ -2,6 +2,12 @@ import sys
 from PySide6.QtWidgets import QApplication
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
+from sharelibs import mem_id
+import json
+from shutil import rmtree
+import os
+import winreg
+from sharelibs import get_resource_path, get_icon
 
 def remove_file(file_path):
     try:
@@ -164,8 +170,6 @@ class MainWindow(QMainWindow):
         sys.exit(0)
 
 if __name__ == '__main__':
-    from sharelibs import mem_id
-
     shared_memory = QSharedMemory(mem_id[3])
     if shared_memory.attach():
         # 已经有一个实例在运行
@@ -179,18 +183,12 @@ if __name__ == '__main__':
         QMessageBox.critical(None, get_control_lang('04'), get_control_lang('08'))
         sys.exit(2)
     
-    import json
-    
     with open('packages.json', 'r', encoding='utf-8') as f:
         packages = json.load(f)
 
     if 'xystudio.clickmouse.repair' in packages:
         from sharelibs import is_admin
         if is_admin():
-            from shutil import rmtree
-            import os
-            import winreg
-            from sharelibs import get_resource_path, get_icon
             window = MainWindow()
             window.show()
         else:

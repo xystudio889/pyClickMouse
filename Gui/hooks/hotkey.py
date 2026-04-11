@@ -1,9 +1,17 @@
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
 from pynput import keyboard
-import sys
+import re
 
 count = 0
+
+def multi_replace(text, replace_dict):
+    '''一次性替换多个子串'''
+    # 将字典键按长度降序排序，避免长词被短词部分覆盖
+    sorted_keys = sorted(replace_dict.keys(), key=len, reverse=True)
+    # 构建正则模式，注意转义特殊字符
+    pattern = '|'.join(re.escape(key) for key in sorted_keys)
+    return re.sub(pattern, lambda m: replace_dict[m.group(0)], text)
 
 class HotkeyListener(QObject):
     '''热键监听器类，用于在后台线程中监听全局热键'''
@@ -69,7 +77,13 @@ class KeyListen(QObject):
         temp_combination = combination.copy()
         
         for index, i in enumerate(temp_combination):
-            temp_combination[index] = i.replace('Key.', '').replace('_l', '').replace('_r', '').replace('_gr', '')
+            replacements = {
+                'Key.': '',
+                '_l': '',
+                '_r': '',
+                '_gr': ''
+            }
+            temp_combination[index] = multi_replace(i, replacements)
         combination = temp_combination.copy()
 
         print(combination)
