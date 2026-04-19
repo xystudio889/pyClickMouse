@@ -55,8 +55,7 @@ def get_windows_version():
             return 10
     else:
         return major_version
-    
-    
+
 def filter_hotkey(text:str):
     return text.split('(')[0]
 
@@ -535,16 +534,16 @@ def on_input_change(*, type:str ):
         
 class UMainWindow(QMainWindow):
     '''自定义窗口基类'''
-    def __init__(self, parent=None):
+    def __init__(self):   
         logger.debug('Initializing window.')
+        super().__init__()
 
-        super().__init__(parent=parent)
         self.setWindowIcon(icon)
         new_color_bar(self)
         
     def showEvent(self, event):
         '''窗口显示事件'''
-        new_color_bar(self)
+        QTimer.singleShot(setting_value.soft_delay, lambda: new_color_bar(self))
         return super().showEvent(event)
     
 class UDialog(QDialog):
@@ -558,7 +557,7 @@ class UDialog(QDialog):
     
     def showEvent(self, event):
         '''窗口显示事件'''
-        new_color_bar(self)
+        QTimer.singleShot(setting_value.soft_delay, lambda:new_color_bar(self))
         return super().showEvent(event)
 
 class StartManager(QObject):
@@ -2308,7 +2307,7 @@ class ClickAttrWindow(UDialog):
             value = get_unit_value(main_window.total_run_time)
             self.total_run_time.setText(f'{get_lang('2c')}: {value[0]:.2f}{value[1]}')
 
-class SettingWindow(SelectUI):
+class SettingWindow(SelectUI, UMainWindow):
     click_setting_changed = Signal()
     window_restarted = Signal()
 
@@ -2320,7 +2319,6 @@ class SettingWindow(SelectUI):
         self.setFixedSize(self.width(), self.height())
         self.setWindowTitle(filter_hotkey(get_lang('04')))
         self.setParent(main_window)
-        self.setWindowIcon(QIcon(get_resource_path('icons', 'extensions', f'cms{'pre' if is_pre else ''}.ico')))
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
@@ -2453,7 +2451,7 @@ class SettingWindow(SelectUI):
                 soft_delay_setting = setting_value.soft_delay
 
                 soft_delay = QSlider(Qt.Horizontal)
-                soft_delay.setMinimum(0)
+                soft_delay.setMinimum(5)
                 soft_delay.setMaximum(100)
                 soft_delay.setValue(soft_delay_setting // 10)
                 soft_delay.setTickPosition(QSlider.TicksBelow)
@@ -2673,8 +2671,8 @@ class SettingWindow(SelectUI):
                 style_use_windows_layout.addStretch(1)
                 
                 theme_layout = QHBoxLayout() # 主题布局
-                theme_tip_window = QLabel(get_lang('4b'))
-                set_style(theme_tip_window, StyleClass.d_11)
+                theme_tip_label = QLabel(get_lang('4b'))
+                set_style(theme_tip_label, StyleClass.d_11)
                 theme_combo = QComboBox()
                 theme_combo.addItems(QStyleFactory.keys())
                 theme_combo.setCurrentText(setting_value.theme)
@@ -2691,13 +2689,14 @@ class SettingWindow(SelectUI):
                 layout.addWidget(tip_label)
                 layout.addWidget(create_horizontal_line())
                 layout.addLayout(theme_layout)
-                layout.addWidget(theme_tip_window)
+                layout.addWidget(theme_tip_label)
                 layout.addWidget(create_horizontal_line())
 
                 # 连接信号
                 self.style_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(self.style_choice.currentIndex, SettingText.select_style))
                 style_choice_use_windows.checkStateChanged.connect(lambda: self.on_setting_changed(style_choice_use_windows.isChecked, SettingText.use_windows_color))
                 theme_combo.currentIndexChanged.connect(lambda: self.on_setting_changed(theme_combo.currentText, SettingText.theme))
+                theme_combo.currentIndexChanged.connect(lambda: refresh.run())
                 theme_combo.currentIndexChanged.connect(lambda: self.app.setStyle(theme_combo.currentText()))
             case self.page_hotkey:
                 set_content_label(get_lang('21'))
@@ -3033,11 +3032,6 @@ class SettingWindow(SelectUI):
         os.remove(Path(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'Clickmouse.lnk'))
         auto_start_manager.create_reg()
         MessageBox.information(self, get_lang('16'), get_lang('d2'))
-
-    def showEvent(self, event):
-        '''窗口显示事件'''
-        new_color_bar(self)
-        return super().showEvent(event)
     
     def repair_settings(self, key: str):
         '''还原默认设置'''
@@ -3543,7 +3537,7 @@ if __name__ == '__main__':
         for k in dev_flags.keys():
             if k not in [i['key'] for i in dev_settings]:
                 del dev_back[k]
-                logger.warning(f'测试版配置ID{k}不存在，自动清除')
+                logger.warning(f'Beta feature ID:{k} is deprecated. Auto delete.')
         dev_flags = dev_back.copy()
         with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
             json.dump(dev_flags, f)
@@ -3582,6 +3576,7 @@ if __name__ == '__main__':
         
         # 加载窗口
         logger.info('Loading ui')
+        
         main_window = MainWindow()
         on_input_change(type=InputChange.main_window) # 更新时间估计状态
 
