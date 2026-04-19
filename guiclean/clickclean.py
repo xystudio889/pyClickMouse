@@ -1109,7 +1109,7 @@ class AboutWindow(UDialog):
         ok_button.clicked.connect(self.close)
         logger.debug('Initializing about window')
 
-class SettingWindow(SelectUI):
+class SettingWindow(SelectUI, UMainWindow):
     click_setting_changed = Signal()
     window_restarted = Signal()
 
@@ -1121,7 +1121,6 @@ class SettingWindow(SelectUI):
         self.setFixedSize(self.width(), self.height())
         self.setWindowTitle(filter_hotkey(get_lang('04')))
         self.setParent(main_window)
-        self.setWindowIcon(QIcon(get_resource_path('icons', 'clickmouse', f'cms.ico')))
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
