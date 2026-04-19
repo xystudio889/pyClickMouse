@@ -10,16 +10,6 @@ QDialog {
     background-color: #202020;
 }
 
-QMenu {
-    background-color: #202020;
-    border-radius: 5px;
-}
-
-QMenu:selected {
-    background-color: #353535;
-    border-radius: 5px;
-}
-
 QComboBox {
     background-color: #353535;
 }
@@ -67,17 +57,22 @@ QPushButton:pressed {
 QMenu {
     background-color: #202020;
     color: white;
-    border-radius: 10px;
+    border-radius: 5px;
     border: 1px solid #303030;
 }
 
 QMenu:disabled {
     background-color: #252525;
     color: #505050;
+    border-radius: 5px;
 }
 
 QMenu:selected {
     background-color: #353535;
+}
+
+QMenuBar {
+    background-color: #202020;
 }
 
 QMenuBar::item:selected {
