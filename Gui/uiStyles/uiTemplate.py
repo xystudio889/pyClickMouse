@@ -4,7 +4,7 @@ from uiStyles.widgets import VScrollArea
 __all__ = ['SelectUI', 'PagesUI']
 
 class SelectUI(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self):
         super().__init__()
 
         self.page_choice_buttons = [] # 用于存储页面选择按钮文字
