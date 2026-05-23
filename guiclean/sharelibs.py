@@ -110,7 +110,7 @@ def run_software(code_path, exe_path, args=None):
     args = [] if args is None else args
     subprocess.Popen(f'python {code_path} {' '.join(args)}' if in_dev else f'{exe_path} {" ".join(args)}')
 
-__version__ = '3.2.2.21'
+__version__ = '3.2.3.22'
     
 with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
     unit_lang = json.load(f)

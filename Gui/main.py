@@ -773,13 +773,13 @@ class Click(QObject):
                     break
                 if not self.paused:
                     try:
-                        pyautogui.click(button=button)
-                        sleep(delay / 1000)
-                        i += 1     
                         if times == float('inf'):
                             self.click_conuter.emit('inf', str(i), str(delay))
                         else:
                             self.click_conuter.emit(str(times), str(i), str(delay))
+                        pyautogui.click(button=button)
+                        sleep(delay / 1000)
+                        i += 1
                     except Exception:
                         trace = format_exc()
                         MessageBox.critical(None, get_lang('14'), f'{get_lang('1b')}\n{trace}')
@@ -3468,6 +3468,7 @@ if __name__ == '__main__':
     shared_memory = QSharedMemory(mem_id[0])
     if shared_memory.attach():
         # 已经有一个实例在运行
+        QMessageBox.critical(None, get_lang('14'), get_lang('d6'))
         sys.exit(2)
     shared_memory.create(1)
 

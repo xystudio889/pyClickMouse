@@ -7,6 +7,6 @@
     {
         "name": "Decoupling UI and program",
         "key": "decoupling",
-        "desc": "To decouple the UI and program."
+        "desc": "To decouple the UI and program.This need to restart the program to take effect."
     }
 ]

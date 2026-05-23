@@ -464,9 +464,8 @@ def compile_ui(ui_file_or_data):
                 compiled_list = []
                 for item in v.get('content', []):
                     compiled_list.append(compile_ui(item)) # 递归解析
-                for step in v.get('init_steps', []):
-                    for k, v in  step.items():
-                        getattr(widget, k)(*v)
+                for k, vs in v.get('init_steps', {}).items():
+                    getattr(widget, k)(*vs)
                 return {'name': ui_data.get('name'), 'direction': v.get('direction'), 'content': compiled_list, 'stretch': v.get('stretch', False)}
             else: # 这是widget类型
                 argv = []
@@ -495,10 +494,9 @@ def compile_ui(ui_file_or_data):
                             
                 widget = globals().get(v.get('type'))(*argv, **kwargv) # 获取函数
                 set_style(widget, style) # 设置样式
-                
-                for step in v.get('init_steps', []):
-                    for k, v in  step.items():
-                        getattr(widget, k)(*v)
+
+                for k, vs in v.get('init_steps', {}).items():
+                    getattr(widget, k)(*vs)
                 
                 return {'name': ui_data.get('name'), 'content': widget}
         else:

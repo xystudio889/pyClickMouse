@@ -211,7 +211,8 @@
             "d2": "Repair successfully.",
             "d3": "Lab",
             "d4": "To test some experimental features, which may not be stable.",
-            "d5": "Hide \"lab\" when no experimental features"
+            "d5": "Hide \"lab\" when no experimental features",
+            "d6": "There is already an instance running, if you can't find the window, you can wake it up from the tray."
         }
     },
     {
@@ -426,7 +427,8 @@
             "d2": "修复成功。",
             "d3": "实验室",
             "d4": "用于测试一些功能，可能不稳定。",
-            "d5": "无实验项时候隐藏\"实验室\"设置项"
+            "d5": "无实验项时候隐藏\"实验室\"设置项",
+            "d6": "已经有一个实例在运行，如果你没有找到窗口，可前往托盘唤醒。"
         }
     }
 ]
