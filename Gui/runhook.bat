@@ -1,3 +1,3 @@
 @echo off
 
-py hooks/%1.py
+py hooks/%1.py %2

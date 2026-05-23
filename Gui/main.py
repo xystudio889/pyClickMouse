@@ -17,7 +17,7 @@ from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel, C
 from uiStyles import indexes as style_indexes # 界面组件样式索引
 from sharelibs import (run_software, langs, create_shortcut, __version__, is_pre, get_icon, default_button_text, 
                         get_unit_value, unit_lang, get_size_text, get_file_hash, system_lang, settings, QtThread, 
-                        default_settings, mem_id, get_resource_path, run_as_admin, get_lang, multi_replace) # 共享库
+                        default_settings, mem_id, get_resource_path, run_as_admin, get_lang, set_style, compile_ui, UIWindow) # 共享库
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 import math # 数学库
@@ -250,20 +250,6 @@ def get_now_filetime():
     # 将整数转换为小端字节序（8字节）
     little_endian = struct.pack('<Q', filetime_value)
     return little_endian
-
-def set_style(widget: QWidget, class_name: str):
-    '''
-    设置按钮的class属性并刷新样式
-    '''
-    # 1. 设置class属性
-    widget.setProperty('class', class_name)
-
-    # 2. 强制样式刷新
-    widget.style().unpolish(widget)
-    widget.style().polish(widget)
-
-    # 3. 触发重绘
-    widget.update()
 
 def get_soft_size():
     '''
@@ -2169,16 +2155,19 @@ class FastSetClickWindow(UDialog):
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
-
         self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
         logger.debug('Initizalizing value')
         self.total_run_time = 0  # 总运行时间
 
         logger.debug('Initizalizing ui')
-        self.init_ui()
+        
+        if dev_flags.get('decoupling', False):
+            self.init_ui()
+        else:
+            self.init_ui_old()
 
-    def init_ui(self):
+    def init_ui_old(self):
         # 创建主控件和布局
         central_layout = QVBoxLayout()
 
@@ -2235,6 +2224,28 @@ class FastSetClickWindow(UDialog):
         self.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.times_combo, main_window.times_combo))
 
         logger.debug('Initizalizing fast set click window successful.')
+        
+    def init_ui(self):
+        self.ui = UIWindow(compile_ui(get_resource_path('ui', 'fastClick.gui')))
+        
+        self.ui.find_widget('central_layout.unit_layout.delay_combo').addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
+        self.ui.find_widget('central_layout.unit_layout.times_combo').addItems([get_lang('66'), get_lang('2a'), get_lang('2b')])
+        self.ui.find_widget('central_layout.total_time_label').setText(main_window.total_time_label.text())
+        self.ui.find_widget('central_layout.total_time_label').setAlignment(Qt.AlignHCenter)
+        
+        self.setLayout(self.ui.draw({
+            'central_layout.unit_layout.input_delay': {'textChanged': lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.ui.find_widget('central_layout.unit_layout.input_delay'), main_window.input_delay)},
+            'central_layout.unit_layout.input_times': {'textChanged': lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.ui.find_widget('central_layout.unit_layout.input_times'), main_window.input_times)},
+            'central_layout.unit_layout.delay_combo': {'currentIndexChanged': lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.ui.find_widget('central_layout.unit_layout.delay_combo'), main_window.delay_combo)},
+            'central_layout.unit_layout.times_combo': {'currentIndexChanged': lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.ui.find_widget('central_layout.unit_layout.times_combo'), main_window.times_combo)},
+            }))
+        
+        # 主窗口同步 主窗口独立文件没有完成
+        main_window.input_delay.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, main_window.input_delay, self.ui.find_widget('central_layout.unit_layout.input_delay')))
+        main_window.input_times.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, main_window.input_times, self.ui.find_widget('central_layout.unit_layout.input_times')))
+        main_window.delay_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, main_window.delay_combo, self.ui.find_widget('central_layout.unit_layout.delay_combo')))
+        main_window.times_combo.currentIndexChanged.connect(lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, main_window.times_combo, self.ui.find_widget('central_layout.unit_layout.times_combo')))
+        main_window.total_time_label.textChanged.connect(lambda: self.sync_input(QLabel.text, QLabel.setText, main_window.total_time_label, self.ui.find_widget('central_layout.total_time_label')))
 
     def sync_input(self, get_handle, set_handle, source, dest):
         '''同步输入框'''
@@ -2248,12 +2259,22 @@ class ClickAttrWindow(UDialog):
 
         # 定义变量
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_attr)
+        self.timer.timeout.connect(self.update_attr if dev_flags.get('decoupling', False) else self.update_attr_old)
         self.timer.start(setting_value.soft_delay)
 
-        self.init_ui()
+        if dev_flags.get('decoupling', False):
+            self.init_ui()
+        else:
+            self.init_ui_old()
 
     def init_ui(self):
+        self.layout_list = UIWindow(compile_ui(get_resource_path('ui', 'clickattr.gui')))
+        
+        self.setLayout(self.layout_list.draw({"central_layout.bottom_layout.ok_button": {"clicked": self.close}}))
+
+        logger.debug('Initizalizing click attribute window successful.')
+        
+    def init_ui_old(self):
         # 创建主布局
         central_layout = QVBoxLayout()
 
@@ -2287,10 +2308,33 @@ class ClickAttrWindow(UDialog):
 
         self.setLayout(central_layout)
 
-        logger.debug('Initizalizing click attribute window successful.')
-
     def update_attr(self):
         '''更新属性'''
+        logger.debug('update attribute')
+        left_clicked = self.layout_list.find_widget('central_layout.left_clicked')
+        right_clicked = self.layout_list.find_widget('central_layout.right_clicked')
+        click_delay = self.layout_list.find_widget('central_layout.click_delay')
+        click_times = self.layout_list.find_widget('central_layout.click_times')
+        paused = self.layout_list.find_widget('central_layout.paused')
+        stopped = self.layout_list.find_widget('central_layout.stopped')
+        total_run_time = self.layout_list.find_widget('central_layout.total_run_time')
+        
+        left_clicked.setText(f'{get_lang('0c')}: {get_lang('7b') if clicker.left_clicked else get_lang('7c')}')
+        right_clicked.setText(f'{get_lang('0d')}: {get_lang('7b') if clicker.right_clicked else get_lang('7c')}')
+        click_delay.setText(f'{get_lang('78')}: {delay_num}{get_lang('ms', source=unit_lang)}')
+        click_times.setText(f'{get_lang('5c')}: {get_lang('2b') if is_inf else time_num}')
+        paused.setText(f'{get_lang('0f')}: {get_lang('79') if clicker.paused else get_lang('7a')}')
+        stopped.setText(f'{get_lang('0e')}: {get_lang('79') if not clicker.running else get_lang('7a')}')
+        try:
+            if is_inf:
+                total_run_time.setText(f'{get_lang('2c')}: {get_lang('2b')}')
+            else:
+                total_run_time.setText(f'{get_lang('2c')}: {main_window.total_run_time[0]:.2f}{main_window.total_run_time[1]}')
+        except TypeError:
+            value = get_unit_value(main_window.total_run_time)
+            total_run_time.setText(f'{get_lang('2c')}: {value[0]:.2f}{value[1]}')
+    
+    def update_attr_old(self):
         logger.debug('update attribute')
         self.left_clicked.setText(f'{get_lang('0c')}: {get_lang('7b') if clicker.left_clicked else get_lang('7c')}')
         self.right_clicked.setText(f'{get_lang('0d')}: {get_lang('7b') if clicker.right_clicked else get_lang('7c')}')

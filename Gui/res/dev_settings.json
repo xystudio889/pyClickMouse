@@ -3,5 +3,10 @@
         "name": "More settings",
         "key": "new_settings",
         "desc": "To add more settings include:\nToast settings\nEnable hotkey checkbox\nFeedback settings and more..."
+    },
+    {
+        "name": "Decoupling UI and program",
+        "key": "decoupling",
+        "desc": "To decouple the UI and program."
     }
 ]

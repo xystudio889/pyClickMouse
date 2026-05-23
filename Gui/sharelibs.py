@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import *
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QThread, Signal
 import os
@@ -294,3 +294,212 @@ class QtThread(QThread):
         '''线程执行函数'''
         result = self.func(*self.args, **self.kwargs)
         self.finished.emit(result)
+        
+class UIWindow:
+    def __init__(self, list):
+        self.list = list
+        
+    def find_widget(self, path: str, data=None):
+        '''
+        在嵌套字典结构中按点分隔路径查找元素。
+
+        规则：
+        - 路径中的每一段对应字典中的 'name' 字段。
+        - 若当前节点是布局（含有 'direction' 键），且不是最后一段，则自动进入其子元素继续查找。
+        - 普通布局（direction 非 'u'）的子元素在 'content' 列表中。
+        - 特殊布局（direction == 'u'）的子元素在 'inputs' 和 'combos' 列表中（'texts' 不参与导航）。
+        - 最后一段如果是普通布局，返回其 'content' 列表；如果是 'u' 布局，返回 {'texts':..., 'inputs':..., 'combos':...}；如果是控件，返回其 'content'。
+        - 路径必须完整且精确，找不到时抛出 KeyError。
+
+        参数:
+            path: 点分隔的路径字符串，如 "layout.vlayout.checkbox2"
+            data: 根字典（例如 {'name': 'layout', 'direction': 'h', 'content': [...]}）
+
+        返回:
+            根据路径找到的控件对象、布局的 content 列表，或 'u' 布局的 texts/inputs/combos 字典。
+        '''
+        data = self.list if data is None else data
+        parts = path.split('.')
+        if not parts:
+            raise ValueError("Empty path")
+
+        # 根节点名称必须匹配第一段
+        if data.get('name') != parts[0]:
+            raise KeyError(f"Root name mismatch: expected '{parts[0]}', got '{data.get('name')}'")
+
+        current = data
+
+        for i, part in enumerate(parts):
+            # 检查当前节点名称是否匹配
+            if current.get('name') != part:
+                raise KeyError(f"Name mismatch: expected '{part}', got '{current.get('name')}'")
+
+            # 最后一段
+            if i == len(parts) - 1:
+                if 'direction' in current:
+                    direction = current.get('direction', '').lower()
+                    if direction == 'u':
+                        # 特殊布局：返回 texts、inputs、combos 组成的字典
+                        return {
+                            'texts': current.get('texts', []),
+                            'inputs': current.get('inputs', []),
+                            'combos': current.get('combos', [])
+                        }
+                    else:
+                        # 普通布局：返回 content 列表
+                        content = current.get('content')
+                        if content is None:
+                            raise ValueError(f"Layout '{part}' has no content")
+                        if not isinstance(content, list):
+                            raise TypeError(f"Layout '{part}' content is not a list")
+                        return content
+                else:
+                    # 控件：返回 content 属性
+                    content = current.get('content')
+                    if content is None:
+                        raise ValueError(f"Widget '{part}' has no content")
+                    return content
+
+            # 不是最后一段，当前节点必须是布局
+            if 'direction' not in current:
+                raise KeyError(f"'{part}' is not a layout, cannot traverse further")
+
+            direction = current.get('direction', '').lower()
+            next_name = parts[i + 1]
+            found = None
+
+            if direction == 'u':
+                # 从 inputs 和 combos 中查找子元素
+                for child in current.get('inputs', []) + current.get('combos', []):
+                    if child.get('name') == next_name:
+                        found = child
+                        break
+            else:
+                # 普通布局从 content 中查找
+                for child in current.get('content', []):
+                    if child.get('name') == next_name:
+                        found = child
+                        break
+
+            if found is None:
+                raise KeyError(f"Child '{next_name}' not found in layout '{part}'")
+            current = found
+
+        # 正常流程不会执行到这里
+        return None
+
+    def draw(self, bindings=None):    
+        bindings = {} if bindings is None else bindings
+        for path, callbacks in bindings.items():
+            widget = self.find_widget(path)
+            for signal, callback in callbacks.items():
+                getattr(widget, signal).connect(callback)
+            
+        return self.draw_layout()[0]
+        
+    def draw_layout(self, list_content=None):
+        list_content = self.list if list_content is None else list_content
+        if list_content.get('direction') is not None: # 这是layout类型
+            if list_content['direction'].lower() == 'h':
+                layout = QHBoxLayout()
+            elif list_content['direction'].lower() == 'v':
+                layout = QVBoxLayout()
+            elif list_content['direction'].lower() == 'u':
+                from uiStyles.widgets import UnitInputLayout
+                layout = UnitInputLayout()
+                for text, input, combo in zip(list_content['texts'], list_content['inputs'], list_content['combos']):
+                    text_show = get_lang(text[6:])
+                    layout.addUnitRow(text_show, input['content'], combo['content'])
+                return layout, 'layout'
+            else:
+                raise ValueError('Direction must be "h" or "v"')
+            if list_content.get('stretch', False):
+                layout.addStretch(1)
+            for item in list_content['content']:
+                widget = self.draw_layout(item)
+                if widget[1] == 'widget':
+                    layout.addWidget(widget[0])
+                elif widget[1] == 'layout':
+                    layout.addLayout(widget[0])
+                else:
+                    raise ValueError('Content must be a widget or a layout')
+            return layout, 'layout'
+        else: # 这是widget类型
+            return list_content['content'], 'widget'
+        
+def set_style(widget, class_name: str):
+    '''
+    设置按钮的class属性并刷新样式
+    '''
+    # 1. 设置class属性
+    widget.setProperty('class', class_name)
+
+    # 2. 强制样式刷新
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+
+    # 3. 触发重绘
+    widget.update()
+        
+def compile_ui(ui_file_or_data):
+    if type(ui_file_or_data) == str:
+        with open(ui_file_or_data, 'r', encoding='utf-8') as f:
+            ui_data = json.load(f)
+    else:
+        ui_data = ui_file_or_data
+    
+    for k, v in ui_data.items():
+        if k == 'value':
+            if v.get('direction'): # 这是layout类型
+                if v.get('direction').lower() == 'u':
+                    input_compiled_list = []
+                    inputs = v.get('inputs', []) # UnitInputLayout
+                    for input in inputs:
+                        input_compiled_list.append(compile_ui(input)) # 递归解析
+                    combos = v.get('combos', []) # 组合框
+                    combos_compiled_list = []
+                    for combo in combos:
+                        combos_compiled_list.append(compile_ui(combo)) # 递归解析
+                    return {'name': ui_data.get('name'), 'direction': v.get('direction'), "texts": v.get('texts'), 'inputs': input_compiled_list, 'combos': combos_compiled_list}
+                compiled_list = []
+                for item in v.get('content', []):
+                    compiled_list.append(compile_ui(item)) # 递归解析
+                for step in v.get('init_steps', []):
+                    for k, v in  step.items():
+                        getattr(widget, k)(*v)
+                return {'name': ui_data.get('name'), 'direction': v.get('direction'), 'content': compiled_list, 'stretch': v.get('stretch', False)}
+            else: # 这是widget类型
+                argv = []
+                kwargv = {}
+                style = v.get('style', '')
+                
+                for arg in v.get('arg', []):
+                    if type(arg) == str:
+                        if arg.startswith('!lang '):
+                            lang_id = arg[6:]
+                            argv.append(get_lang(lang_id))
+                        else:
+                            argv.append(arg)
+                    else:
+                        argv.append(arg)
+                        
+                for k, arg in v.get('kwarg', {}).items():
+                    if type(arg) == str:
+                        if arg.startswith('!lang '):
+                            lang_id = arg[6:]
+                            kwargv[k] = get_lang(lang_id)
+                        else:
+                            kwargv[k] = arg
+                    else:
+                        kwargv[k] = arg
+                            
+                widget = globals().get(v.get('type'))(*argv, **kwargv) # 获取函数
+                set_style(widget, style) # 设置样式
+                
+                for step in v.get('init_steps', []):
+                    for k, v in  step.items():
+                        getattr(widget, k)(*v)
+                
+                return {'name': ui_data.get('name'), 'content': widget}
+        else:
+            pass

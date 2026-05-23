@@ -4,7 +4,8 @@
     "markdown-preview-enhanced.revealjsTheme": "black.css",
     "markdown-preview-enhanced.previewTheme": "atom-dark.css",
     "files.associations": {
-        "*.qss": "css"
+        "*.qss": "css",
+        "*.gui": "json"
     },
     "gitLineAuthor.colorConfigs": [
         {
