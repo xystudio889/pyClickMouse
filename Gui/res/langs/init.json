@@ -50,7 +50,9 @@
             "2d": "\nStart menu shortcut",
             "2e": "Checking for update files...",
             "2f": "No package change",
-            "30": "Current status:"
+            "30": "Current status:",
+            "31": "There is already a uninstall or repair program instance running, please close it.",
+            "33": "There is already a modify program instance running."
         }
     },
     {
@@ -104,7 +106,9 @@
             "2d": "\n开始菜单快捷方式",
             "2e": "检查需要更新的文件...",
             "2f": "没有包变动",
-            "30": "当前状态:"
+            "30": "当前状态:",
+            "31": "已经有一个卸载或修复程序实例在运行，请先关闭它。",
+            "33": "已经有一个修改程序实例在运行。"
         }
     }
 ]
