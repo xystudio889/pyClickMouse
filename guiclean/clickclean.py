@@ -14,7 +14,7 @@ from time import sleep # 延迟
 from webbrowser import open as open_url # 关于作者
 from uiStyles import (UnitInputLayout, styles, StyleReplaceMode, CustonMessageButton, SelectUI, UCheckBox, UMessageBox, MessageButtonTemplate) # 软件界面样式
 from sharelibs import (run_software, langs,  __version__, get_icon, default_button_text, get_unit_value, unit_lang, system_lang, settings, QtThread, 
-                       default_settings, get_resource_path, get_lang, create_shortcut) # 共享库
+                       default_settings, get_lang, create_shortcut) # 共享库
 import winreg # 注册表库
 import math # 数学库
 import colorsys # 颜色库
@@ -629,13 +629,13 @@ class Click(QObject):
                     break
                 if not self.paused:
                     try:
-                        pyautogui.click(button=button)
-                        sleep(delay / 1000)
-                        i += 1     
                         if times == float('inf'):
                             self.click_conuter.emit('inf', str(i), str(delay))
                         else:
                             self.click_conuter.emit(str(times), str(i), str(delay))
+                        pyautogui.click(button=button)
+                        sleep(delay / 1000)
+                        i += 1     
                     except Exception:
                         trace = format_exc()
                         UMessageBox.critical(None, get_lang('14'), f'{get_lang('1b')}\n{trace}')
@@ -937,7 +937,7 @@ class MainWindow(UMainWindow):
         menu_bar = self.menuBar()
 
         # 功能菜单
-        function_menu = menu_bar.addMenu(get_lang('d6'))
+        function_menu = menu_bar.addMenu(get_lang('d5'))
 
         # 设置菜单
         settings_action = function_menu.addAction(get_lang('05'))
@@ -1778,6 +1778,7 @@ if __name__ == '__main__':
     shared_memory = QSharedMemory('clickmouse_running')
     if shared_memory.attach():
         # 已经有一个实例在运行
+        QMessageBox.critical(None, get_lang('14'), get_lang('d6'))
         sys.exit(2)
     shared_memory.create(1)
 

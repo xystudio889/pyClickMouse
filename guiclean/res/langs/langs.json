@@ -87,9 +87,10 @@
             "b5": "(Restart program to effect.)",
             "c9": "Enable hotkey",
             "d1": "If your startup is not working, or startup opened the clickmouse\nwindow, you can try to click to fix it.",
-            "d6": "Tool",
+            "d5": "Tool",
             "ba": "Feedback(&F)",
-            "b6": "Auto startup"
+            "b6": "Auto startup",
+            "d6": "There is already an instance running, if you can't find the window, you can wake it up from the tray."
         }
     },
     {
@@ -180,8 +181,9 @@
             "b6": "开机自启动",
             "c9": "启用热键",
             "d1": "如果你的开机自启动出现问题，或打开了clickmouse窗口，可尝试点击\n它来修复。",
-            "d6": "工具",
-            "ba": "反馈(&F)"
+            "d5": "工具",
+            "ba": "反馈(&F)",
+            "d6": "已经有一个实例在运行，如果你没有找到窗口，可前往托盘唤醒。"
         }
     }
 ]
