@@ -832,12 +832,14 @@ if __name__ == '__main__':
     shared_memory = QSharedMemory(mem_id[2])
     if shared_memory.attach():
         # 已经有一个实例在运行
+        QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('33'))
         sys.exit(2)
     shared_memory.create(1)
     
     is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
     if is_running:
         # 已经有一个实例在运行
+        QMessageBox.critical(None, get_init_lang('1d'), get_init_lang('31'))
         sys.exit(2)
         
     is_ipk = '--ipk' in app.arguments()
@@ -886,11 +888,6 @@ if __name__ == '__main__':
             sys.exit(1)
 
         if is_admin():
-            is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
-            if is_running:
-                # 已经有一个实例在运行
-                sys.exit(2)
-
             has_package = os.path.exists(get_resource_path('packages'))
             if not has_package:
                 QMessageBox.warning(None, get_ipk_lang('1d'), get_ipk_lang('1f'))

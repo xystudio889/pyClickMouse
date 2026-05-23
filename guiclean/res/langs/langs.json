@@ -17,7 +17,7 @@
             "0e": "Stop",
             "0f": "Pause",
             "10": "Restart",
-            "11": "Delay(ms)",
+            "11": "Delay",
             "12": "Find the index of the style is out of range, the default style setting has been restored.",
             "14": "Error",
             "15": "Warning",
@@ -87,9 +87,10 @@
             "b5": "(Restart program to effect.)",
             "c9": "Enable hotkey",
             "d1": "If your startup is not working, or startup opened the clickmouse\nwindow, you can try to click to fix it.",
-            "d6": "Tool",
+            "d5": "Tool",
             "ba": "Feedback(&F)",
-            "b6": "Auto startup"
+            "b6": "Auto startup",
+            "d6": "There is already an instance running, if you can't find the window, you can wake it up from the tray."
         }
     },
     {
@@ -110,7 +111,7 @@
             "0e": "停止",
             "0f": "暂停",
             "10": "重启",
-            "11": "延迟(ms)",
+            "11": "延迟",
             "14": "错误",
             "15": "警告",
             "16": "提示",
@@ -180,8 +181,9 @@
             "b6": "开机自启动",
             "c9": "启用热键",
             "d1": "如果你的开机自启动出现问题，或打开了clickmouse窗口，可尝试点击\n它来修复。",
-            "d6": "工具",
-            "ba": "反馈(&F)"
+            "d5": "工具",
+            "ba": "反馈(&F)",
+            "d6": "已经有一个实例在运行，如果你没有找到窗口，可前往托盘唤醒。"
         }
     }
 ]
