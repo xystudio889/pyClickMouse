@@ -2,7 +2,9 @@
 
 import json
 from pathlib import Path
-from PySide6.QtWidgets import *
+import uiml
+from uiml import set_style
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QThread, Signal
 import os
@@ -13,6 +15,7 @@ import ctypes
 import win32com.client
 import hashlib
 import re
+from typing import *
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
@@ -94,7 +97,7 @@ def get_lang(lang_package_id, lang_id = None, source = None):
     try:
         return lang_text[lang_package_id]
     except KeyError:
-        print(f'{lang_package_id} not found')
+        print(f'Language {lang_package_id} not found')
         return 'Language not found'
     except UnboundLocalError:
         lang_text = {}
@@ -277,7 +280,7 @@ def get_file_hash(file_path, algorithm):
     except FileNotFoundError:
         return None
     except Exception as e:
-        print(f'计算哈希时出错: {e}')
+        raise Exception(f'计算哈希时出错: {e}')
         return None
     
 class QtThread(QThread):
@@ -295,9 +298,36 @@ class QtThread(QThread):
         result = self.func(*self.args, **self.kwargs)
         self.finished.emit(result)
         
-class UIWindow:
-    def __init__(self, list):
-        self.list = list
+def widget_replacer(ui_data: str):
+    '''
+    替换UI中的widget，使用函数式返回
+    '''
+    if ui_data.startswith('!lang '):
+        return get_lang(ui_data[6:]) # 语言解析
+    else:
+        uiml.default_replacer(ui_data) # 交由uiml进行替换
+        
+def layout_parser(ui_data: Dict[str, Any]):
+    if ui_data.get('direction').lower() == 'u':
+        input_compiled_list = []
+        # 索引0 -- 字
+        # 索引1 -- 输入框
+        # 索引2 -- 选择框
+        inputs = ui_data['content'][1]
+        for input in inputs['content']:
+            input_compiled_list.append(uiml.compile_ui(input)) # 递归解析
+        combos = ui_data['content'][2] # 组合框
+        combos_compiled_list = []
+        for combo in combos['content']:
+            combos_compiled_list.append(uiml.compile_ui(combo)) # 递归解析
+        return {'name': ui_data.get('name'), 'direction': ui_data.get('direction'), "texts": ui_data['content'][0]['values'], 'inputs': input_compiled_list, 'combos': combos_compiled_list}
+    return uiml.default_layout_parser(ui_data) # 交由uiml进行替换
+
+uiml.set_namespace(value_replace_func=widget_replacer, layout_parser_func=layout_parser) # 设置uiml的控制函数
+
+class UIWindow(uiml.UIMLLayout):
+    def __init__(self, list=None):
+        super().__init__(list)
         
     def find_widget(self, path: str, data=None):
         '''
@@ -388,116 +418,14 @@ class UIWindow:
         # 正常流程不会执行到这里
         return None
 
-    def draw(self, bindings=None):    
-        bindings = {} if bindings is None else bindings
-        for path, callbacks in bindings.items():
-            widget = self.find_widget(path)
-            for signal, callback in callbacks.items():
-                getattr(widget, signal).connect(callback)
-            
-        return self.draw_layout()[0]
-        
-    def draw_layout(self, list_content=None):
-        list_content = self.list if list_content is None else list_content
-        if list_content.get('direction') is not None: # 这是layout类型
-            if list_content['direction'].lower() == 'h':
-                layout = QHBoxLayout()
-            elif list_content['direction'].lower() == 'v':
-                layout = QVBoxLayout()
-            elif list_content['direction'].lower() == 'u':
-                from uiStyles.widgets import UnitInputLayout
-                layout = UnitInputLayout()
-                for text, input, combo in zip(list_content['texts'], list_content['inputs'], list_content['combos']):
-                    text_show = get_lang(text[6:])
-                    layout.addUnitRow(text_show, input['content'], combo['content'])
-                return layout, 'layout'
-            else:
-                raise ValueError('Direction must be "h" or "v"')
-            if list_content.get('stretch', False):
-                layout.addStretch(1)
-            for item in list_content['content']:
-                widget = self.draw_layout(item)
-                if widget[1] == 'widget':
-                    layout.addWidget(widget[0])
-                elif widget[1] == 'layout':
-                    layout.addLayout(widget[0])
-                else:
-                    raise ValueError('Content must be a widget or a layout')
+    def extend_layout(self, list_info):
+        if list_info['direction'].lower() == 'u':
+            from uiStyles.widgets import UnitInputLayout
+            layout = UnitInputLayout()
+            for text, input, combo in zip(list_info['texts'], list_info['inputs'], list_info['combos']):
+                if text.startswith('!lang '): # 语言解析
+                    text = get_lang(text[6:])
+                layout.addUnitRow(text, input['content'], combo['content'])
             return layout, 'layout'
-        else: # 这是widget类型
-            return list_content['content'], 'widget'
-        
-def set_style(widget, class_name: str):
-    '''
-    设置按钮的class属性并刷新样式
-    '''
-    # 1. 设置class属性
-    widget.setProperty('class', class_name)
-
-    # 2. 强制样式刷新
-    widget.style().unpolish(widget)
-    widget.style().polish(widget)
-
-    # 3. 触发重绘
-    widget.update()
-        
-def compile_ui(ui_file_or_data):
-    if type(ui_file_or_data) == str:
-        with open(ui_file_or_data, 'r', encoding='utf-8') as f:
-            ui_data = json.load(f)
-    else:
-        ui_data = ui_file_or_data
-    
-    for k, v in ui_data.items():
-        if k == 'value':
-            if v.get('direction'): # 这是layout类型
-                if v.get('direction').lower() == 'u':
-                    input_compiled_list = []
-                    inputs = v.get('inputs', []) # UnitInputLayout
-                    for input in inputs:
-                        input_compiled_list.append(compile_ui(input)) # 递归解析
-                    combos = v.get('combos', []) # 组合框
-                    combos_compiled_list = []
-                    for combo in combos:
-                        combos_compiled_list.append(compile_ui(combo)) # 递归解析
-                    return {'name': ui_data.get('name'), 'direction': v.get('direction'), "texts": v.get('texts'), 'inputs': input_compiled_list, 'combos': combos_compiled_list}
-                compiled_list = []
-                for item in v.get('content', []):
-                    compiled_list.append(compile_ui(item)) # 递归解析
-                for k, vs in v.get('init_steps', {}).items():
-                    getattr(widget, k)(*vs)
-                return {'name': ui_data.get('name'), 'direction': v.get('direction'), 'content': compiled_list, 'stretch': v.get('stretch', False)}
-            else: # 这是widget类型
-                argv = []
-                kwargv = {}
-                style = v.get('style', '')
-                
-                for arg in v.get('arg', []):
-                    if type(arg) == str:
-                        if arg.startswith('!lang '):
-                            lang_id = arg[6:]
-                            argv.append(get_lang(lang_id))
-                        else:
-                            argv.append(arg)
-                    else:
-                        argv.append(arg)
-                        
-                for k, arg in v.get('kwarg', {}).items():
-                    if type(arg) == str:
-                        if arg.startswith('!lang '):
-                            lang_id = arg[6:]
-                            kwargv[k] = get_lang(lang_id)
-                        else:
-                            kwargv[k] = arg
-                    else:
-                        kwargv[k] = arg
-                            
-                widget = globals().get(v.get('type'))(*argv, **kwargv) # 获取函数
-                set_style(widget, style) # 设置样式
-
-                for k, vs in v.get('init_steps', {}).items():
-                    getattr(widget, k)(*vs)
-                
-                return {'name': ui_data.get('name'), 'content': widget}
         else:
-            pass
+            uiml.WidgetError.direction_error() # 交由 uiml 进行处理
