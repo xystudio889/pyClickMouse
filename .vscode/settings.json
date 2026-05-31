@@ -5,7 +5,7 @@
     "markdown-preview-enhanced.previewTheme": "atom-dark.css",
     "files.associations": {
         "*.qss": "css",
-        "*.gui": "json"
+        "*.gui": "xml"
     },
     "gitLineAuthor.colorConfigs": [
         {

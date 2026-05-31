@@ -15,9 +15,8 @@ from webbrowser import open as open_url # 关于作者
 from check_update import check_update, web_data, download_file # 更新检查
 from uiStyles import (UnitInputLayout, styles, maps, StyleReplaceMode, ULabel, CustonMessageButton, SelectUI, UCheckBox, UMessageBox, MessageButtonTemplate) # 软件界面样式
 from uiStyles import indexes as style_indexes # 界面组件样式索引
-from sharelibs import (run_software, langs, create_shortcut, __version__, is_pre, get_icon, default_button_text, 
-                        get_unit_value, unit_lang, get_size_text, get_file_hash, system_lang, settings, QtThread, 
-                        default_settings, mem_id, get_resource_path, run_as_admin, get_lang, set_style, compile_ui, UIWindow) # 共享库
+from sharelibs import * # 共享库
+from sharelibs import __version__ # 版本号
 import parse_dev # 解析开发固件配置
 import winreg # 注册表库
 import math # 数学库
@@ -965,7 +964,7 @@ class ColorGetter(QObject):
 
         hwnd = window.winId().__int__()
 
-        if select_styles.css_data['.meta']['mode'] == 'dark':
+        if select_styles.css_data['.meta']['--mode'] == 'dark':
             is_dark_mode = 1
         else:
             is_dark_mode = 0
@@ -995,7 +994,7 @@ class ColorGetter(QObject):
             steps = [
                 [['.selected:pressed', 'background-color'], lighten_color_hex(self.windows_color, -0.165)]
             ]
-            if select_styles.css_data['.meta']['mode'] == 'dark':
+            if select_styles.css_data['.meta']['--mode'] == 'dark':
                 steps.extend([
                     [['.selected', 'background-color'], lighten_color_hex(self.windows_color, 0.4)],
                     [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.45)],
@@ -2226,19 +2225,9 @@ class FastSetClickWindow(UDialog):
         logger.debug('Initizalizing fast set click window successful.')
         
     def init_ui(self):
-        self.ui = UIWindow(compile_ui(get_resource_path('ui', 'fastClick.gui')))
-        
-        self.ui.find_widget('central_layout.unit_layout.delay_combo').addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
-        self.ui.find_widget('central_layout.unit_layout.times_combo').addItems([get_lang('66'), get_lang('2a'), get_lang('2b')])
-        self.ui.find_widget('central_layout.total_time_label').setText(main_window.total_time_label.text())
-        self.ui.find_widget('central_layout.total_time_label').setAlignment(Qt.AlignHCenter)
-        
-        self.setLayout(self.ui.draw({
-            'central_layout.unit_layout.input_delay': {'textChanged': lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.ui.find_widget('central_layout.unit_layout.input_delay'), main_window.input_delay)},
-            'central_layout.unit_layout.input_times': {'textChanged': lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, self.ui.find_widget('central_layout.unit_layout.input_times'), main_window.input_times)},
-            'central_layout.unit_layout.delay_combo': {'currentIndexChanged': lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.ui.find_widget('central_layout.unit_layout.delay_combo'), main_window.delay_combo)},
-            'central_layout.unit_layout.times_combo': {'currentIndexChanged': lambda: self.sync_input(QComboBox.currentIndex, QComboBox.setCurrentIndex, self.ui.find_widget('central_layout.unit_layout.times_combo'), main_window.times_combo)},
-            }))
+        self.ui = UIWindow(uiml.compile_ui_file(get_resource_path('ui', 'fastClick.gui')))
+
+        self.setLayout(self.ui.show())
         
         # 主窗口同步 主窗口独立文件没有完成
         main_window.input_delay.textChanged.connect(lambda: self.sync_input(QLineEdit.text, QLineEdit.setText, main_window.input_delay, self.ui.find_widget('central_layout.unit_layout.input_delay')))
@@ -2268,9 +2257,9 @@ class ClickAttrWindow(UDialog):
             self.init_ui_old()
 
     def init_ui(self):
-        self.layout_list = UIWindow(compile_ui(get_resource_path('ui', 'clickattr.gui')))
+        self.layout_list = UIWindow(uiml.compile_ui_file(get_resource_path('ui', 'clickattr.gui')))
         
-        self.setLayout(self.layout_list.draw({"central_layout.bottom_layout.ok_button": {"clicked": self.close}}))
+        self.setLayout(self.layout_list.show())
 
         logger.debug('Initizalizing click attribute window successful.')
         
@@ -2967,6 +2956,8 @@ class SettingWindow(SelectUI, UMainWindow):
                         checkbox = UCheckBox(i['name'])
                         if i['key'] == 'new_settings':
                             checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx),self.window_restarted.emit(),))
+                        else:
+                            checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx)))   
                         checkbox.setChecked(dev_flags.get(i['key'], False))
                         desc = QLabel(i['desc'])
                         set_style(desc, StyleClass.d_11)                        

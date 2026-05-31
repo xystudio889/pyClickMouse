@@ -219,5 +219,5 @@ QStatusBar {
 
 /* 元数据 */
 .meta { 
-    mode: light;
+    --mode: light;
 }
