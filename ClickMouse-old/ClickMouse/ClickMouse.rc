@@ -1,0 +1,247 @@
+// Microsoft Visual C++ generated resource script.
+//
+#pragma code_page(65001)
+
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(简体，中国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDC_CLICKMOUSE MENU
+BEGIN
+    POPUP "帮助(&H)"
+    BEGIN
+        MENUITEM "关于(&A)",                      IDM_ABOUT
+        MENUITEM "更新(&U)",                      IDM_UPDATE
+        MENUITEM "更新日志(&L)",                    IDM_UPDATE_LOG
+    END
+    MENUITEM "退出(&X)",                      IDM_EXIT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDC_CLICKMOUSE ACCELERATORS
+BEGIN
+    "?",            IDM_ABOUT,              ASCII,  ALT
+    "/",            IDM_ABOUT,              ASCII,  ALT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 157, 106
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于 Clickmouse"
+FONT 10, "Microsoft Sans Serif", 400, 0, 0x0
+BEGIN
+    ICON            IDI_CLICKMOUSE,IDC_STATIC,14,14,20,20
+    DEFPUSHBUTTON   "确定",IDOK,100,85,50,14,WS_GROUP
+    LTEXT           "Clickmouse,版本1.0.2.3",IDC_STATIC,36,17,114,8
+    LTEXT           "一款轻便、快捷，使用C++制作的鼠标连点器",IDC_STATIC,31,38,119,18
+    PUSHBUTTON      "支持作者",IDSTAR,7,85,50,14
+    LTEXT           "本软件完全开源，作者为xystudio。建议前往项目地址来个star！",IDC_STATIC,7,65,143,17
+END
+
+IDD_MAIN_WINDOW DIALOGEX 0, 0, 300, 150
+STYLE DS_SETFONT | DS_NOFAILCREATE | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ClickMouse"
+MENU IDC_CLICKMOUSE
+FONT 9, "微软雅黑", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "右键连点",IDC_RIGHT,210,20,60,20
+    PUSHBUTTON      "左键连点",IDC_LEFT,30,20,60,20
+    PUSHBUTTON      "暂停",IDC_PAUSE,120,50,60,20
+    PUSHBUTTON      "停止",IDC_STOP,120,80,60,20
+    LTEXT           "间隔（毫秒）：",IDC_DELAY_TEXT,67,110,60,13
+    EDITTEXT        IDC_DELAY_INPUT_BOX,120,110,140,15,ES_CENTER | ES_AUTOHSCROLL
+END
+
+IDD_UPDATE_LOG DIALOGEX 0, 0, 205, 193
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "更新日志"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,148,172,50,14
+    PUSHBUTTON      "更多日志",IDSHOW_MORE_UPDATE_LOG,37,172,50,14
+    LTEXT           "2025/08/03    v1.0.0.0",IDC_STATIC,7,7,80,8
+    LTEXT           "ClickMouse上线",IDC_STATIC,7,18,191,8
+    LTEXT           "2025/08/03    v1.0.1.0",IDC_STATIC,7,32,80,8
+    LTEXT           "对'关于'界面更新：\n\t·添加了""支持作者""按钮\n\t移动'更新按钮'到主窗口的'帮助'菜单\n添加了找不到焦点提示",IDC_STATIC,7,43,191,40
+    LTEXT           "2025/08/03    v1.0.2.0",IDC_STATIC,7,82,80,8
+    LTEXT           "添加了“更新日志”界面",IDC_STATIC,7,94,191,8
+    LTEXT           "目前最多显示5个更新日志，更多更新日志请查阅github releases.",IDC_STATIC,7,147,191,17
+    LTEXT           "2025/08/03    v1.0.2.3",IDC_STATIC,7,109,80,8
+    LTEXT           "修改了部分显示字符\n修复了当关闭""更新日志""时，主窗口一并关闭的问题",IDC_STATIC,7,121,191,19
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 150
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 99
+    END
+
+    IDD_MAIN_WINDOW, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 138
+    END
+
+    IDD_UPDATE_LOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 198
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 186
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,2,3
+ PRODUCTVERSION 1,0,2,3
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "xystudio"
+            VALUE "FileDescription", "鼠标连点器"
+            VALUE "FileVersion", "1.0.2.3"
+            VALUE "InternalName", "Clickmouse.exe"
+            VALUE "LegalCopyright", "©xystudio"
+            VALUE "OriginalFilename", "Clickmouse.exe"
+            VALUE "ProductName", "Clickmouse"
+            VALUE "ProductVersion", "1.0.2.3"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_CLICKMOUSE          ICON                    "ClickMouse.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "Clickmouse"
+    IDC_CLICKMOUSE          "CLICKMOUSE"
+END
+
+#endif    // 中文(简体，中国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
