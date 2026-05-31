@@ -31,7 +31,7 @@ layout: doc
 ### 功能介绍
 如果您有任何意见或建议，可以通过点击反馈菜单来进行反馈
 
-打开的网址是设置中的`软件反馈网址`，默认为[链接](https://github.com/xystudiocode/pyclickmouse/issues/new/choose)`https://github.com/xystudiocode/pyclickmouse/issues/new/choose`
+打开的网址是设置中的`软件反馈网址`，默认为[链接](https://github.com/xystudiocode/pyClickMouse/issues/new/choose)`https://github.com/xystudiocode/pyClickMouse/issues/new/choose`
 
 ### 使用方法
 1. 打开`帮助`菜单->点击`反馈`按钮
@@ -41,6 +41,6 @@ layout: doc
 ### 功能介绍
 能打开clickmouse的官方文档进行查阅
 
-默认打开的网址是设置中的`文档链接`，默认为[链接](https://xystudiocode.github.io/pyclickmouse/)`https://xystudiocode.github.io/pyclickmouse/`
+默认打开的网址是设置中的`文档链接`，默认为[链接](https://xystudiocode.github.io/pyClickMouse/)`https://xystudiocode.github.io/pyClickMouse/`
 
 <img class="about" alt="关于">

@@ -14,7 +14,7 @@ This article introduces how to use Python to call pyd files.
 
 ## Download
 
-Go to [github releases](https://github.com/xystudiocode/pyclickmouse/releases), find latest version with .h or dll version files.
+Go to [github releases](https://github.com/xystudiocode/pyClickMouse/releases), find latest version with .h or dll version files.
 
 <important text='Important'>
 In the following text, <code>CLICKMOUSE_CLASS</code> in dll refers to <code>int</code>, in header calling refers to <code>void</code>.

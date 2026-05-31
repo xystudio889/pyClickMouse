@@ -60,7 +60,7 @@ title: 常见问题
 
 **1. 语言包不存在：**
 
-请检查clickmouse的`res`目录里是否存在langs目录，如果有，检查里面是否有`langs.json`文件，如果没有，请重新安装clickmouse。[下载链接](https://github.com/xystudiocode/pyclickmouse/releases/latest)
+请检查clickmouse的`res`目录里是否存在langs目录，如果有，检查里面是否有`langs.json`文件，如果没有，请重新安装clickmouse。[下载链接](https://github.com/xystudiocode/pyClickMouse/releases/latest)
 
 <img class='lang_not_found' alt='语言包不存在' />
 
@@ -78,7 +78,7 @@ title: 常见问题
 
 如果你能编译源码，也可以尝试使用makefile，移除编译源码的`--windows-console-mode=disable`获取错误堆栈。
 
-如果仍然不行，可尝试卸载重装clickmouse。[下载链接](https://github.com/xystudiocode/pyclickmouse/releases/latest)
+如果仍然不行，可尝试卸载重装clickmouse。[下载链接](https://github.com/xystudiocode/pyClickMouse/releases/latest)
 
 若问题持续，你可以向我们[报告问题](https://github.com/xystudiocode/pyClickMouse/issues/new/choose)
 

@@ -86,7 +86,7 @@ npm config get registry
 #### 克隆仓库
 你需要在github创建一个fork，然后克隆到本地：
 
-你可以使用`git clone https://github.com/username/pyclickmouse.git`下载源码到本地
+你可以使用`git clone https://github.com/username/pyClickMouse.git`下载源码到本地
 
 在**管理员终端**运行`npm install`进行安装依赖。
 
@@ -97,7 +97,7 @@ git checkout -b my-branch
 ```
 并创建一个remote链接：
 ```bash
-git remote add origin https://github.com/username/pyclickmouse.git
+git remote add origin https://github.com/username/pyClickMouse.git
 ```
 
 配置你的邮箱和用户名：
@@ -118,7 +118,7 @@ git config --global user.name "your name"
 然后，你就可以发布了。
 
 #### 提交PR
-你需要在[此链接](https://github.com/xystudiocode/pyclickmouse)上创建一个Pull request，然后等待review。
+你需要在[此链接](https://github.com/xystudiocode/pyClickMouse)上创建一个Pull request，然后等待review。
 
 [点击了解PR的规范](./github.md)
 
@@ -127,7 +127,7 @@ git config --global user.name "your name"
 #### 编译和调试
 可以运行`npm run dev`打开编译环境，根据提示打开网页即可。
 
-运行`npm run build`编译脚本，可以放到`/pyclickmouse/`目录来部署。
+运行`npm run build`编译脚本，可以放到`/pyClickMouse/`目录来部署。
 
 <note title='批注'>
 但是我们会对每个提交到main分支的更改自动部署，所以你不需要自己编译。

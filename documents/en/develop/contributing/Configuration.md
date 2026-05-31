@@ -7,7 +7,7 @@ layout: doc
     import warning from '@theme/components/warning.vue'
 </script>
 # Configuring Repository
-1. Download repository: `git clone https://github.com/xystudiocode/pyclickmouse.git`
+1. Download repository: `git clone https://github.com/xystudiocode/pyClickMouse.git`
 2. For python version install python, recommend using 3.13, consistent with software developer's version, [download link](https://www.python.org/downloads/release/python-31312/)
 3. For header files and dll version, can install [visual studio](https://visualstudio.microsoft.com/).
 ## GUI Version

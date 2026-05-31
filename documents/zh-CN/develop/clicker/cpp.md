@@ -14,7 +14,7 @@ layout: doc
 
 ## 下载
 
-前往[github releases](https://github.com/xystudiocode/pyclickmouse/releases)，找到最新版本有.h或dll的版本文件。
+前往[github releases](https://github.com/xystudiocode/pyClickMouse/releases)，找到最新版本有.h或dll的版本文件。
 
 <important text='重要'>
 在下文，<code>CLICKMOUSE_CLASS</code>在dll中指<code>int</code>，在header调用中指<code>void</code>。

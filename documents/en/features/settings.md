@@ -216,7 +216,7 @@ If custom language pack is not updated in time, lacking translation for new cont
 <note title="Tip">This setting item needs to enable <code>More settings</code> to enable.</note>
 
 - - Type: Input box
-- - Default value: [link](https://github.com/xystudiocode/pyclickmouse/issues/new/choose) `https://github.com/xystudiocode/pyclickmouse/issues/new/choose`
+- - Default value: [link](https://github.com/xystudiocode/pyClickMouse/issues/new/choose) `https://github.com/xystudiocode/pyClickMouse/issues/new/choose`
 - - Field name: `feedback`
 - Reset feedback URL: Reset the feedback URL to default value.
 <note title="Tip">This setting item needs to enable <code>More settings</code> to enable.</note>
@@ -458,7 +458,7 @@ Used to set documentation function default opened website.
 Setting items include:
 - Documentation Default Link:
 - - Type: Input box
-- - Default value: [link](https://xystudiocode.github.io/pyclickmouse/{lang})`https://xystudiocode.github.io/pyclickmouse/{lang}`
+- - Default value: [link](https://xystudiocode.github.io/pyClickMouse/{lang})`https://xystudiocode.github.io/pyClickMouse/{lang}`
 - - Field name: `doc_default_link`
 - Reset documentation default link: Used to restore default documentation default link.
 <note title="Tip">This setting item needs to enable <code>More settings</code> to enable.</note>
@@ -482,7 +482,7 @@ Setting items include:
 - - Type: Button
 
 ::: tip Tip
-Software's update log path is relative to documentation default link path, such as default open update log link is [link](https://xystudiocode.github.io/pyclickmouse/{lang}/updatelog)`https://xystudiocode.github.io/pyclickmouse/{lang}/updatelog`, then update log path fill in `updatelog`.
+Software's update log path is relative to documentation default link path, such as default open update log link is [link](https://xystudiocode.github.io/pyClickMouse/{lang}/updatelog)`https://xystudiocode.github.io/pyClickMouse/{lang}/updatelog`, then update log path fill in `updatelog`.
 :::
 
 > This section's {lang} will also be parsed.

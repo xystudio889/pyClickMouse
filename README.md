@@ -18,10 +18,10 @@
         <img src="https://img.shields.io/pypi/pyversions/ClickMouse" alt="support-version">
     </a>
     <a href="https://github.com/gaogaotiantian/viztracer/blob/master/LICENSE">
-        <img src="https://img.shields.io/github/license/xystudio889/pyclickmouse" alt="license">
+        <img src="https://img.shields.io/github/license/xystudio889/pyClickMouse" alt="license">
     </a>
     <a href="https://github.com/xystudiocode/pyClickMouse/commits/master">
-        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
+        <img src="https://img.shields.io/github/last-commit/xystudio889/pyClickMouse" alt="commit">
     </a>
     <!-- <a href="https://github.com/sponsors/xystudio889">
         <img src="https://img.shields.io/badge/%E2%9D%A4-Sponsor%20me-%23c96198?style=flat&logo=GitHub"
@@ -34,7 +34,7 @@
     <a href='https://xystudiocode.github.io/clickmouse/'>
         <img src='https://img.shields.io/badge/clickmouse-文档-52cbad' alt='clickmouse文档' />
     </a>
-    <a href='https://github.com/xystudiocode/pyclickmouse/'>
+    <a href='https://github.com/xystudiocode/pyClickMouse/'>
         <img src='https://img.shields.io/badge/clickmouse-源码-dd6e4f' alt='clickmouse源码'/>
     </a>
     <br />

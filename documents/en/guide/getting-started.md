@@ -48,7 +48,7 @@ title: Getting Started
 # Getting Started
 ## Download and Install
 
-Go to [GitHub releases page](https://github.com/xystudiocode/pyclickmouse/releases/latest)
+Go to [GitHub releases page](https://github.com/xystudiocode/pyClickMouse/releases/latest)
 
 Select `clickmouse.7z`, then download, after downloading, extract to current directory
 

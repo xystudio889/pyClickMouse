@@ -175,13 +175,13 @@ a, a:hover {
 <strongCard LabelColor='#d73a4a' TypeColor='#f85149' :LangPack='{...CardLangPack, ...bugLabel}'>
 <subtitle required='true' noTopMargin='true'>添加一个标题</subtitle>
 <ginput text='🐛[BUG]'></ginput>
-<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyclickmouse/issues">检查是否存在重复</a>😊</note>
+<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyClickMouse/issues">检查是否存在重复</a>😊</note>
 <important title='注意'>我们不会在gitee上处理issue，请使用github发布。🙋‍♂️</important>
 <tip title='提示'>请一次只报告1个问题。😀</tip>
 <subtitle required='true' desc='反馈三位或四位版本号，可前往"帮助" - "关于"界面查看当前clickmouse版本号'>🔡Clickmouse版本</subtitle>
 <ginput text='' place='X.X.X 或 X.X.X.X'></ginput>
 <subtitle required='true'>🎭你是否从官方版本发现bug</subtitle>
-<p class="desc">❗clickmouse官方版本只在<a href="https://github.com/xystudiocode/pyclickmouse/releases">github releases</a>或<a href="https://gitee.com/xystudiocode/pyclickmouse/releases">gitee releases</a>页面发布，其他均为非官方版本。</p>
+<p class="desc">❗clickmouse官方版本只在<a href="https://github.com/xystudiocode/pyClickMouse/releases">github releases</a>或<a href="https://gitee.com/xystudiocode/pyClickMouse/releases">gitee releases</a>页面发布，其他均为非官方版本。</p>
 <choiceBox :placeholder='ChoicePlace' v-model='defaultOfficalSelect' :options='officalOptions'>
 </choiceBox>
 <br />
@@ -212,7 +212,7 @@ a, a:hover {
 <strongCard LabelColor='#a2eeef' TypeColor='#0969da' LabelText='enhancement' TypeText='Feature' :LangPack='{...CardLangPack, ...featureLabel}' ShowDate='true'>
 <subtitle required='true' noTopMargin='true'>添加一个标题</subtitle>
 <ginput text='❇️[FEATURE]'></ginput>
-<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyclickmouse/issues">检查是否存在重复</a>😊</note>
+<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyClickMouse/issues">检查是否存在重复</a>😊</note>
 <important title='注意'>我们不会在gitee上处理issue，请使用github发布。🙋‍♂️</important>
 <tip title='提示'>请一次只报告1个功能。😀</tip>
 <subtitle required='true' desc='❇️你想新增功能的是什么模块？'>❇️新增功能的模块</subtitle>
@@ -234,7 +234,7 @@ a, a:hover {
 <strongCard LabelColor='#a2eeef' TypeColor='#0969da' LabelText='enhancement' TypeText='Feature' :LangPack='{...CardLangPack, ...featureLabel}'>
 <subtitle required='true' noTopMargin='true'>添加一个标题</subtitle>
 <ginput text='🗒️[SPA]'></ginput>
-<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyclickmouse/issues">检查是否存在重复</a>😊</note>
+<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyClickMouse/issues">检查是否存在重复</a>😊</note>
 <important title='注意'>我们不会在gitee上处理issue，请使用github发布。🙋‍♂️</important>
 <tip title='提示'>请一次只报告1个立项。😀</tip>
 <subtitle required='true' desc='🧾请详细描述你想要立项的标准。'>🧾新增的立项</subtitle>
@@ -254,7 +254,7 @@ a, a:hover {
 <strongCard LabelColor='#a2eeef' TypeColor='#9a6700' LabelText='enhancement' TypeText='Task' :LangPack='{...CardLangPack, ...taskLabel}'>
 <subtitle required='true' noTopMargin='true'>添加一个标题</subtitle>
 <ginput text='☑️[TASK]'></ginput>
-<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyclickmouse/issues">检查是否存在重复</a>😊</note>
+<note title='批注'>为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。<a href="https://github.com/xystudiocode/pyClickMouse/issues">检查是否存在重复</a>😊</note>
 <important title='注意'>我们不会在gitee上处理issue，请使用github发布。🙋‍♂️</important>
 <subtitle required='true' desc='☑️你想新增任务包含哪些模块？'>☑️新增任务包含的模块</subtitle>
 <choiceBox :placeholder='ChoicePlace' multiple='true' :options='moduleOptions'></choiceBox>
