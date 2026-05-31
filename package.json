@@ -1,0 +1,19 @@
+{
+  "name": "clickmouse_docs",
+  "version": "1.2.0",
+  "type": "module",
+  "description": "Clickmouse documentation built in vitepress",
+  "scripts": {
+    "dev": "vitepress dev documents",
+    "build": "vitepress build documents",
+    "preview": "vitepress preview documents"
+  },
+  "author": "xystudio",
+  "license": "MIT",
+  "devDependencies": {
+    "marked": "^17.0.4",
+    "vitepress": "^1.0.0-rc.32",
+    "vitepress-plugin-mermaid": "^2.0.17",
+    "mermaid": "^11.14.0"
+  }
+}

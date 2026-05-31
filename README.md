@@ -1,6 +1,15 @@
-# Clickmouse
-
-<div align = "center">
+<div align="center">
+    <img src="./imgs/readme//icon.ico" alt="icon" width="200" />
+    <h1>Clickmouse</h1>
+    <br />
+    A fast, simple, lightweight mouse clicker made with Python.
+    <br />
+    <a href="https://github.com/xystudiocode/pyClickMouse/actions/workflows/test.yml/">
+        <img src="https://github.com/xystudiocode/pyClickMouse/actions/workflows/test.yml/badge.svg" alt="Running Tests">
+    </a>
+    <a href="https://github.com/xystudiocode/pyClickMouse/actions/workflows/deploy.yml/">
+        <img src="https://github.com/xystudiocode/pyClickMouse/actions/workflows/deploy.yml/badge.svg" alt="Deploy">
+    </a>
     <a href="https://pypi.org/project/ClickMouse/">
         <img src="https://img.shields.io/pypi/v/clickMouse.svg" 
         alt="pypi">
@@ -9,10 +18,10 @@
         <img src="https://img.shields.io/pypi/pyversions/ClickMouse" alt="support-version">
     </a>
     <a href="https://github.com/gaogaotiantian/viztracer/blob/master/LICENSE">
-        <img src="https://img.shields.io/github/license/xystudio889/pyclickmouse" alt="license">
+        <img src="https://img.shields.io/github/license/xystudio889/pyClickMouse" alt="license">
     </a>
     <a href="https://github.com/xystudiocode/pyClickMouse/commits/master">
-        <img src="https://img.shields.io/github/last-commit/xystudio889/pyclickmouse" alt="commit">
+        <img src="https://img.shields.io/github/last-commit/xystudio889/pyClickMouse" alt="commit">
     </a>
     <!-- <a href="https://github.com/sponsors/xystudio889">
         <img src="https://img.shields.io/badge/%E2%9D%A4-Sponsor%20me-%23c96198?style=flat&logo=GitHub"
@@ -22,133 +31,130 @@
     <a href="https://github.com/xystudio889/clickmouse/releases">
         <img src="https://img.shields.io/badge/点击下载-旧版本clickmouse-536af5?color=63eafa&logoColor=white">
     </a>
-    <a href='https://xystudiocode.github.io/clickmouse_docs/'>
-        <img src='https://img.shields.io/badge/文档-网页-52cbad' alt='clickmouse文档' />
+    <a href='https://xystudiocode.github.io/clickmouse/'>
+        <img src='https://img.shields.io/badge/clickmouse-文档-52cbad' alt='clickmouse文档' />
     </a>
-    <a href='https://github.com/xystudiocode/clickmouse_docs/'>
-        <img src='https://img.shields.io/badge/文档-源码-b0baea' alt='clickmouse文档源码'/>
-    </a>
-    <a href='https://github.com/xystudiocode/pyclickmouse/'>
+    <a href='https://github.com/xystudiocode/pyClickMouse/'>
         <img src='https://img.shields.io/badge/clickmouse-源码-dd6e4f' alt='clickmouse源码'/>
     </a>
+    <br />
+    <a href="./README.md"><img
+    src="https://img.shields.io/badge/Language-English-536af5?color=781ff1&logoColor=white"/></a>
+    <a href="./README-zh_CN.md"><img
+    src="https://img.shields.io/badge/简体中文-536af5?color=ff0000&logoColor=white"/></a>
 </div>
 
 > [!IMPORTANT]
-> clickmouse主程序是main.exe,如果要运行clickmouse请点击main.exe,不要点击其他文件
+> The main program of clickmouse is `main.exe`. To run clickmouse, please click `main.exe`, do not click on other files.
 
 > [!TIP]
-> 我们不会在gitee上处理issue和pr，请使用github。
+> We do not handle issues or PRs on Gitee, please use GitHub.
 
-## 🅱️版权声明
-<a target="_blank" href="https://icons8.com/icon/13347/mouse">鼠标</a> 的图标 <a target="_blank" href="https://icons8.com">Icons8</a>
+## 🅱️ Copyright Notice
+Icon <a target="_blank" href="https://icons8.com/icon/13347/mouse">Mouse</a> by <a target="_blank" href="https://icons8.com">Icons8</a>
 
-## 📄介绍
-一款快捷，简洁，轻便；使用python制作的鼠标连点器。
+## 📄 Introduction
+A fast, simple, lightweight mouse auto-clicker made with Python.
 
-这个软件可以有较多的版本，基本都是C/C++调用版本、python调用版本和命令行交互版本。
+This software has multiple versions, mostly C/C++ callable versions, Python callable versions, and command-line interactive versions.
 
-## 📚使用的第三方库和使用的功能
+## 📚 Third-party libraries used and features utilized
 
-### 🐍python
-#### 📔需要使用的库
-- PySide6：对于gui界面，他是图形核心框架
-- pyautogui：鼠标连点器核心
-- requests：用于检查版本号
-- nuitka：打包为gui或~~交互式命令行~~的库
-- cython：打包为pyd的库
-- setuptools：打包为python包的库
-- pywin32:win32控制
-- pynput: 键盘控制库
-- pyperclip: 剪贴板库
-- psutil: 进程管理库
-- packaging: 版本管理库
-- pytz: 时区管理库
+### 🐍 Python
+#### 📔 Required libraries
+- PySide6: GUI framework core
+- pyautogui: core of the auto-clicker
+- requests: for version checking
+- nuitka: for packaging as GUI or ~~interactive command line~~
+- cython: for packaging as pyd
+- setuptools: for packaging as Python package
+- pywin32: Windows control
+- pynput: keyboard control library
+- pyperclip: clipboard library
+- psutil: process management library
+- packaging: version management library
+- pytz: timezone management library
 
-#### 📖clickmouse官方制作的库
-- clickmouse: 连点器管理库
-- clickmouse_api: 扩展制作的调用api
+#### 📖 Official libraries made by clickmouse
+- clickmouse: auto-clicker management library
+- clickmouse_api: extended API for calling
 
-### ⬇️快速安装
-输入`pip install -r requirements.txt`安装
+### ⬇️ Quick install
+Run `pip install -r requirements.txt` to install
 
-## 🛠️支持调用的工具
-- [x] C/C++头文件调用 使用原本C++版本的clickMouse改装而来 速度最快，兼容性最好，但是使用失效的可能性最大。可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载
-- [x] 使用原本C++版本的clickMouse 速度最快，兼容性最好，但是使用失效的可能性最大，已经停止更新，可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载，[之前的clickmouse项目](https://github.com/xystudio889/ClickMouse)
-- [x] 使用.dll调用 基于C++语言，速度最快，兼容性较好，使用失效的可能性最大。(配置较难，推荐使用C/C++头文件)可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载
-- [x] (开发人员推荐)python调用 速度中等，兼容性最好，使用失效的可能性最小。可以使用`pip install clickmouse`下载
-- [x] 使用.pyd调用 基于python语言，速度较快，兼容性较差（不同版本的python可能不兼容），使用失效的可能性较小。可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载(单独编译仅需编译cython/目录)
-- [x] (普通用户推荐)使用exe 使用 基于交互式命令行添加了gui。可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载
-- [ ] 使用交互式命令行 使用 基于python语言，比gui轻便。~~可以从[releases](https://github.com/xystudiocode/pyClickMouse)下载~~ 暂时没有该版本，敬请期待
-- [ ] 使用标准命令行 使用 基于python语言。~~将会自带在gui版本和pip安装版本中~~ 暂时没有该版本，敬请期待
-- [x] 精简版(ClickClean) 比exe gui版本更加精简，告别臃肿的无用功能。可以从[releases](https://github.com/xystudiocode/pyClickMouse)
+## 🛠️ Supported calling tools
+- [x] C/C++ header file call – adapted from the original C++ version of clickMouse; fastest, best compatibility, but most likely to become ineffective. Download from [releases](https://github.com/xystudiocode/pyClickMouse)
+- [x] Original C++ version of clickMouse – fastest, best compatibility, but most likely to become ineffective; discontinued. Download from [releases](https://github.com/xystudiocode/pyClickMouse), [previous clickmouse project](https://github.com/xystudio889/ClickMouse)
+- [x] .dll call – based on C++, very fast, good compatibility, most likely to become ineffective (harder to configure; C/C++ header file recommended). Download from [releases](https://github.com/xystudiocode/pyClickMouse)
+- [x] (Recommended for developers) Python call – medium speed, best compatibility, least likely to become ineffective. Install via `pip install clickmouse`
+- [x] .pyd call – based on Python, relatively fast, weaker compatibility (may be incompatible with different Python versions), less likely to become ineffective. Download from [releases](https://github.com/xystudiocode/pyClickMouse) (to compile separately, just compile the `cython/` directory)
+- [x] (Recommended for regular users) EXE – GUI built on interactive command line. Download from [releases](https://github.com/xystudiocode/pyClickMouse)
+- [ ] Interactive command line – based on Python, lighter than GUI. ~~Download from [releases](https://github.com/xystudiocode/pyClickMouse)~~ Not yet available, stay tuned
+- [ ] Standard command line – based on Python. ~~Will be included in GUI version and pip install~~ Not yet available, stay tuned
+- [x] Lightweight version (ClickClean) – more streamlined than the GUI EXE, eliminating bloated features. Download from [releases](https://github.com/xystudiocode/pyClickMouse)
 
-## ⚒️安装和调用
-Gui版本和~~命令行交互版本~~无需安装，直接运行即可。
+## ⚒️ Installation and calling
+The GUI version and ~~interactive command line version~~ require no installation; just run directly.
 
-C/C++头文件调用可以直接使用以下代码调用(需要配置include目录)
+For C/C++ header file call, you can use the following code (requires include directory configuration):
 ```C++
 #include <clickMouse.h>
 #include <iostream>
 using namespace std;
 
 int main(){
-    cout << CLICKMOUSE_VERSION << endl; // 打印版本信息,若成功输出一串数字，则安装成功
-    clickMouse(LEFT, 1000, 10, 10); // 连点10次左键，间隔为1000ms，按下时间为10ms
+    cout << CLICKMOUSE_VERSION << endl; // prints version info; if a number is output, installation succeeded
+    clickMouse(LEFT, 1000, 10, 10); // click left button 10 times, interval 1000ms, press duration 10ms
     return 0;
 }
 ```
 
 > [!IMPORTANT]
-> 下载基于pyd的文件时候需要注意:必须下载是你python版本的文件(如`lickmouse.cp39-win_amd64.pyd`)仅支持python3.9(cp后面的是版本，如果你使用python3.13以后的版本，不需要下载后面有t的版本(除非你使用free thread开发))
+> When downloading pyd-based files, make sure to download the version matching your Python version (e.g., `clickmouse.cp39-win_amd64.pyd` – cp39 means Python 3.9; if you use Python 3.13 or later, do not download versions with a `t` suffix unless you are using free-threaded development).
 
-python调用或.pyd调用可以直接使用以下代码调用：
+For Python call or .pyd call, use the following code:
 ```python
 import clickmouse
 
-clickMouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # 连点10次左键，间隔为1000ms，按下时间为10ms
+clickmouse.click_mouse(clickmouse.LEFT, 1000, 10, 10) # click left button 10 times, interval 1000ms, press duration 10ms
 ```
-~~命令行调用~~
+~~Command line call~~
 ```bash
-ClickMouse.exe /h # 查看帮助
+ClickMouse.exe /h # show help
 ```
-## 💻再次编译方法
-见[协作文档](./CONTRIBUTING.md)，找到`## ⬇️配置仓库`这一段，按照说明配置仓库。
-### 📊使用优先级
-开发人员：
+## 💻 Recompilation instructions
+See [Collaboration Document](./CONTRIBUTING.md), locate the `## ⬇️ Repository Setup` section and follow the instructions to set up the repository.
+
+### 📊 Usage priority
+Developers:
 ```mermaid
 graph LR
-A[python] --> B[pyd调用] --> D[命令行调用]
-C[C/C++] --> E[dll调用] --> D
+A[python] --> B[pyd call] --> D[command line call]
+C[C/C++] --> E[dll call] --> D
 ```
-鼠标连点器会一直保持运行，直到关闭程序或手动停止。
-目前支持暂停和停止功能。
+The auto-clicker will keep running until the program is closed or manually stopped.
+Supports pause and stop functions.
 
-## 🖥️Clickmouse 软件
-clickmouse版本格式为：`A.B.C.D[(alpha | beta |.dev | rc) E]`
-## 😊正式版本
-正式版不带.dev、alpha、beta或rc后缀。
+## 🖥️ Clickmouse Software
+Clickmouse version format: `A.B.C.D[(alpha | beta | .dev | rc) E]`
 
-A位代表有重大更新，有代码级的变动。如1.0升级到2.0就重构了代码。
+## 😊 Stable versions
+Stable versions do not have suffixes like .dev, alpha, beta, or rc.
 
-B位代表有普通更新，通常是更新一些大功能。
+- A digit: major updates with code-level changes. For example, upgrading from 1.0 to 2.0 means a code refactor.
+- B digit: regular updates, usually adding major features.
+- C digit: patch updates, usually adding minor features and bug fixes.
+- D digit: release identifier, incremented whenever A, B, or C changes. It may also increment without changes to A, B, C, indicating an emergency update that fixes several critical bugs.
 
-C位代表有修复更新，通常会更新一些小功能和一些bug。
+## 🅱️ Test versions
+Test versions have suffixes like .dev, alpha, beta, or rc.
 
-D位代表版本代号，通常每A, B, C位有变动时候+1。也有可能A, B, C位没有变动，D位+1，这代表紧急更新，通常是修复几个重大影响的bug。
+Typically the preceding `A.B.C.D` remains unchanged during a test cycle and represents the next version.
 
-## 🅱️测试版本
-测试版本带.dev、alpha、beta或rc后缀。
+- `.dev` – early development update, unstable features, many bugs, at the project's early stage. New features added during this phase are placed in the lab and disabled by default.
+- `alpha` – late development update, incomplete features, many bugs, at the project's early stage. New features added during this phase are placed in the lab and disabled by default.
+- `beta` – release candidate testing update, features complete, few bugs, no new features added; at the project's mid stage. Features from the lab are gradually merged.
+- `rc` – release candidate, features complete, few bugs; will fix critical security or stability issues; very close to stable release; at the final stage of the project.
 
-通常前面的`A.B.C.D`在一个测试周期内不变，代表下一个版本。
-
-`.dev`代表早期开发更新，功能不稳定，bug很多，位于版本项目初期。这阶段新增的功能将会被放到实验室中，并默认关闭。
-
-`alpha`代表晚期开发更新，功能不完善，bug较多，位于版本项目早期。这阶段新增的功能将会被放到实验室中，并默认关闭。
-
-`beta`代表发布测试更新，功能完善，bug较少，不会再新增功能，位于版本项目中期。并且会逐步合并实验室中的feature。
-
-`rc`代表预备发布版本，功能完善，bug较少，会修复一些重要安全问题或bug，最接近正式版，即将发布正式版，位于版本项目末期。
-
-::: tip 提示
-rc最后一个版本将直接合并到测试版，不再单独发布；功能完全一样。
-:::
+> [!tip]
+> The last rc version will be merged directly into the test version and not released separately; the features are identical.

@@ -10,7 +10,7 @@ def check_clickmouse_installed():
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, software_reg_key, 0, winreg.KEY_READ):
             pass
     except:
-        raise UserWarning('ClickMouse未安装！请前往https://www.github.com/xystudio889/pyclickmouse/releases下载安装.')
+        raise UserWarning('ClickMouse未安装！请前往https://www.github.com/xystudio889/pyClickMouse/releases下载安装.')
         
 check_clickmouse_installed()
 

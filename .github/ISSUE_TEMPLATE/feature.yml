@@ -8,7 +8,7 @@ body:
   attributes:
     value: |
       > [!NOTE]
-      > 为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。[检查是否存在重复](https://github.com/xystudiocode/pyclickmouse/issues)😊
+      > 为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。[检查是否存在重复](https://github.com/xystudiocode/pyClickMouse/issues)😊
       
       > [!IMPORTANT]
       > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
@@ -36,7 +36,7 @@ body:
       - ⤴️安装更新
       - 💠其他扩展
       - ♻️清理缓存
-      - 📄文档
+      - 📄文档站
       - 🏳️‍🌈主题/样式
       - 🟦clickClean
       - ❓其他/未知

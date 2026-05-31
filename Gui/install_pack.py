@@ -738,7 +738,7 @@ class InstallWindow(PagesUI):
             winreg.SetValueEx(uninstall_key, 'DisplayVersion', 0, winreg.REG_SZ, version)
 
             winreg.SetValueEx(uninstall_key, 'EstimatedSize', 0, winreg.REG_DWORD, int(get_dir_size_for_reg(install_path)))
-            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudiocode/pyclickmouse')
+            winreg.SetValueEx(uninstall_key, 'URLInfoAbout', 0, winreg.REG_SZ, 'https://www.github.com/xystudiocode/pyClickMouse')
             winreg.SetValueEx(uninstall_key, 'DisplayIcon', 0, winreg.REG_SZ, fr'{install_path}\res\icons\clickmouse\icon.ico')
             
             winreg.SetValueEx(uninstall_key, 'RegOwner', 0, winreg.REG_SZ, 'xystudio')

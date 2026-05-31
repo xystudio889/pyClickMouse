@@ -1,0 +1,35 @@
+.md-tip {
+    display: block;
+    unicode-bidi: isolate;
+    padding: .5rem 1rem;
+    margin-bottom: .5rem;
+    margin-top: 1rem;
+    color: inherit;
+    border-left: 3px solid var(--color, #555);
+}
+
+.md-title {
+    font-weight: 600;
+    align-items: center;
+    line-height: 1;
+    display: flex;
+    color: var(--color, #555);
+    margin-top: 0;
+}
+
+svg {
+    margin-right: .5rem;
+}
+
+.svg-alert {
+    vertical-align: text-bottom;
+    display: inline-block;
+    overflow: visible;
+    fill: var(--color, #555);
+}
+
+.text {
+    line-height: 1.5;
+    margin-bottom: 0;
+    margin-top: 0;
+}
