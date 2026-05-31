@@ -14,7 +14,7 @@ clickmouse: gui/main.py
 
 clickclean: guiclean/clickclean.py
 	$(command) --file-version="3.2.3.22" guiclean/clickclean.py  --windows-console-mode="disable" --product-name="ClickClean" --windows-icon-from-ico=guiclean/res/icons/clickmouse/icon.ico --file-description="ClickClean" --enable-plugin=pyside6 --include-data-dir=guiclean/res/=res/ --output-dir=dist/clickmouse/
-	ren ./dist/clickclean.dist clickclean
+	ren ./dist/clickmouse/clickclean.dist clickclean
 
 clickmouse_lib: setup.py
 	python setup.py bdist_wheel

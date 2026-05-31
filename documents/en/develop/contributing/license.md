@@ -10,9 +10,9 @@ layout: doc
 ## Open Source License
 This software is based on the MIT open source license. I will include the license content at the end. You can copy, modify, and distribute this software and documentation site, but you must retain the original author information and license declaration in the source code.
 
-This software and documentation site are both open source on GitHub. You can open them at [Software link](https://github.com/xystudiocode/pyclickmouse)
+This software and documentation site are both open source on GitHub. You can open them at [Software link](https://github.com/xystudiocode/pyClickMouse)
 
-At the same time, the software source code is open source on Gitee for convenient download by Chinese users. [Software link](https://gitee.com/xystudio889/pyclickmouse)
+At the same time, the software source code is open source on Gitee for convenient download by Chinese users. [Software link](https://gitee.com/xystudio889/pyClickMouse)
 
 ## Commercial Authorization
 We do not oppose commercial authorization. You can use this software for commercial purposes without contacting the author, but you must retain the original author information and license declaration in the source code.

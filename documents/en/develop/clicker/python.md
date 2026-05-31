@@ -28,7 +28,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple clickmouse
 ```
 
 ### pyd
-Go to [github releases](https://github.com/xystudiocode/pyclickmouse/releases), find latest version with pyd version files.
+Go to [github releases](https://github.com/xystudiocode/pyClickMouse/releases), find latest version with pyd version files.
 
 ::: warning Note
 Please ensure downloading pyd files.

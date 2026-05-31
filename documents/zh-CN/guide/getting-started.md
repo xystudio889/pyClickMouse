@@ -48,7 +48,7 @@ title: 开始使用
 # 开始使用
 ## 下载安装
 
-前往[github发布页面](https://github.com/xystudiocode/pyclickmouse/releases/latest)
+前往[github发布页面](https://github.com/xystudiocode/pyClickMouse/releases/latest)
 
 选择`clickmouse.7z`，然后下载，下载完成后解压到当前目录
 

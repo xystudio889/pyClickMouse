@@ -111,7 +111,7 @@ pr无特定格式，但是必须清晰描述更新内容，关联到版本号的
 - milestone格式为:`dev_版本号`
 
 ## ⬇️配置仓库
-1. 下载仓库：`git clone https://github.com/xystudiocode/pyclickmouse.git`
+1. 下载仓库：`git clone https://github.com/xystudiocode/pyClickMouse.git`
 2. 对于python版本安装python，推荐使用3.13，和软件开发者的版本一一致，[下载连接](https://www.python.org/downloads/release/python-31312/)
 3. 对于头文件和dll版本，可以安装[visual studio](https://visualstudio.microsoft.com/)。
 ### 🖥️GUI

@@ -86,7 +86,7 @@ If returns `https://registry.npmmirror.com/`, indicates speed up successful.
 #### Clone Repository
 You need create fork on github, then clone to local:
 
-You can use `git clone https://github.com/username/pyclickmouse.git` download source code to local
+You can use `git clone https://github.com/username/pyClickMouse.git` download source code to local
 
 Run `npm install` in **administrator terminal** to install dependencies.
 
@@ -97,7 +97,7 @@ git checkout -b my-branch
 ```
 And create remote link:
 ```bash
-git remote add origin https://github.com/username/pyclickmouse.git
+git remote add origin https://github.com/username/pyClickMouse.git
 ```
 
 Configure your email and username:
@@ -120,7 +120,7 @@ When publishing, may need your username and password, so you need set a key on g
 Then, you can publish.
 
 #### Submit PR
-You need create Pull request on [this link](https://github.com/xystudiocode/pyclickmouse), then wait for review.
+You need create Pull request on [this link](https://github.com/xystudiocode/pyClickMouse), then wait for review.
 
 [Click to understand PR specifications](./github.md)
 
@@ -129,7 +129,7 @@ Open [this link](https://github.com/settings/personal-access-tokens/new)
 #### Compile and Debug
 Can run `npm run dev` open compilation environment, open webpage according to prompt.
 
-Run `npm run build` compile script, can put in `/pyclickmouse/` directory to deploy.
+Run `npm run build` compile script, can put in `/pyClickMouse/` directory to deploy.
 
 <note title='Note'>
 But we will automatically deploy each commit to main branch, so you don't need compile yourself.

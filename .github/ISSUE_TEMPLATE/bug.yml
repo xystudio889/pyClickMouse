@@ -9,7 +9,7 @@ body:
   attributes:
     value: |
       > [!NOTE]
-      > 为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。[检查是否存在重复](https://github.com/xystudiocode/pyclickmouse/issues)😊
+      > 为避免造成更多的麻烦，请在报告issue前，先检查是否有其他人已经报告过相同的问题。[检查是否存在重复](https://github.com/xystudiocode/pyClickMouse/issues)😊
       
       > [!IMPORTANT]
       > 我们不会在gitee上处理issue，请使用github发布。🙋‍♂️
@@ -26,7 +26,7 @@ body:
 - type: dropdown
   attributes:
     label: 🎭你是否从官方版本发现bug
-    description: ❗clickmouse官方版本只在[github releases](https://github.com/xystudiocode/pyclickmouse/releases)或[gitee releases](https://gitee.com/xystudio889/pyclickmouse/releases)页面发布，其他均为非官方版本。
+    description: ❗clickmouse官方版本只在[github releases](https://github.com/xystudiocode/pyClickMouse/releases)或[gitee releases](https://gitee.com/xystudio889/pyClickMouse/releases)页面发布，其他均为非官方版本。
     multiple: false
     options:
       - ✅是

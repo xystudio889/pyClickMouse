@@ -216,7 +216,7 @@ layout: doc
 <note title="提示">这个设置项需要在实验室开启<code>More settings</code>才能启用</note>
 
 - - 类型：输入框
-- - 默认值：[链接](https://github.com/xystudiocode/pyclickmouse/issues/new/choose) `https://github.com/xystudiocode/pyclickmouse/issues/new/choose`
+- - 默认值：[链接](https://github.com/xystudiocode/pyClickMouse/issues/new/choose) `https://github.com/xystudiocode/pyClickMouse/issues/new/choose`
 - - 字段名：`feedback`
 - 重置反馈链接：重置软件反馈网站的链接。
 <note title="提示">这个设置项需要在实验室开启<code>More settings</code>才能启用</note>
@@ -458,7 +458,7 @@ layout: doc
 设置项目有：
 - 文档默认连接：
 - - 类型：输入框
-- - 默认值：[链接](https://xystudiocode.github.io/pyclickmouse/{lang})`https://xystudiocode.github.io/pyclickmouse/{lang}`
+- - 默认值：[链接](https://xystudiocode.github.io/pyClickMouse/{lang})`https://xystudiocode.github.io/pyClickMouse/{lang}`
 - - 字段名：`doc_default_link`
 - 重置文档默认链接：用于恢复默认文档默认链接。
 <note title="提示">这个设置项需要在实验室开启<code>More settings</code>才能启用</note>
@@ -479,7 +479,7 @@ layout: doc
 - - 默认值：`updatelog`
 
 ::: tip 提示
-软件的更新日志路径是相对于文档默认连接的路径，如默认的打开更新日志的链接是[链接](https://xystudiocode.github.io/pyclickmouse/{lang}/updatelog)`https://xystudiocode.github.io/pyclickmouse/{lang}/updatelog`，那么更新日志路径就填入`updatelog`。
+软件的更新日志路径是相对于文档默认连接的路径，如默认的打开更新日志的链接是[链接](https://xystudiocode.github.io/pyClickMouse/{lang}/updatelog)`https://xystudiocode.github.io/pyClickMouse/{lang}/updatelog`，那么更新日志路径就填入`updatelog`。
 :::
 
 - 重置更新日志路径：用于恢复默认更新日志路径。

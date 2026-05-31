@@ -16,7 +16,7 @@
   
   // 跳转到对应语言目录
   onMounted(() => {;
-    window.location.href = `/pyclickmouse/${targetLang}/`;
+    window.location.href = `/pyClickMouse/${targetLang}/`;
   });
 </script>
 

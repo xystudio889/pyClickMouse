@@ -10,9 +10,9 @@ layout: doc
 ## 开源协议
 本软件基于MIT开源协议，最后我会放出协议内容，你可以复制、修改、分发本软件及文档站，但你必须在源代码中保留原作者信息和协议声明。
 
-本软件及文档站均开源在github上，你可以在[软件链接](https://github.com/xystudiocode/pyclickmouse)打开
+本软件及文档站均开源在github上，你可以在[软件链接](https://github.com/xystudiocode/pyClickMouse)打开
 
-同时软件的源代码开源在gitee上，方便中国用户下载。[软件链接](https://gitee.com/xystudio889/pyclickmouse)
+同时软件的源代码开源在gitee上，方便中国用户下载。[软件链接](https://gitee.com/xystudio889/pyClickMouse)
 
 ## 商业授权
 我们不反对商业授权，你可以在无需联系作者的情况下，将本软件用于商业用途，但必须在源代码中保留原作者信息和协议声明。

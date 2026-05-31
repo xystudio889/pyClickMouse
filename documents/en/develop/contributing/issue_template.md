@@ -122,13 +122,13 @@ Report a bug.
 <strongCard LabelColor='#d73a4a' TypeColor='#f85149' :LangPack='{...CardLangPack, ...bugLabel}'>
 <subtitle required='true' noTopMargin='true'>Add a title</subtitle>
 <ginput text='🐛[BUG]'></ginput>
-<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyclickmouse/issues">Check if duplicate exists</a>😊</note>
+<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyClickMouse/issues">Check if duplicate exists</a>😊</note>
 <important title='Important'>We will not handle issues on gitee, please use github to publish.🙋‍♂️</important>
 <tip title='Tip'>Please only report 1 problem at a time.😀</tip>
 <subtitle required='true' desc='Feedback three or four digit version number, can go to "Help" - "About" interface view current clickmouse version number'>🔡Clickmouse version</subtitle>
 <ginput text='' place='X.X.X or X.X.X.X'></ginput>
 <subtitle required='true'>🎭Did you discover bug from official version</subtitle>
-<p class="desc">❗clickmouse official version only published on<a href="https://github.com/xystudiocode/pyclickmouse/releases">github releases</a> or <a href="https://gitee.com/xystudiocode/pyclickmouse/releases">gitee releases</a>, others are unofficial versions.</p>
+<p class="desc">❗clickmouse official version only published on<a href="https://github.com/xystudiocode/pyClickMouse/releases">github releases</a> or <a href="https://gitee.com/xystudiocode/pyClickMouse/releases">gitee releases</a>, others are unofficial versions.</p>
 <choiceBox v-model='defaultOfficalSelect' :options='officalOptions'>
 </choiceBox>
 <br />
@@ -158,7 +158,7 @@ A new feature you suggest to add.
 <strongCard LabelColor='#a2eeef' TypeColor='#0969da' :LangPack='{...CardLangPack, ...featureLabel}' :ShowDate='true'>
 <subtitle required='true' noTopMargin='true'>Add a title</subtitle>
 <ginput text='❇️[FEATURE]'></ginput>
-<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyclickmouse/issues">Check if duplicate exists</a>😊</note>
+<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyClickMouse/issues">Check if duplicate exists</a>😊</note>
 <important title='Important'>We will not handle issues on gitee, please use github to publish.🙋‍♂️</important>
 <tip title='Tip'>Please only report 1 feature at a time.😀</tip>
 <subtitle required='true' desc='❇️What module do you want to add new feature to?'>❇️Module for new feature</subtitle>
@@ -179,7 +179,7 @@ Will suggest, establish or modify a standard.
 <strongCard LabelColor='#a2eeef' TypeColor='#0969da' :LangPack='{...CardLangPack, ...featureLabel}'>
 <subtitle required='true' noTopMargin='true'>Add a title</subtitle>
 <ginput text='🗒️[SPA]'></ginput>
-<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyclickmouse/issues">Check if duplicate exists</a>😊</note>
+<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyClickMouse/issues">Check if duplicate exists</a>😊</note>
 <important title='Important'>We will not handle issues on gitee, please use github to publish.🙋‍♂️</important>
 <tip title='Tip'>Please only report 1 project at a time.😀</tip>
 <subtitle required='true' desc='🧾Please describe in detail the standard you want to establish.'>🧾New project</subtitle>
@@ -198,7 +198,7 @@ Some task orders, can be used to draft new version planning, etc.
 <strongCard LabelColor='#a2eeef' TypeColor='#9a6700' :LangPack='{...CardLangPack, ...taskLabel}'>
 <subtitle required='true' noTopMargin='true'>Add a title</subtitle>
 <ginput text='☑️[TASK]'></ginput>
-<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyclickmouse/issues">Check if duplicate exists</a>😊</note>
+<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyClickMouse/issues">Check if duplicate exists</a>😊</note>
 <important title='Important'>We will not handle issues on gitee, please use github to publish.🙋‍♂️</important>
 <subtitle required='true' desc='☑️What modules do you want new task to include?'>☑️Modules included in new task</subtitle>
 <choiceBox multiple='true' :options='moduleOptions'></choiceBox>

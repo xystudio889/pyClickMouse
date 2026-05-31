@@ -1,7 +1,7 @@
 import { withMermaid } from "vitepress-plugin-mermaid";
 
 export default withMermaid({
-  base: '/pyclickmouse/',
+  base: '/pyClickMouse/',
   head: [['link', { rel: 'icon', href: '/imgs/icons/icon.ico' }]],
   markdown: {
     emoji: {
@@ -71,7 +71,7 @@ export default withMermaid({
         lastUpdatedText: 'Last Updated',
         editLink: {
           pattern:
-            'https://github.com/xystudiocode/pyclickmouse/tree/main/documents/:path',
+            'https://github.com/xystudiocode/pyClickMouse/tree/main/documents/:path',
           text: 'Edit this page',
         },
         docFooter: {
@@ -89,8 +89,8 @@ export default withMermaid({
         darkModeSwitchTitle: 'Switch to dark mode',
         // 社交链接
         socialLinks: [
-          { icon: 'github', link: 'https://github.com/xystudiocode/pyclickmouse' },
-          { icon: 'gitee', link: 'https://gitee.com/xystudio889/pyclickmouse' },
+          { icon: 'github', link: 'https://github.com/xystudiocode/pyClickMouse' },
+          { icon: 'gitee', link: 'https://gitee.com/xystudio889/pyClickMouse' },
         ],
         sidebar: {
           '/en/guide/': [
@@ -476,7 +476,7 @@ export default withMermaid({
         sidebarMenuLabel: '目录',
         editLink: {
           pattern:
-            'https://github.com/xystudiocode/pyclickmouse/tree/main/documents/:path',
+            'https://github.com/xystudiocode/pyClickMouse/tree/main/documents/:path',
           text: '编辑此页',
         },
         notFound: {
@@ -490,8 +490,8 @@ export default withMermaid({
         darkModeSwitchLabel: '主题',
         // 社交链接
         socialLinks: [
-          { icon: 'github', link: 'https://github.com/xystudiocode/pyclickmouse'},
-          { icon: 'gitee', link: 'https://gitee.com/xystudio889/pyclickmouse' },
+          { icon: 'github', link: 'https://github.com/xystudiocode/pyClickMouse'},
+          { icon: 'gitee', link: 'https://gitee.com/xystudio889/pyClickMouse' },
         ],
         nav: [
           { text: '首页', link: '/zh-CN/' },

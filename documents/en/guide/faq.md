@@ -60,7 +60,7 @@ If Windows cannot open the files mentioned inside, please try opening with Notep
 
 **1. Language pack does not exist:**
 
-Please check if there is a langs directory in clickmouse's `res` directory. If yes, check if there is a `langs.json` file inside. If not, please reinstall clickmouse. [Download link](https://github.com/xystudiocode/pyclickmouse/releases/latest)
+Please check if there is a langs directory in clickmouse's `res` directory. If yes, check if there is a `langs.json` file inside. If not, please reinstall clickmouse. [Download link](https://github.com/xystudiocode/pyClickMouse/releases/latest)
 
 <img class='lang_not_found' alt='Language pack not found' />
 
@@ -78,7 +78,7 @@ It is recommended to select all repair items, but this will delete all user data
 
 If you can compile source code, you can also try using makefile, remove the `--windows-console-mode=disable` from compiling source code to get error stack trace.
 
-If still not working, try uninstalling and reinstalling clickmouse. [Download link](https://github.com/xystudiocode/pyclickmouse/releases/latest)
+If still not working, try uninstalling and reinstalling clickmouse. [Download link](https://github.com/xystudiocode/pyClickMouse/releases/latest)
 
 If the problem persists, you can [report an issue](https://github.com/xystudiocode/pyClickMouse/issues/new/choose)
 
