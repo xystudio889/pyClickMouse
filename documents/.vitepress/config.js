@@ -98,10 +98,10 @@ export default withMermaid({
               text: 'Guide',
               items: [
                 { text: 'Introduction', link: '/en/guide/' },
-                { text: 'Getting Started', link: '/en/guide/getting-started.html' },
-                { text: 'FAQ', link: '/en/guide/faq.html',},
-                { text: 'Version Naming', link: '/en/guide/version-naming.html',},
-                { text: 'License', link: '/en/guide/license.html',},
+                { text: 'Getting Started', link: '/en/guide/getting-started' },
+                { text: 'FAQ', link: '/en/guide/faq',},
+                { text: 'Version Naming', link: '/en/guide/version-naming',},
+                { text: 'License', link: '/en/guide/license',},
               ],
             },
           ],
@@ -119,51 +119,51 @@ export default withMermaid({
                       items: [
                         {
                           text: '3.2.3.22',
-                          link: '/en/updatelog/final/3/32322.html',
+                          link: '/en/updatelog/final/3/32322',
                         },
                         {
                           text: '3.2.2.21',
-                          link: '/en/updatelog/final/3/32221.html',
+                          link: '/en/updatelog/final/3/32221',
                         },
                         {
                           text: '3.2.1.20',
-                          link: '/en/updatelog/final/3/32120.html',
+                          link: '/en/updatelog/final/3/32120',
                         },
                         {
                           text: '3.2.0.19',
-                          link: '/en/updatelog/final/3/32019.html',
+                          link: '/en/updatelog/final/3/32019',
                         },
                         {
                           text: '3.1.3.18',
-                          link: '/en/updatelog/final/3/31318.html',
+                          link: '/en/updatelog/final/3/31318',
                         },
                         {
                           text: '3.1.2.17',
-                          link: '/en/updatelog/final/3/31217.html',
+                          link: '/en/updatelog/final/3/31217',
                         },
                         {
                           text: '3.1.1.16',
-                          link: '/en/updatelog/final/3/31116.html',
+                          link: '/en/updatelog/final/3/31116',
                         },
                         {
                           text: '3.1.0.15',
-                          link: '/en/updatelog/final/3/31015.html',
+                          link: '/en/updatelog/final/3/31015',
                         },
                         {
                           text: '3.0.3.14',
-                          link: '/en/updatelog/final/3/30314.html',
+                          link: '/en/updatelog/final/3/30314',
                         },
                         {
                           text: '3.0.2.13',
-                          link: '/en/updatelog/final/3/30213.html',
+                          link: '/en/updatelog/final/3/30213',
                         },
                         {
                           text: '3.0.1.12',
-                          link: '/en/updatelog/final/3/30112.html',
+                          link: '/en/updatelog/final/3/30112',
                         },
                         {
                           text: '3.0.0.11',
-                          link: '/en/updatelog/final/3/30011.html',
+                          link: '/en/updatelog/final/3/30011',
                         },
                       ],
                     },
@@ -173,31 +173,31 @@ export default withMermaid({
                       items: [
                         {
                           text: '2.2.3.10',
-                          link: '/en/updatelog/final/2/22310.html',
+                          link: '/en/updatelog/final/2/22310',
                         },
                         {
                           text: '2.2.2.9',
-                          link: '/en/updatelog/final/2/2229.html',
+                          link: '/en/updatelog/final/2/2229',
                         },
                         {
                           text: '2.2.1.8',
-                          link: '/en/updatelog/final/2/2218.html',
+                          link: '/en/updatelog/final/2/2218',
                         },
                         {
                           text: '2.2.0.7',
-                          link: '/en/updatelog/final/2/2207.html',
+                          link: '/en/updatelog/final/2/2207',
                         },
                         {
                           text: '2.1.1.6',
-                          link: '/en/updatelog/final/2/2116.html',
+                          link: '/en/updatelog/final/2/2116',
                         },
                         {
                           text: '2.1.0.5',
-                          link: '/en/updatelog/final/2/2105.html',
+                          link: '/en/updatelog/final/2/2105',
                         },
                         {
                           text: '2.0.0.4',
-                          link: '/en/updatelog/final/2/2004.html',
+                          link: '/en/updatelog/final/2/2004',
                         },
                       ],
                     },
@@ -207,19 +207,19 @@ export default withMermaid({
                       items: [
                         {
                           text: '1.0.2.3',
-                          link: '/en/updatelog/final/1/1023.html',
+                          link: '/en/updatelog/final/1/1023',
                         },
                         {
                           text: '1.0.2.2',
-                          link: '/en/updatelog/final/1/1022.html',
+                          link: '/en/updatelog/final/1/1022',
                         },
                         {
                           text: '1.0.1.1',
-                          link: '/en/updatelog/final/1/1011.html',
+                          link: '/en/updatelog/final/1/1011',
                         },
                         {
                           text: '1.0.0.0',
-                          link: '/en/updatelog/final/1/1000.html',
+                          link: '/en/updatelog/final/1/1000',
                         },
                       ],
                     },
@@ -235,115 +235,115 @@ export default withMermaid({
                       items: [
                         {
                           text: '3.3.0.23alpha5',
-                          link: '/en/updatelog/beta/3/33023a5.html',
+                          link: '/en/updatelog/beta/3/33023a5',
                         },
                         {
                           text: '3.3.0.23alpha4',
-                          link: '/en/updatelog/beta/3/33022a4.html',
+                          link: '/en/updatelog/beta/3/33022a4',
                         },
                         {
                           text: '3.3.0.23alpha2',
-                          link: '/en/updatelog/beta/3/32120a2.html',
+                          link: '/en/updatelog/beta/3/32120a2',
                         },
                         {
                           text: '3.3.0.23alpha1',
-                          link: '/en/updatelog/beta/3/32120a1.html',
+                          link: '/en/updatelog/beta/3/32120a1',
                         },
                         {
                           text: '3.2.0.19rc3',
-                          link: '/en/updatelog/beta/3/32019rc3.html',
+                          link: '/en/updatelog/beta/3/32019rc3',
                         },
                         {
                           text: '3.2.0.19rc2',
-                          link: '/en/updatelog/beta/3/32019rc2.html',
+                          link: '/en/updatelog/beta/3/32019rc2',
                         },
                         {
                           text: '3.2.0.19rc1',
-                          link: '/en/updatelog/beta/3/32019rc1.html',
+                          link: '/en/updatelog/beta/3/32019rc1',
                         },
                         {
                           text: '3.2.0.19beta11',
-                          link: '/en/updatelog/beta/3/32019b11.html',
+                          link: '/en/updatelog/beta/3/32019b11',
                         },
                         {
                           text: '3.2.0.19beta10',
-                          link: '/en/updatelog/beta/3/32019b10.html',
+                          link: '/en/updatelog/beta/3/32019b10',
                         },
                         {
                           text: '3.2.0.19beta9',
-                          link: '/en/updatelog/beta/3/32019b9.html',
+                          link: '/en/updatelog/beta/3/32019b9',
                         },
                         {
                           text: '3.2.0.18beta8',
-                          link: '/en/updatelog/beta/3/32018b8.html',
+                          link: '/en/updatelog/beta/3/32018b8',
                         },
                         {
                           text: '3.2.0.18beta5',
-                          link: '/en/updatelog/beta/3/32018b5.html',
+                          link: '/en/updatelog/beta/3/32018b5',
                         },
                         {
                           text: '3.2.0.18beta4',
-                          link: '/en/updatelog/beta/3/32018b4.html',
+                          link: '/en/updatelog/beta/3/32018b4',
                         },
                         {
                           text: '3.1.2.17beta3',
-                          link: '/en/updatelog/beta/3/31217b3.html',
+                          link: '/en/updatelog/beta/3/31217b3',
                         },
                         {
                           text: '3.1.2.17beta1',
-                          link: '/en/updatelog/beta/3/31217b1.html',
+                          link: '/en/updatelog/beta/3/31217b1',
                         },
                         {
                           text: '3.1.0.15beta3',
-                          link: '/en/updatelog/beta/3/31015b3.html',
+                          link: '/en/updatelog/beta/3/31015b3',
                         },
                         {
                           text: '3.1.0.15beta2',
-                          link: '/en/updatelog/beta/3/31015b2.html',
+                          link: '/en/updatelog/beta/3/31015b2',
                         },
                         {
                           text: '3.1.0.15beta1',
-                          link: '/en/updatelog/beta/3/31015b1.html',
+                          link: '/en/updatelog/beta/3/31015b1',
                         },
                         {
                           text: '3.1.0.15.dev0',
-                          link: '/en/updatelog/beta/3/31015dev0.html',
+                          link: '/en/updatelog/beta/3/31015dev0',
                         },
                         {
                           text: '3.0.2.13rc1',
-                          link: '/en/updatelog/beta/3/30213rc1.html',
+                          link: '/en/updatelog/beta/3/30213rc1',
                         },
                         {
                           text: '3.0.1.12rc1',
-                          link: '/en/updatelog/beta/3/30112rc1.html',
+                          link: '/en/updatelog/beta/3/30112rc1',
                         },
                         {
                           text: '3.0.0.11rc1',
-                          link: '/en/updatelog/beta/3/30011rc1.html',
+                          link: '/en/updatelog/beta/3/30011rc1',
                         },
                         {
                           text: '3.0.0.11alpha3',
-                          link: '/en/updatelog/beta/3/30011a3.html',
+                          link: '/en/updatelog/beta/3/30011a3',
                         },
                         {
                           text: '3.0.0.11alpha2',
-                          link: '/en/updatelog/beta/3/30011a2.html',
+                          link: '/en/updatelog/beta/3/30011a2',
                         },
                         {
                           text: '3.0.0.11alpha1',
-                          link: '/en/updatelog/beta/3/30011a1.html',
+                          link: '/en/updatelog/beta/3/30011a1',
                         },
                         {
                           text: '3.0.0.11.dev4',
-                          link: '/en/updatelog/beta/3/30011dev4.html',
+                          link: '/en/updatelog/beta/3/30011dev4',
                         },
                         {
                           text: '3.0.0.11.dev3',
-                          link: '/en/updatelog/beta/3/30011dev3.html',
+                          link: '/en/updatelog/beta/3/30011dev3',
                         },
                         {
                           text: '3.0.0.11.dev1',
-                          link: '/en/updatelog/beta/3/30011dev1.html',
+                          link: '/en/updatelog/beta/3/30011dev1',
                         },
                       ],
                     },
@@ -362,23 +362,23 @@ export default withMermaid({
                 },
                 {
                   text: 'Clean cache',
-                  link: '/en/features/cleancache.html',
+                  link: '/en/features/cleancache',
                 },
                 {
                   text: 'Settings',
-                  link: '/en/features/settings.html',
+                  link: '/en/features/settings',
                 },
                 {
                   text: 'Update',
-                  link: '/en/features/update.html',
+                  link: '/en/features/update',
                 },
                 {
                   text: 'Help',
-                  link: '/en/features/help.html',
+                  link: '/en/features/help',
                 },
                 {
                   text: 'clickclean',
-                  link: '/en/features/clickclean.html',
+                  link: '/en/features/clickclean',
                 },
                 {
                   text: 'Extensions',
@@ -394,11 +394,11 @@ export default withMermaid({
             items: [
               {
                 text: 'Introduction',
-                link: '/en/develop/index.html',
+                link: '/en/develop/index',
               },
               {
                 text: 'Dependencies',
-                link: '/en/develop/dependencies.html',
+                link: '/en/develop/dependencies',
               },
               {
                   text: 'Clickmouse library usage',
@@ -406,15 +406,15 @@ export default withMermaid({
                   items: [
                     {
                       text: 'Introduction',
-                      link: '/en/develop/clicker/index.html',
+                      link: '/en/develop/clicker/index',
                     },
                     {
                       text: 'Calling using Python/pyd',
-                      link: '/en/develop/clicker/python.html',
+                      link: '/en/develop/clicker/python',
                     },
                     {
                       text: 'Calling using C++/dll',
-                      link: '/en/develop/clicker/cpp.html',
+                      link: '/en/develop/clicker/cpp',
                     }
                   ],
                 },
@@ -424,27 +424,27 @@ export default withMermaid({
                   items: [
                     {
                       text: 'Contributing clickmouse',
-                      link: '/en/develop/contributing/github.html',
+                      link: '/en/develop/contributing/github',
                     },
                     {
                       text: 'Configuration development environment',
-                      link: '/en/develop/contributing/configuration.html',
+                      link: '/en/develop/contributing/configuration',
                     },
                     {
                       text: 'Documentation development',
-                      link: '/en/develop/contributing/doc.html',
+                      link: '/en/develop/contributing/doc',
                     },
                     {
                       text: 'Issue template',
-                      link: '/en/develop/contributing/issue_template.html'
+                      link: '/en/develop/contributing/issue_template'
                     },
                     {
                       text: 'Security policy',
-                      link: '/en/develop/contributing/security.html'
+                      link: '/en/develop/contributing/security'
                     },
                     {
                       text: 'License',
-                      link: '/en/develop/contributing/license.html'
+                      link: '/en/develop/contributing/license'
                     }
                   ],
                 },
@@ -514,10 +514,10 @@ export default withMermaid({
               text: '指南',
               items: [
                 { text: '介绍', link: '/zh-CN/guide/' },
-                { text: '开始使用', link: '/zh-CN/guide/getting-started.html' },
-                { text: 'FAQ', link: '/zh-CN/guide/faq.html',},
-                { text: '版本命名', link: '/zh-CN/guide/version-naming.html',},
-                { text: '用户协议', link: '/zh-CN/guide/license.html',},
+                { text: '开始使用', link: '/zh-CN/guide/getting-started' },
+                { text: 'FAQ', link: '/zh-CN/guide/faq',},
+                { text: '版本命名', link: '/zh-CN/guide/version-naming',},
+                { text: '用户协议', link: '/zh-CN/guide/license',},
               ],
             },
           ],
@@ -535,51 +535,51 @@ export default withMermaid({
                       items: [
                         {
                           text: '3.2.3.22',
-                          link: '/zh-CN/updatelog/final/3/32322.html',
+                          link: '/zh-CN/updatelog/final/3/32322',
                         },
                         {
                           text: '3.2.2.21',
-                          link: '/zh-CN/updatelog/final/3/32221.html',
+                          link: '/zh-CN/updatelog/final/3/32221',
                         },
                         {
                           text: '3.2.1.20',
-                          link: '/zh-CN/updatelog/final/3/32120.html'
+                          link: '/zh-CN/updatelog/final/3/32120'
                         },
                         {
                           text: '3.2.0.19',
-                          link: '/zh-CN/updatelog/final/3/32019.html',
+                          link: '/zh-CN/updatelog/final/3/32019',
                         },
                         {
                           text: '3.1.3.18',
-                          link: '/zh-CN/updatelog/final/3/31318.html',
+                          link: '/zh-CN/updatelog/final/3/31318',
                         },
                         {
                           text: '3.1.2.17',
-                          link: '/zh-CN/updatelog/final/3/31217.html',
+                          link: '/zh-CN/updatelog/final/3/31217',
                         },
                         {
                           text: '3.1.1.16',
-                          link: '/zh-CN/updatelog/final/3/31116.html',
+                          link: '/zh-CN/updatelog/final/3/31116',
                         },
                         {
                           text: '3.1.0.15',
-                          link: '/zh-CN/updatelog/final/3/31015.html',
+                          link: '/zh-CN/updatelog/final/3/31015',
                         },
                         {
                           text: '3.0.3.14',
-                          link: '/zh-CN/updatelog/final/3/30314.html',
+                          link: '/zh-CN/updatelog/final/3/30314',
                         },
                         {
                           text: '3.0.2.13',
-                          link: '/zh-CN/updatelog/final/3/30213.html',
+                          link: '/zh-CN/updatelog/final/3/30213',
                         },
                         {
                           text: '3.0.1.12',
-                          link: '/zh-CN/updatelog/final/3/30112.html',
+                          link: '/zh-CN/updatelog/final/3/30112',
                         },
                         {
                           text: '3.0.0.11',
-                          link: '/zh-CN/updatelog/final/3/30011.html',
+                          link: '/zh-CN/updatelog/final/3/30011',
                         },
                       ],
                     },
@@ -589,31 +589,31 @@ export default withMermaid({
                       items: [
                         {
                           text: '2.2.3.10',
-                          link: '/zh-CN/updatelog/final/2/22310.html',
+                          link: '/zh-CN/updatelog/final/2/22310',
                         },
                         {
                           text: '2.2.2.9',
-                          link: '/zh-CN/updatelog/final/2/2229.html',
+                          link: '/zh-CN/updatelog/final/2/2229',
                         },
                         {
                           text: '2.2.1.8',
-                          link: '/zh-CN/updatelog/final/2/2218.html',
+                          link: '/zh-CN/updatelog/final/2/2218',
                         },
                         {
                           text: '2.2.0.7',
-                          link: '/zh-CN/updatelog/final/2/2207.html',
+                          link: '/zh-CN/updatelog/final/2/2207',
                         },
                         {
                           text: '2.1.1.6',
-                          link: '/zh-CN/updatelog/final/2/2116.html',
+                          link: '/zh-CN/updatelog/final/2/2116',
                         },
                         {
                           text: '2.1.0.5',
-                          link: '/zh-CN/updatelog/final/2/2105.html',
+                          link: '/zh-CN/updatelog/final/2/2105',
                         },
                         {
                           text: '2.0.0.4',
-                          link: '/zh-CN/updatelog/final/2/2004.html',
+                          link: '/zh-CN/updatelog/final/2/2004',
                         },
                       ],
                     },
@@ -623,19 +623,19 @@ export default withMermaid({
                       items: [
                         {
                           text: '1.0.2.3',
-                          link: '/zh-CN/updatelog/final/1/1023.html',
+                          link: '/zh-CN/updatelog/final/1/1023',
                         },
                         {
                           text: '1.0.2.2',
-                          link: '/zh-CN/updatelog/final/1/1022.html',
+                          link: '/zh-CN/updatelog/final/1/1022',
                         },
                         {
                           text: '1.0.1.1',
-                          link: '/zh-CN/updatelog/final/1/1011.html',
+                          link: '/zh-CN/updatelog/final/1/1011',
                         },
                         {
                           text: '1.0.0.0',
-                          link: '/zh-CN/updatelog/final/1/1000.html',
+                          link: '/zh-CN/updatelog/final/1/1000',
                         },
                       ],
                     },
@@ -651,115 +651,115 @@ export default withMermaid({
                       items: [
                         {
                           text: '3.3.0.23alpha5',
-                          link: '/zh-CN/updatelog/beta/3/33023a5.html',
+                          link: '/zh-CN/updatelog/beta/3/33023a5',
                         },
                         {
                           text: '3.3.0.22alpha4',
-                          link: '/zh-CN/updatelog/beta/3/33022a4.html',
+                          link: '/zh-CN/updatelog/beta/3/33022a4',
                         },
                         {
                           text: '3.2.1.20alpha2',
-                          link: '/zh-CN/updatelog/beta/3/32120a2.html',
+                          link: '/zh-CN/updatelog/beta/3/32120a2',
                         },
                         {
                           text: '3.2.1.20alpha1',
-                          link: '/zh-CN/updatelog/beta/3/32120a1.html',
+                          link: '/zh-CN/updatelog/beta/3/32120a1',
                         },
                         {
                           text: '3.2.0.19rc3',
-                          link: '/zh-CN/updatelog/beta/3/32019rc3.html',
+                          link: '/zh-CN/updatelog/beta/3/32019rc3',
                         },
                         {
                           text: '3.2.0.19rc2',
-                          link: '/zh-CN/updatelog/beta/3/32019rc2.html',
+                          link: '/zh-CN/updatelog/beta/3/32019rc2',
                         },
                         {
                           text: '3.2.0.19rc1',
-                          link: '/zh-CN/updatelog/beta/3/32019rc1.html',
+                          link: '/zh-CN/updatelog/beta/3/32019rc1',
                         },
                         {
                           text: '3.2.0.19beta11',
-                          link: '/zh-CN/updatelog/beta/3/32019b11.html',
+                          link: '/zh-CN/updatelog/beta/3/32019b11',
                         },
                         {
                           text: '3.2.0.19beta10',
-                          link: '/zh-CN/updatelog/beta/3/32019b10.html',
+                          link: '/zh-CN/updatelog/beta/3/32019b10',
                         },
                         {
                           text: '3.2.0.19beta9',
-                          link: '/zh-CN/updatelog/beta/3/32019b9.html',
+                          link: '/zh-CN/updatelog/beta/3/32019b9',
                         },
                         {
                           text: '3.2.0.18beta8',
-                          link: '/zh-CN/updatelog/beta/3/32018b8.html',
+                          link: '/zh-CN/updatelog/beta/3/32018b8',
                         },
                         {
                           text: '3.2.0.18beta5',
-                          link: '/zh-CN/updatelog/beta/3/32018b5.html',
+                          link: '/zh-CN/updatelog/beta/3/32018b5',
                         },
                         {
                           text: '3.2.0.18beta4',
-                          link: '/zh-CN/updatelog/beta/3/32018b4.html',
+                          link: '/zh-CN/updatelog/beta/3/32018b4',
                         },
                         {
                           text: '3.1.2.17beta3',
-                          link: '/zh-CN/updatelog/beta/3/31217b3.html',
+                          link: '/zh-CN/updatelog/beta/3/31217b3',
                         },
                         {
                           text: '3.1.2.17beta1',
-                          link: '/zh-CN/updatelog/beta/3/31217b1.html',
+                          link: '/zh-CN/updatelog/beta/3/31217b1',
                         },
                         {
                           text: '3.1.0.15beta3',
-                          link: '/zh-CN/updatelog/beta/3/31015b3.html',
+                          link: '/zh-CN/updatelog/beta/3/31015b3',
                         },
                         {
                           text: '3.1.0.15beta2',
-                          link: '/zh-CN/updatelog/beta/3/31015b2.html',
+                          link: '/zh-CN/updatelog/beta/3/31015b2',
                         },
                         {
                           text: '3.1.0.15beta1',
-                          link: '/zh-CN/updatelog/beta/3/31015b1.html',
+                          link: '/zh-CN/updatelog/beta/3/31015b1',
                         },
                         {
                           text: '3.1.0.15.dev0',
-                          link: '/zh-CN/updatelog/beta/3/31015dev0.html',
+                          link: '/zh-CN/updatelog/beta/3/31015dev0',
                         },
                         {
                           text: '3.0.2.13rc1',
-                          link: '/zh-CN/updatelog/beta/3/30213rc1.html',
+                          link: '/zh-CN/updatelog/beta/3/30213rc1',
                         },
                         {
                           text: '3.0.1.12rc1',
-                          link: '/zh-CN/updatelog/beta/3/30112rc1.html',
+                          link: '/zh-CN/updatelog/beta/3/30112rc1',
                         },
                         {
                           text: '3.0.0.11rc1',
-                          link: '/zh-CN/updatelog/beta/3/30011rc1.html',
+                          link: '/zh-CN/updatelog/beta/3/30011rc1',
                         },
                         {
                           text: '3.0.0.11alpha3',
-                          link: '/zh-CN/updatelog/beta/3/30011a3.html',
+                          link: '/zh-CN/updatelog/beta/3/30011a3',
                         },
                         {
                           text: '3.0.0.11alpha2',
-                          link: '/zh-CN/updatelog/beta/3/30011a2.html',
+                          link: '/zh-CN/updatelog/beta/3/30011a2',
                         },
                         {
                           text: '3.0.0.11alpha1',
-                          link: '/zh-CN/updatelog/beta/3/30011a1.html',
+                          link: '/zh-CN/updatelog/beta/3/30011a1',
                         },
                         {
                           text: '3.0.0.11.dev4',
-                          link: '/zh-CN/updatelog/beta/3/30011dev4.html',
+                          link: '/zh-CN/updatelog/beta/3/30011dev4',
                         },
                         {
                           text: '3.0.0.11.dev3',
-                          link: '/zh-CN/updatelog/beta/3/30011dev3.html',
+                          link: '/zh-CN/updatelog/beta/3/30011dev3',
                         },
                         {
                           text: '3.0.0.11.dev1',
-                          link: '/zh-CN/updatelog/beta/3/30011dev1.html',
+                          link: '/zh-CN/updatelog/beta/3/30011dev1',
                         },
                       ],
                     },
@@ -778,23 +778,23 @@ export default withMermaid({
                 },
                 {
                   text: '清理缓存',
-                  link: '/zh-CN/features/cleancache.html',
+                  link: '/zh-CN/features/cleancache',
                 },
                 {
                   text: '设置',
-                  link: '/zh-CN/features/settings.html',
+                  link: '/zh-CN/features/settings',
                 },
                 {
                   text: '更新',
-                  link: '/zh-CN/features/update.html',
+                  link: '/zh-CN/features/update',
                 },
                 {
                   text: '帮助',
-                  link: '/zh-CN/features/help.html',
+                  link: '/zh-CN/features/help',
                 },
                 {
                   text: 'clickclean',
-                  link: '/zh-CN/features/clickclean.html',
+                  link: '/zh-CN/features/clickclean',
                 },
                 {
                   text: '扩展',
@@ -810,11 +810,11 @@ export default withMermaid({
             items: [
               {
                 text: '介绍',
-                link: '/zh-CN/develop/index.html',
+                link: '/zh-CN/develop/index',
               },
               {
                 text: '依赖',
-                link: '/zh-CN/develop/dependencies.html',
+                link: '/zh-CN/develop/dependencies',
               },
               {
                   text: 'clickmouse库调用',
@@ -822,15 +822,15 @@ export default withMermaid({
                   items: [
                     {
                       text: '介绍',
-                      link: '/zh-CN/develop/clicker/index.html',
+                      link: '/zh-CN/develop/clicker/index',
                     },
                     {
                       text: '基于python/pyd的调用',
-                      link: '/zh-CN/develop/clicker/python.html',
+                      link: '/zh-CN/develop/clicker/python',
                     },
                     {
                       text: '基于C++/dll的调用',
-                      link: '/zh-CN/develop/clicker/cpp.html',
+                      link: '/zh-CN/develop/clicker/cpp',
                     }
                   ],
                 },
@@ -840,26 +840,26 @@ export default withMermaid({
                   items: [
                     {
                       text: '协作clickmouse',
-                      link: '/zh-CN/develop/contributing/github.html',
+                      link: '/zh-CN/develop/contributing/github',
                     },
                     {
                       text: '配置开发环境',
-                      link: '/zh-CN/develop/contributing/configuration.html',
+                      link: '/zh-CN/develop/contributing/configuration',
                     },
                     {
                       text: '文档协作',
-                      link: '/zh-CN/develop/contributing/doc.html',
+                      link: '/zh-CN/develop/contributing/doc',
                     },
                     {
                       text: 'issue 模板',
-                      link: '/zh-CN/develop/contributing/issue_template.html'
+                      link: '/zh-CN/develop/contributing/issue_template'
                     },{
                       text: '安全报告',
-                      link: '/zh-CN/develop/contributing/security.html'
+                      link: '/zh-CN/develop/contributing/security'
                     },
                     {
                       text: '软件协议',
-                      link: '/zh-CN/develop/contributing/license.html'
+                      link: '/zh-CN/develop/contributing/license'
                     }
                   ],
                 },

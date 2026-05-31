@@ -16,10 +16,10 @@ hero:
       link: https://github.com/xystudiocode/pyClickMouse/releases/releases/latest
     - theme: alt
       text: 开始使用
-      link: /zh-CN/guide/getting-started.html
+      link: /zh-CN/guide/getting-started
     - theme: alt
       text: 查阅源码
-      link: /zh-CN/githublink.html
+      link: /zh-CN/githublink
 features:
   - icon: ⬇️
     title: 连点功能丰富
