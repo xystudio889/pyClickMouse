@@ -2357,10 +2357,7 @@ class SettingWindow(SelectUI, UMainWindow):
         ) # 设置窗口属性
 
         # 变量
-        if dev_flags.get('new_settings', False):
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
-        else:
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
+        self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f'))]
 
         self.create_setting_page_value()
 
@@ -2383,15 +2380,6 @@ class SettingWindow(SelectUI, UMainWindow):
         self.page_update = self.page_choice_buttons[3] # 更新设置
         self.page_hotkey = self.page_choice_buttons[4] # 热键设置
         self.page_doc = self.page_choice_buttons[5] # 文档设置
-        if dev_flags.get('new_settings', False):
-            self.page_notify = self.page_choice_buttons[6] # 提示设置
-            self.page_flags = self.page_choice_buttons[7] # 实验室
-        else:
-            self.page_notify = ''
-            self.page_flags = self.page_choice_buttons[6] # 实验室
-            
-        if (setting_value.hide_flags and len(dev_settings) == 0):
-            del self.page_choice_buttons[self.page_choice_buttons.index(self.page_flags)]
         
     def check_values(self):
         '''检查设置值'''
@@ -2533,17 +2521,11 @@ class SettingWindow(SelectUI, UMainWindow):
                 layout.addLayout(start_layout)
                 
                 layout.addLayout(repair_start_layout)
-                if dev_flags.get('new_settings', False):
-                    layout.addWidget(create_horizontal_line())
-                    layout.addLayout(feedback_layout)
                 layout.addWidget(create_horizontal_line())
                 layout.addLayout(soft_delay_layout)
                 layout.addWidget(delay_layout_text)
                 layout.addWidget(delay_tip_label)
                 layout.addWidget(create_horizontal_line())
-                if dev_flags.get('new_settings', False):
-                    layout.addWidget(hide_flags_checkbox)
-                    layout.addWidget(create_horizontal_line())
                 layout.addLayout(repair_layout)
 
                 # 绑定事件
@@ -2672,11 +2654,7 @@ class SettingWindow(SelectUI, UMainWindow):
                 self.quiet_install.checkStateChanged.connect(lambda: self.on_setting_changed(self.quiet_install.isChecked, SettingText.quiet_update))
                 self.update_ok.checkStateChanged.connect(lambda: self.on_setting_changed(self.update_ok.isChecked, SettingText.update_ok_notify))
                 self.update_frequency.currentIndexChanged.connect(lambda: self.on_setting_changed(self.update_frequency.currentIndex, SettingText.update_frequency))
-                if dev_flags.get('new_settings', False):
-                    self.update_notify.checkStateChanged.connect(self.on_sync_notice)
-                    self.update_ok.checkStateChanged.connect(self.on_sync_ok_notice)
-                else:
-                    self.on_enable_update(self.enable_update.isChecked())
+                self.on_enable_update(self.enable_update.isChecked())
             case self.page_style:
                 set_content_label(get_lang('a7'))
                 # 选择窗口风格
@@ -2823,8 +2801,6 @@ class SettingWindow(SelectUI, UMainWindow):
                 self.main_window_layout.addStretch()
 
                 # 布局
-                if dev_flags.get('new_settings', False):
-                    layout.addWidget(self.hotkey_enabled)
                 layout.addLayout(self.left_click_layout)
                 layout.addLayout(self.right_click_layout)
                 layout.addLayout(self.pause_click_layout)
@@ -2851,7 +2827,7 @@ class SettingWindow(SelectUI, UMainWindow):
                 self.main_window_button.clicked.connect(lambda: self.repair_settings(SettingText.main_window_hotkey))
                 
                 self.hotkey_enabled.checkStateChanged.connect(self.on_enable_hotkey_changed)
-                self.on_enable_hotkey_changed(self.hotkey_enabled.isChecked() if dev_flags.get('new_settings', False) else True)
+                self.on_enable_hotkey_changed(True)
             case self.page_doc:
                 set_content_label(get_lang('ca'))
                 
@@ -2864,8 +2840,6 @@ class SettingWindow(SelectUI, UMainWindow):
                 # 布局
                 default_doc_layout.addWidget(QLabel(get_lang('c2')), 1) # 默认打开文档提示
                 default_doc_layout.addWidget(default_doc_link, 6)
-                if dev_flags.get('new_settings', False):
-                    default_doc_layout.addWidget(repair_default_doc_link_button, 1)
                 default_doc_layout.addStretch()
                 
                 default_lang_layout = QHBoxLayout() # 默认文档语言布局
@@ -2887,8 +2861,6 @@ class SettingWindow(SelectUI, UMainWindow):
                 # 布局
                 update_log_path_layout.addWidget(QLabel(get_lang('c6')), 1) # 更新日志路径提示
                 update_log_path_layout.addWidget(update_log_path_input, 6)
-                if dev_flags.get('new_settings', False):
-                    update_log_path_layout.addWidget(repair_update_log_path_button, 1)
                 update_log_path_layout.addStretch()
                 
                 label = QLabel(get_lang('c7'))
@@ -2908,63 +2880,6 @@ class SettingWindow(SelectUI, UMainWindow):
                 update_log_path_input.textChanged.connect(lambda: self.on_setting_changed(update_log_path_input.text, SettingText.update_log_path))
                 repair_default_doc_link_button.clicked.connect(lambda: self.repair_settings(SettingText.default_doc_link))
                 repair_update_log_path_button.clicked.connect(lambda: self.repair_settings(SettingText.update_log_path))
-            case self.page_notify:
-                set_content_label(get_lang('cc'))
-
-                # 更新提示
-                self.notice_update_notify = UCheckBox(get_lang('4a'))
-                self.notice_update_notify.setChecked(setting_value.update_notify)
-                
-                # 更新完成提示
-                self.notice_update_ok_notify = UCheckBox(get_lang('4c'))
-                self.notice_update_ok_notify.setChecked(setting_value.update_ok_notify)
-                
-                # 启用软件启动警告
-                self.start_warning = UCheckBox(get_lang('cd'))
-                tip_label = QLabel(get_lang('ce'))
-                set_style(tip_label, StyleClass.d_11)
-                self.start_warning.setChecked(setting_value.show_warning)
-                
-                self.package_warning = UCheckBox(get_lang('cf'))
-                self.package_warning.setChecked(setting_value.show_package_warning)
-                
-                # 布局
-                layout.addWidget(self.notice_update_notify)
-                layout.addWidget(self.notice_update_ok_notify)
-                layout.addWidget(create_horizontal_line())
-                layout.addWidget(self.start_warning)
-                layout.addWidget(tip_label)
-                layout.addWidget(self.package_warning)
-                
-                # 连接信号
-                self.notice_update_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.notice_update_notify.isChecked, SettingText.update_notify))
-                self.notice_update_notify.checkStateChanged.connect(self.on_sync_notice)
-                self.notice_update_ok_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.notice_update_ok_notify.isChecked, SettingText.update_ok_notify))
-                self.notice_update_ok_notify.checkStateChanged.connect(self.on_sync_ok_notice)
-                self.start_warning.checkStateChanged.connect(self.on_enable_warn)
-                self.package_warning.checkStateChanged.connect(lambda: self.on_setting_changed(self.package_warning.isChecked, SettingText.show_package_warning))
-               
-                self.on_enable_update(self.enable_update.isChecked())
-                self.on_warning_update(self.start_warning.isChecked())
-            case self.page_flags:
-                set_content_label(get_lang('d4'))
-                
-                if not dev_settings:
-                    layout.addWidget(QLabel('No dev settings found.'))
-                else:
-                    for i in dev_settings:
-                        checkbox = UCheckBox(i['name'])
-                        if i['key'] == 'new_settings':
-                            checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx),self.window_restarted.emit(),))
-                        else:
-                            checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx)))   
-                        checkbox.setChecked(dev_flags.get(i['key'], False))
-                        desc = QLabel(i['desc'])
-                        set_style(desc, StyleClass.d_11)                        
-
-                        layout.addWidget(checkbox)
-                        layout.addWidget(desc)
-                        layout.addWidget(create_horizontal_line())
             
         restart_layout = QHBoxLayout() # 重启提示布局
         self.restart_button = QPushButton(get_lang('7e'))
@@ -2985,31 +2900,13 @@ class SettingWindow(SelectUI, UMainWindow):
 
         return page
     
-    def save_dev_config(self, checked: bool, flag_name: str):
-        dev_flags[flag_name] = checked
-        with open('data/dev_flags.json', 'w', encoding='utf-8') as f:
-            json.dump(dev_flags, f)
-    
-    def on_warning_update(self, state):
-        '''启用软件启动警告'''
-        self.package_warning.setEnabled(state)
-        
-    def on_enable_warn(self, state):
-        '''启用软件启动警告'''
-        self.on_warning_update(state)
-        self.on_setting_changed(self.start_warning.isChecked, SettingText.show_warning)
-    
     def on_sync_notice(self, state):
         '''提示同步'''
-        self.notice_update_notify.setChecked(state)
-        self.notice_update_notify.setEnabled(setting_value.update_enabled)
         self.update_notify.setChecked(state)
         self.update_notify.setEnabled(setting_value.update_enabled)
     
     def on_sync_ok_notice(self, state):
         '''提示同步'''
-        self.notice_update_ok_notify.setChecked(state)
-        self.notice_update_ok_notify.setEnabled(setting_value.update_enabled)
         self.update_ok.setChecked(state)
         self.update_ok.setEnabled(setting_value.update_enabled)
     
@@ -3058,9 +2955,6 @@ class SettingWindow(SelectUI, UMainWindow):
         self.quiet_install.setEnabled(state)
         self.update_ok.setEnabled(state)
         self.update_frequency.setEnabled(state)
-        if dev_flags.get('new_settings', False):
-            self.notice_update_notify.setEnabled(state)
-            self.notice_update_ok_notify.setEnabled(state)
         
     def repair_auto_start(self):
         logger.info('Repair auto start')
@@ -3556,27 +3450,6 @@ if __name__ == '__main__':
         
         settings_need_restart = False
         can_update = False
-        
-        try:
-            with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
-                dev_flags = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            dev_flags = {}
-            
-        try:
-            with open(get_resource_path('dev_settings.json'), 'r', encoding='utf-8') as f:
-                dev_settings = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            dev_settings = {}
-        
-        dev_back = dev_flags.copy()
-        for k in dev_flags.keys():
-            if k not in [i['key'] for i in dev_settings]:
-                del dev_back[k]
-                logger.warning(f'Beta feature ID:{k} is deprecated. Auto delete.')
-        dev_flags = dev_back.copy()
-        with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
-            json.dump(dev_flags, f)
 
         # 单位控制
         latest_index = 2

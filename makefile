@@ -1,10 +1,10 @@
-command = python -m nuitka --msvc=latest --remove-output --company-name="xystudio" --copyright="Copyright 2026 xystudio" --trademarks="xystudio" --product-version="3.3.0" --standalone
+command = python -m nuitka --msvc=latest --remove-output --company-name="xystudio" --copyright="Copyright 2026 xystudio" --trademarks="xystudio" --product-version="3.2.3" --standalone
 
 main:
 	echo Please run a build command, such as "make clickmouse".
 
 clickmouse: gui/main.py
-	$(command) --file-description="Clickmouse" --product-name="ClickMouse" --windows-icon-from-ico=gui/res/icons/clickmouse/icon.ico --include-data-dir=gui/res/=res/ --include-data-file=gui/key=key gui/main.py --file-version="3.3.0.22"  --enable-plugin=pyside6 --windows-console-mode="disable" --include-data-file=gui/7z.exe=7z.exe --include-data-file=gui/7z.dll=7z.dll --output-dir=dist/clickmouse/
+	$(command) --file-description="Clickmouse" --product-name="ClickMouse" --windows-icon-from-ico=gui/res/icons/clickmouse/icon.ico --include-data-dir=gui/res/=res/ --include-data-file=gui/key=key gui/main.py --file-version="3.2.3.22"  --enable-plugin=pyside6 --windows-console-mode="disable" --include-data-file=gui/7z.exe=7z.exe --include-data-file=gui/7z.dll=7z.dll --output-dir=dist/clickmouse/
 	$(command) --file-description="Clickmouse uninstall" --product-name="uninstall" --windows-icon-from-ico=gui/res/icons/clickmouse/uninstall.ico --file-version="2026.05.23.1" gui/uninstall.py  --enable-plugin=pyside6 --windows-console-mode="disable" --windows-uac-admin --output-dir=dist/clickmouse/
 	$(command) --file-description="Clickmouse IPK" --product-name="CmIPK" --windows-icon-from-ico=gui/res/icons/clickmouse/init.ico --file-version="2026.05.23.1" gui/install_pack.py  --enable-plugin=pyside6 --windows-console-mode="disable" --output-dir=dist/clickmouse/
 	$(command) --file-description="Clickmouse repair" --product-name="CmRepair" --windows-icon-from-ico=gui/res/icons/clickmouse/repair.ico --file-version="2026.05.23.1" gui/repair.py  --enable-plugin=pyside6 --windows-console-mode="disable" --windows-uac-admin --output-dir=dist/clickmouse/
@@ -14,7 +14,7 @@ clickmouse: gui/main.py
 
 clickclean: guiclean/clickclean.py
 	$(command) --file-version="3.2.3.22" guiclean/clickclean.py  --windows-console-mode="disable" --product-name="ClickClean" --windows-icon-from-ico=guiclean/res/icons/clickmouse/icon.ico --file-description="ClickClean" --enable-plugin=pyside6 --include-data-dir=guiclean/res/=res/ --output-dir=dist/clickmouse/
-	ren ./dist/clickmouse/clickclean.dist clickclean
+	ren ./dist/clickclean.dist clickclean
 
 clickmouse_lib: setup.py
 	python setup.py bdist_wheel
