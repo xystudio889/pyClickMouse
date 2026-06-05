@@ -1,12 +1,12 @@
-<layout name="central_layout" direction="v">
-    <QLabel name="left_clicked" arg=["!lang 0d"] />
-    <QLabel name="right_clicked" arg=["!lang 0e"] />
-    <QLabel name="click_delay" arg=["!lang 78"] />
-    <QLabel name="click_times" arg=["!lang 5c"] />
-    <QLabel name="paused" arg=["!lang 71"] />
-    <QLabel name="stopped" arg=["!lang 73"] />
-    <QLabel name="total_run_time" arg=["!lang 2c"] />
-    <layout name="bottom_layout" direction="h" stretch="true">
-        <QPushButton name="ok_button" arg=["!lang 1e"] style="selected" signals={"clicked": self.close} />
+<layout name='central_layout' direction='v'>
+    <QLabel name='left_clicked' args=['!lang 0d'] />
+    <QLabel name='right_clicked' args=['!lang 0e'] />
+    <QLabel name='click_delay' args=['!lang 78'] />
+    <QLabel name='click_times' args=['!lang 5c'] />
+    <QLabel name='paused' args=['!lang 71'] />
+    <QLabel name='stopped' args=['!lang 73'] />
+    <QLabel name='total_run_time' args=['!lang 2c'] />
+    <layout name='bottom_layout' direction='h' stretch='true'>
+        <QPushButton name='ok_button' args=['!lang 1e'] style='selected' signals={'clicked': self.close} />
     </layout>
 </layout>

@@ -1,0 +1,78 @@
+<layout name='general' direction='v' stretch=true>
+    <QLabel name='title' args=[title] style='big_text_24' />
+    <QLabel name='description' args=['!lang 7f'] style='dest' />
+    <UFrame name='line1' style='frame' />
+    <layout name='lang_choice_layout' direction='h' stretch=true>
+        <QLabel name='lang_choice_label' args=[f'{get_lang('45')}{get_lang('b5')}:']/>
+        <QComboBox 
+            name='lang_choice' 
+            init_steps=[
+                {'name': 'addItems', 'args': [['!lang c4'] + [i['lang_name'] for i in langs]]}, 
+                {'name': 'setCurrentIndex', 'args': [setting_value.select_lang + 1]}
+            ] 
+            signals={'currentIndexChanged': lambda: self.on_need_restart_setting_changed(lambda: self.get_code('general').find_widget('general.lang_choice_layout.lang_choice').currentIndex() - 1, SettingText.select_lang)}
+        />
+    </layout>
+    <layout name='tray_layout' direction='h' stretch=true>
+        <UCheckBox 
+            name='tray'
+            args=['!lang 80']
+            init_steps=[
+                {'name': 'setChecked', 'args': [setting_value.show_tray_icon]}
+            ]
+            signals={'checkStateChanged': self.on_tray_checked}
+        />
+    </layout>
+    <UFrame name='line2' style='frame' />
+    <layout name='start_layout' direction='v' stretch=true>
+        <UCheckBox name='start_checkbox' args=['!lang b6'] init_steps=[{'name': 'setChecked', 'args': [auto_start_manager.auto_start]}] signals={'checkStateChanged': self.on_auto_start_changed} />
+        <layout name='repair_start_layout' direction='h' stretch=true>
+            <QPushButton name='repair_start_button' args=['!lang 20'] signals={'clicked': self.repair_auto_start} />
+            <QLabel name='repair_start_tip' args=['!lang d1'] style='dest_small' />
+        </layout>
+    </layout>
+    <UFrame name='line4' style='frame' show_if=dev_flags.get('new_settings',False) />
+    <layout name='feedback_layout' direction='h'>
+        <QLabel name='feedback_label' args=['!lang c3'] stretch=1 />
+        <QLineEdit 
+            name='feedback_input' 
+            init_steps=[{'name': 'setText', 'args': [setting_value.feedback]}] 
+            stretch=6 
+            signals={'textChanged': lambda: self.on_setting_changed(self.get_code('general').find_widget('general.feedback_layout.feedback_input').text, SettingText.feedback)} 
+        />
+        <QPushButton name='feedback_repair_button' args=['!lang 20'] strech=1 signals={'clicked': lambda: self.repair_settings(SettingText.feedback)} />
+    </layout>
+    <UFrame name='line3' style='frame' />
+    <layout name='delay_layout' direction='v' stretch=true>
+        <layout name='software_delay_layout' direction='h' stretch=true>
+            <QLabel name='delay_label' args=[get_lang('b0')+': '] />
+            <QSlider
+                name='software_delay'
+                init_steps=[
+                    {'name': 'setMinimum', 'args': [5]},
+                    {'name': 'setMaximum', 'args': [100]},
+                    {'name': 'setValue', 'args': [setting_value.soft_delay // 10]},
+                    {'name': 'setTickPosition', 'args': [QSlider.TicksBelow]},
+                    {'name': 'setTickInterval', 'args': [10]},
+                    {'name': 'setFixedWidth', 'args': [200]},
+                    {'name': 'setOrientation', 'args': [Qt.Horizontal]}
+                ]
+                signals={'valueChanged': self.on_soft_delay_changed}
+            />
+        </layout>
+        <QLabel name='delay_label' style='big_text_16' />
+        <QLabel name='delay_dest' style='dest_small' args=['!lang 8a'] />
+    </layout>
+    <UFrame name='line5' style='frame' />
+    <UCheckBox 
+        name='hide_flag' 
+        args=['!lang d5'] 
+        init_steps=[{'name': 'setChecked', 'args': [setting_value.hide_flags]}] 
+        signals={'checkStateChanged': self.on_hide_flag_changed} 
+        show_if=dev_flags.get('new_settings',False) 
+    />
+    <UFrame name='line6' style='frame' show_if=dev_flags.get('new_settings',False) />
+    <layout name='repair_layout' direction='h' stretch=true>
+        <QPushButton name='repair_button' args=['!lang 5e'] signals={'clicked': self.repair_all_settings} />
+    </layout>
+</layout>

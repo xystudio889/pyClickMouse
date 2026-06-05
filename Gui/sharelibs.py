@@ -88,7 +88,10 @@ with open(get_resource_path('vars', 'mem_id.json'), 'r') as f:
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
+    select_lang = settings.get('select_lang', 0)
+    if select_lang == -1:
+        select_lang = system_lang
+    lang_id = select_lang if lang_id is None else lang_id
     for i in source:
         if i['lang_id'] == 0: # 设置默认语言包
             default_lang_text = i['lang_package']
@@ -303,11 +306,16 @@ def widget_replacer(ui_data: str):
     替换UI中的widget，使用函数式返回
     '''
     if ui_data.startswith('!lang '):
-        return get_lang(ui_data[6:]) # 语言解析
+        if len(ui_data.split(' ')) == 2:
+            return get_lang(ui_data.split(' ')[1]) # 语言解析
+        else:
+            return get_lang(ui_data.split(' ')[1], source=globals()[ui_data.split(' ')[2]]) # 语言解析
     else:
-        uiml.default_replacer(ui_data) # 交由uiml进行替换
+        return uiml.default_replacer(ui_data) # 交由uiml进行替换
         
-def layout_parser(ui_data: Dict[str, Any]):
+def layout_parser(ui_data: Dict[str, Any], namespace=None):
+    if not ui_data.get('show_if', True):
+        return None
     if ui_data.get('direction').lower() == 'u':
         input_compiled_list = []
         # 索引0 -- 字
@@ -315,15 +323,22 @@ def layout_parser(ui_data: Dict[str, Any]):
         # 索引2 -- 选择框
         inputs = ui_data['content'][1]
         for input in inputs['content']:
-            input_compiled_list.append(uiml.compile_ui(input)) # 递归解析
+            input_compiled_list.append(uiml.compile_ui(input, namespace)) # 递归解析
         combos = ui_data['content'][2] # 组合框
         combos_compiled_list = []
         for combo in combos['content']:
-            combos_compiled_list.append(uiml.compile_ui(combo)) # 递归解析
+            combos_compiled_list.append(uiml.compile_ui(combo, namespace)) # 递归解析
         return {'name': ui_data.get('name'), 'direction': ui_data.get('direction'), "texts": ui_data['content'][0]['values'], 'inputs': input_compiled_list, 'combos': combos_compiled_list}
-    return uiml.default_layout_parser(ui_data) # 交由uiml进行替换
+    return uiml.default_layout_parser(ui_data, namespace) # 交由uiml进行替换
 
-uiml.set_namespace(value_replace_func=widget_replacer, layout_parser_func=layout_parser) # 设置uiml的控制函数
+def widget_parser(ui_data: Dict[str, Any], namespace=None):
+    show_value = ui_data.get('show_if', True)
+    uiml_value = uiml.default_widget_parser(ui_data, namespace) # 交由uiml进行替换
+    if not show_value:
+        return None
+    return uiml_value
+
+uiml.set_namespace(value_replace_func=widget_replacer, layout_parser_func=layout_parser, widget_parser_func=widget_parser, additional_used_widget_key=['show_if'], additional_used_layout_key=['show_if'], reverse=True) # 设置uiml的控制函数
 
 class UIWindow(uiml.UIMLLayout):
     def __init__(self, list=None):
@@ -417,6 +432,30 @@ class UIWindow(uiml.UIMLLayout):
 
         # 正常流程不会执行到这里
         return None
+    
+    def draw_layout(self, list_content=None):
+        '''绘制布局，返回布局对象和类型字符串'''
+        list_content = self.list if list_content is None else list_content
+        if list_content.get('direction') is not None: # 这是layout类型
+            if list_content['direction'].lower() == 'h':
+                layout = uiml.QHBoxLayout()
+            elif list_content['direction'].lower() == 'v':
+                layout = uiml.QVBoxLayout()
+            else:
+                return self.extend_layout(list_content)
+            for item in list_content['content']:
+                widget = self.draw_layout(item)
+                if widget[1] == 'widget':
+                    layout.addWidget(widget[0], widget[2])
+                elif widget[1] == 'layout':
+                    layout.addLayout(widget[0])
+                else:
+                    raise ValueError('Content must be a widget or a layout')
+            if list_content.get('stretch', False):
+                layout.addStretch(1)
+            return layout, 'layout'
+        else: # 这是widget类型
+            return self.extend_widget(list_content)
 
     def extend_layout(self, list_info):
         if list_info['direction'].lower() == 'u':
@@ -429,3 +468,8 @@ class UIWindow(uiml.UIMLLayout):
             return layout, 'layout'
         else:
             uiml.WidgetError.direction_error() # 交由 uiml 进行处理
+            
+    def extend_widget(self, widget_info):
+        widget = list(super().extend_widget(widget_info))
+        widget.append(widget_info.get('stretch', 0))
+        return tuple(widget)
