@@ -88,7 +88,7 @@ with open(get_resource_path('vars', 'mem_id.json'), 'r') as f:
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
-    lang_id = settings.get('select_lang', 0) if lang_id is None else lang_id
+    lang_id = select_lang if lang_id is None else lang_id
     for i in source:
         if i['lang_id'] == 0: # 设置默认语言包
             default_lang_text = i['lang_package']
@@ -121,6 +121,9 @@ def parse_system_language_to_lang_id():
     return 0
 
 system_lang = parse_system_language_to_lang_id()
+select_lang = settings.get('select_lang', 0)
+if select_lang == -1:
+    select_lang = system_lang
 
 def get_control_lang(lang_id):
     return get_lang(lang_id, source=control_langs)
@@ -303,11 +306,16 @@ def widget_replacer(ui_data: str):
     替换UI中的widget，使用函数式返回
     '''
     if ui_data.startswith('!lang '):
-        return get_lang(ui_data[6:]) # 语言解析
+        if len(ui_data.split(' ')) == 2:
+            return get_lang(ui_data.split(' ')[1]) # 语言解析
+        else:
+            return get_lang(ui_data.split(' ')[1], source=globals()[ui_data.split(' ')[2]]) # 语言解析
     else:
-        uiml.default_replacer(ui_data) # 交由uiml进行替换
+        return uiml.default_replacer(ui_data) # 交由uiml进行替换
         
-def layout_parser(ui_data: Dict[str, Any]):
+def layout_parser(ui_data: Dict[str, Any], namespace=None):
+    if not ui_data.get('show_if', True):
+        return None
     if ui_data.get('direction').lower() == 'u':
         input_compiled_list = []
         # 索引0 -- 字
@@ -315,15 +323,22 @@ def layout_parser(ui_data: Dict[str, Any]):
         # 索引2 -- 选择框
         inputs = ui_data['content'][1]
         for input in inputs['content']:
-            input_compiled_list.append(uiml.compile_ui(input)) # 递归解析
+            input_compiled_list.append(uiml.compile_ui(input, namespace)) # 递归解析
         combos = ui_data['content'][2] # 组合框
         combos_compiled_list = []
         for combo in combos['content']:
-            combos_compiled_list.append(uiml.compile_ui(combo)) # 递归解析
+            combos_compiled_list.append(uiml.compile_ui(combo, namespace)) # 递归解析
         return {'name': ui_data.get('name'), 'direction': ui_data.get('direction'), "texts": ui_data['content'][0]['values'], 'inputs': input_compiled_list, 'combos': combos_compiled_list}
-    return uiml.default_layout_parser(ui_data) # 交由uiml进行替换
+    return uiml.default_layout_parser(ui_data, namespace) # 交由uiml进行替换
 
-uiml.set_namespace(value_replace_func=widget_replacer, layout_parser_func=layout_parser) # 设置uiml的控制函数
+def widget_parser(ui_data: Dict[str, Any], namespace=None):
+    show_value = ui_data.get('show_if', True)
+    uiml_value = uiml.default_widget_parser(ui_data, namespace) # 交由uiml进行替换
+    if not show_value:
+        return None
+    return uiml_value
+
+uiml.set_namespace(value_replace_func=widget_replacer, layout_parser_func=layout_parser, widget_parser_func=widget_parser, additional_used_widget_key=['show_if'], additional_used_layout_key=['show_if'], reverse=True) # 设置uiml的控制函数
 
 class UIWindow(uiml.UIMLLayout):
     def __init__(self, list=None):
@@ -417,6 +432,9 @@ class UIWindow(uiml.UIMLLayout):
 
         # 正常流程不会执行到这里
         return None
+    
+    def return_layout(self, layout):
+        return layout, 'layout', 0
 
     def extend_layout(self, list_info):
         if list_info['direction'].lower() == 'u':
@@ -426,6 +444,23 @@ class UIWindow(uiml.UIMLLayout):
                 if text.startswith('!lang '): # 语言解析
                     text = get_lang(text[6:])
                 layout.addUnitRow(text, input['content'], combo['content'])
-            return layout, 'layout'
+            return layout, 'layout', 0
         else:
             uiml.WidgetError.direction_error() # 交由 uiml 进行处理
+            
+    def adder(self, widget_info):
+        return (widget_info[0], ), {'stretch': widget_info[2]}
+    
+    def add_layout(self, list_content: Dict, layout: uiml.QLayout):
+        draw_on_end = list_content.get('stretch_place', 'end') == 'end' # 是否在布局末尾绘制拉伸
+        if not draw_on_end: # 在布局前绘制拉伸
+            self._add_stretch(list_content, layout) # 添加伸缩
+        self._for_loop(list_content, layout) # 递归绘制子布局
+        if draw_on_end: # 在布局末尾绘制拉伸
+            self._add_stretch(list_content, layout) # 添加伸缩
+        return self.return_layout(layout)
+            
+    def extend_widget(self, widget_info):
+        widget = list(super().extend_widget(widget_info))
+        widget.append(widget_info.get('stretch', 0))
+        return tuple(widget)

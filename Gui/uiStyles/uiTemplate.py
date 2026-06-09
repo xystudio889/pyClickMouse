@@ -17,20 +17,20 @@ class SelectUI(QMainWindow):
     def init_base_ui(self):
         '''创建基础UI'''
         # 创建中心部件和主布局
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.main_layout = QHBoxLayout(self.central_widget)
         
         # 设置两个滚动区域之间的间距为15像素
-        main_layout.setSpacing(15)
+        self.main_layout.setSpacing(15)
         
         # 创建左侧滚动区域
         self.left_scroll = QScrollArea()
-        main_layout.addWidget(self.left_scroll, 1)  # 拉伸系数为1
+        self.main_layout.addWidget(self.left_scroll, 1)  # 拉伸系数为1
         
         # 创建右侧滚动区域
         self.right_scroll = VScrollArea()
-        main_layout.addWidget(self.right_scroll, 5)  # 拉伸系数为5
+        self.main_layout.addWidget(self.right_scroll, 5)  # 拉伸系数为5
         
     def init_ui(self):
         '''创建设置界面'''
@@ -46,7 +46,7 @@ class SelectUI(QMainWindow):
         for i, page_title in enumerate(self.page_choice_buttons):
             button = QPushButton(page_title)
             # 连接按钮点击信号到槽函数
-            button.clicked.connect(lambda checked, idx=i: self.on_page_button_clicked(idx))
+            button.clicked.connect(lambda checked, idx=i: (self.on_page_button_clicked(idx)))
             content_layout.addWidget(button)
             self.buttons.append(button)
         
@@ -54,6 +54,11 @@ class SelectUI(QMainWindow):
         content_layout.addStretch()
         
         self.left_scroll.setWidget(content)
+        
+    def on_page_button_clicked(self, idx):
+        '''页面按钮点击槽函数'''
+        # 请自行实现
+        pass
     
     def init_right_pages(self):
         '''初始化右侧设置页面'''

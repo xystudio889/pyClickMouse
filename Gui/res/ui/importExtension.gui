@@ -1,0 +1,5 @@
+<layout direction='v' name='main_layout'>
+    <QLabel name='title' args=['!lang ab'] style='big_text_16' init_steps=[{'name': 'setAlignment', 'args': [Qt.AlignCenter]}] />
+    <QComboBox name='mode_combo' init_steps=[{'name': 'addItems', 'args': [['!lang ac', '!lang ad']]}, {'name': 'setCurrentIndex', 'args': [1]}] />
+    <QPushButton name='mode_button' args=['!lang 1e'] signals={'clicked': self.close} />
+</layout>

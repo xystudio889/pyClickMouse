@@ -1,4 +1,4 @@
-# Security Vulnerability Report
+# 安全漏洞报告
 
 <div align="center">
     <a href="./SECURITY.md"><img
@@ -7,11 +7,11 @@
     src="https://img.shields.io/badge/简体中文-536af5?color=ff0000&logoColor=white"/></a>
 </div>
 
-## How to submit a vulnerability?
+## 怎么提交漏洞？
 
-Submit to GitHub Security, detailing the impact range of the vulnerability, triggering conditions, vulnerability details, etc.
+提交一个github security，详细说明漏洞的影响范围、触发条件、漏洞详情等。
 
-## Vulnerability submission format
+## 提交漏洞格式
 
 ```markdown
 # Security Policy

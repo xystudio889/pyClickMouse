@@ -1,0 +1,8 @@
+<layout direction='h' stretch=true stretch_place='start'>
+    <QPushButton 
+        args=['!lang 7e'] 
+        style='selected' 
+        signals={'clicked': self.restart} 
+        show_if=settings_need_restart 
+    />
+</layout>

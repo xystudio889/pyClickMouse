@@ -1,0 +1,163 @@
+name: "🐛Bug"
+title: "🐛[BUG]"
+description: Report a bug.
+labels: 
+  - bug
+type: Bug
+body:
+- type: markdown
+  attributes:
+    value: |
+      > [!NOTE]
+      > To avoid unnecessary trouble, please check if anyone else has already reported the same issue before filing an issue. [Check for duplicates](https://github.com/xystudiocode/pyClickMouse/issues) 😊
+      
+      > [!IMPORTANT]
+      > We do not handle issues on Gitee, please use GitHub. 🙋‍♂️
+
+      > [!TIP]
+      > Please report only one issue at a time. 😀
+- type: input
+  attributes:
+    label: 🔡Clickmouse version
+    placeholder: X.X.X or X.X.X.X
+    description: Provide a three‑ or four‑part version number. You can find the current Clickmouse version in "Help" → "About".
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: 🎭Did you find the bug in an official version?
+    description: ❗Official Clickmouse versions are only published on [GitHub Releases](https://github.com/xystudiocode/pyClickMouse/releases) or [Gitee Releases](https://gitee.com/xystudio889/pyClickMouse/releases). Any other sources are unofficial.
+    multiple: false
+    options:
+      - ✅Yes
+      - ❌No
+      - ❓I don't know / forgot
+  validations:
+    required: true
+- id: modules
+  type: dropdown
+  attributes:
+    label: 🐛Module where the bug occurred
+    description: 🐛Select the module(s) where you experienced the bug. Multiple selections allowed.
+    multiple: true
+    options:
+      - 🖱️Clicking feature
+      - 🧮Real‑time calculation and evaluation of click delay (including main window, settings, and quick click)
+      - ⚙️Settings
+      - ✳️Adaptive theme switching
+      - ⌨️Hotkeys
+      - ️⬜System tray application
+      - ☁️Other main program features
+      - ⬇️Initialization program
+      - 📦Package manager (including the package manager during initialization)
+      - 🗑️Uninstaller
+      - 🔄️Update check service
+      - 🔧Repair tool
+      - ⤴️Update installation
+      - 💠Other extensions
+      - ♻️Cache cleaning
+      - 🏳️‍🌈Theme / styling
+      - 📄Documentation site
+      - 🟦clickClean
+      - ❓Other / unknown
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: 🐍Bug description
+    placeholder: |
+      Please describe it here.
+    description: 🐍Describe your bug.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: 🔦Impact of this bug
+    placeholder: |
+      Please describe it here.
+    description: 🔦Describe the impact of this bug.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 📝Steps to reproduce
+    placeholder: |
+      1. Step 1
+      2. Step 2
+      3. Step 3
+      4. Step...
+    description: 🔧Describe how to reproduce this bug.
+  validations:
+    required: false
+- type: input
+  attributes:
+    label: ℹ️Estimated affected Clickmouse version(s)
+    placeholder: |
+      >=X.X.X or >=X.X.X.X
+    description: 🔠Provide a three‑ or four‑part version number with “>=”.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 📄Your ideas for fixing the bug
+    placeholder: |
+      - Solution 1:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Solution 2:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Solution 3:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Other solutions...
+    description: ♻️You can provide multiple solutions, but each must be able to resolve your issue.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 🔄️Workarounds for the bug
+    placeholder: |
+      - Workaround 1:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Workaround 2:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Workaround 3:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Other workarounds...
+    description: 🔄️You can provide multiple workarounds, but each must be able to mitigate your issue.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 📂Log file
+    placeholder: |
+        Paste the last section of the log file here...
+    description: |
+      ✉️The log is located at `clickmouse installation directory/cache/logs/ today's date.log`.
+      **Log sections are separated by `---`. Please copy the last section of the log here**.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: ➕Additional information
+    placeholder: |
+      Your operating system version, system language, software that caused the bug, etc.
+    description: ✉️Provide more information, such as operating system version, system language, software that caused the bug, etc.
+  validations:
+    required: false

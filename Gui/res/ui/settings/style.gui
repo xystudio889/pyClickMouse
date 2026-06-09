@@ -1,0 +1,34 @@
+<layout name='style' direction='v' stretch=true>
+    <QLabel name='title' args=[title] style='big_text_24' />
+    <QLabel name='description' args=['!lang a7'] style='dest' />
+    <UFrame name='line1' style='frame' />
+    <layout name='style_layout' direction='h' stretch=true>
+        <QLabel name='style_label' args=['!lang 81']  />
+        <QComboBox 
+            name='style_combo' 
+            init_steps=[
+                {'name': 'addItems', 'args': [[get_lang('82')]+list(style_indexes[select_lang]['lang_package'].values())]}, 
+                {'name': 'setCurrentIndex', 'args': [setting_value.select_style]}
+            ]
+            signals={'currentIndexChanged': lambda: self.on_setting_changed(self.get_code('style').find_widget('style.style_layout.style_combo').currentIndex, SettingText.select_style)}
+        />
+    </layout>
+    <UFrame name='line2' style='frame' />
+    <layout name='windows_color_layout' direction='v' stretch=true>
+        <UCheckBox 
+            name='style_use_windows_color' 
+            args=['!lang a8'] 
+            init_steps=[{'name': 'setChecked', 'args': [setting_value.use_windows_color]}] 
+            signals={'checkStateChanged': lambda: self.on_setting_changed(self.get_code('style').find_widget('style.windows_color_layout.style_use_windows_color').isChecked, SettingText.use_windows_color)} 
+        />
+        <QLabel name='style_tip_label' args=['!lang b4'] style='dest_small'  />
+    </layout>
+    <UFrame name='line3' style='frame' />
+    <layout name='theme_layout' direction='v' stretch=true>
+        <layout name='theme_combo_layout' direction='h' stretch=true>
+            <QLabel name='theme_label' args=['!lang 23']  />
+            <QComboBox init_steps=[{'name': 'addItems', 'args':[QStyleFactory.keys()]}, {'name': 'setCurrentText', 'args':[setting_value.theme]}] signals={'currentIndexChanged': self.on_theme_updated} />
+        </layout>
+        <QLabel name='theme_tip' args=['!lang 4b'] style='dest_small' />
+    </layout>
+</layout>

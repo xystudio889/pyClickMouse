@@ -1,0 +1,53 @@
+name: 🗒️New Standard
+description: Propose, establish, or modify a standard.
+title: "🗒️[SPA]"
+labels: enhancement
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > [!NOTE]
+        > To avoid unnecessary trouble, please check if anyone else has already reported the same proposal before filing an issue. [Check for duplicates](https://github.com/xystudiocode/pyClickMouse/issues) 😊
+        
+        > [!IMPORTANT]
+        > We do not handle issues on Gitee, please use GitHub. 🙋‍♂️
+
+        > [!TIP]
+        > Please report only one proposal at a time. 😀
+  - type: textarea
+    attributes:
+      label: 🧾New proposal
+      placeholder: |
+        Please enter the proposal content here.
+      description: 🧾Please describe in detail the standard you want to propose.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: ℹ️Clickmouse version for the proposal
+      placeholder: |
+        >=X.X.X or >=X.X.X.X
+      description: 🔠Provide a three‑ or four‑part version number.
+      value: |
+        next official Clickmouse release
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: ❓Reason for this proposal
+      placeholder: |
+        What problem does it solve?
+        What does it improve?
+        Other reasons...
+      description: ❓Why is this proposal needed?
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: ➕Additional information
+      description: ✉️Anything else you know.
+      placeholder: |
+        More information.
+    validations:
+      required: false
