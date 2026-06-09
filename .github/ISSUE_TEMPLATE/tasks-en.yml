@@ -1,0 +1,129 @@
+name: ☑️Task List
+description: Task lists, e.g., for drafting a new release plan.
+title: "☑️[TASK]"
+labels: enhancement
+type: Task
+body:
+- type: markdown
+  attributes:
+    value: |
+      > [!NOTE]
+      > To avoid unnecessary trouble, please check if anyone else has already reported the same issue before filing an issue. [Check for duplicates](https://github.com/xystudiocode/pyClickMouse/issues) 😊
+      
+      > [!IMPORTANT]
+      > We do not handle issues on Gitee, please use GitHub. 🙋‍♂️
+- type: dropdown
+  attributes:
+    label: ☑️Modules covered by the new task
+    description: ☑️Which modules should the new task cover?
+    multiple: true
+    options:
+      - 🖱️Clicking feature
+      - 🧮Real‑time calculation and evaluation of click delay (including main window, settings, and quick click)
+      - ⚙️Settings
+      - ✳️Adaptive theme switching
+      - ⌨️Hotkeys
+      - ️⬜System tray application
+      - ☁️Other main program features
+      - ⬇️Initialization program
+      - 📦Package manager (including the package manager during initialization)
+      - 🗑️Uninstaller
+      - 🔄️Update check service
+      - 🔧Repair tool
+      - ⤴️Update installation
+      - 💠Other extensions
+      - ♻️Cache cleaning
+      - 📄Documentation site
+      - 🏳️‍🌈Theme / styling
+      - 🟦clickClean
+      - ❓Other / unknown
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: 🧾Description of each new feature
+    placeholder: |
+      - New feature 1
+      - New feature 2
+      - New feature 3
+      - New feature...
+    description: 🧾Please describe in detail the features you want to add.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: ❓Reason for these features
+    placeholder: |
+      What problem does it solve?
+      What does it improve?
+      Other reasons...
+    description: ❓Why are these features needed?
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 📄Ideas for implementation steps
+    placeholder: |
+      - New feature 1:
+      - - Plan 1:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Plan 2:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Plan 3:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Other plans...
+      - New feature 2:
+      - - Plan 1:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Plan 2:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Plan 3:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Other plans...
+      - New feature 3:
+      - - Plan 1:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Plan 2:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Plan 3:
+      - - 1. Step 1
+      - - 2. Step 2
+      - - 3. Step 3
+      - - 4. Step...
+      - - Other plans...
+      - Other features...
+    description: ♻️You can provide multiple implementation plans for multiple new features, but each plan must be able to fulfill your requirement.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: ➕Additional information
+    description: ✉️Anything else you know
+    placeholder: |
+      More information.
+  validations:
+    required: false

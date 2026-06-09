@@ -1,152 +1,180 @@
-# ❓怎么贡献？
-## ⬆️commit message
+# ❓ How to Contribute?
 
-需要遵循以下格式:
+<div align="center">
+    <a href="./CONTRIBUTING.md"><img
+    src="https://img.shields.io/badge/Language-English-536af5?color=781ff1&logoColor=white"/></a>
+    <a href="./CONTRIBUTING-zh_CN.md"><img
+    src="https://img.shields.io/badge/简体中文-536af5?color=ff0000&logoColor=white"/></a>
+</div>
+
+## ⬆️ Commit Message
+
+Must follow the format below:
+
 ```
-更新类型(更新模块):(可选)(版本号) (更新概括):
+UpdateType(Module):(optional)(Version) Summary:
 
-- [(可选)子更新类型]更新内容1
-- [(可选)子更新类型]更新内容2
+- [(optional) Sub-updateType] Update content 1
+- [(optional) Sub-updateType] Update content 2
 - ...
 ```
 
-更新类型有这些内容:
-| 类型 | 说明 |
+Update types include:
+
+| Type | Description |
 | --- | --- |
-| ✅feat | 新功能 |
-| 🔧modify | 修改功能 |
-| 🐛fix | 修bug  |
-| ⚒️refactor | 重构 |
-| 📃docs | 改文档，比如README |
-| ❇️style | 改代码风格，不影响功能 |
-| 🔎test | 加测试、改测试 |
-| 📆chore | 杂项，比如改.gitignore |
-| ⏫perf | 性能优化  |
-| 🛒ci | CI/CD相关改动 |
-| 🚅build | 改构建系统或依赖 |
-| ◀️revert  | 回滚 |
-| 🔡dependency | 依赖更新 |
-| ❌remove | 删除弃用的组件 |
-| ↪️move | 移动了组件 |
-| ❓unknown | 未知类型 |
-| 自定义  | 尽量以一个直观的英文单词描述，最好配上emoji |
+| ✅feat | New feature |
+| 🔧modify | Modify functionality |
+| 🐛fix | Bug fix |
+| ⚒️refactor | Refactor |
+| 📃docs | Documentation changes (e.g., README) |
+| ❇️style | Code style changes, no functional impact |
+| 🔎test | Add or modify tests |
+| 📆chore | Chores, e.g., modify .gitignore |
+| ⏫perf | Performance improvements |
+| 🛒ci | CI/CD related changes |
+| 🚅build | Build system or dependency changes |
+| ◀️revert | Revert changes |
+| 🔡dependency | Dependency updates |
+| ❌remove | Remove deprecated components |
+| ↪️move | Move components |
+| ❓unknown | Unknown type |
+| custom | Use an intuitive English word, preferably with an emoji |
 
-内容较多时需要对更新内容添加更新类型提示
+When there are many updates, add an update type hint for each update item.
 
-## 🗂️分支
+## 🗂️ Branches
 
-请按此图所示的分支结构来更新：
-<img src='./imgs/readme/mergeSteps.png' alt="合并步骤" />
+Please follow the branching structure shown in the image below:
 
-创建的分支需要以`feature/`开头，以表示功能分支，或创建一个fork，并在fork的分支开发。
+<img src='./imgs/readme/mergeSteps-en.png' alt="Merge Steps" />
 
-发布pr时不限定合并分支，只要不是`main`分支都可以。
+Create branches with the prefix `feature/` to indicate a feature branch, or create a fork and develop on a branch within the fork.
 
-## 🔠版本号
-clickmouse版本格式为：`A.B.C.D[(alpha | beta |.dev | rc) E]`
-## 😊正式版本
-正式版不带.dev、alpha、beta或rc后缀。
+When opening a PR, the target branch is not restricted, as long as it is not the `main` branch.
 
-A位代表有重大更新，有代码级的变动。如1.0升级到2.0就重构了代码。
+## 🔠 Version Number
 
-B位代表有普通更新，通常是更新一些大功能。
+The clickmouse version format is: `A.B.C.D[(alpha | beta | .dev | rc) E]`
 
-C位代表有修复更新，通常会更新一些小功能和一些bug。
+## 😊 Official Releases
 
-D位代表版本代号，通常每A, B, C位有变动时候+1。也有可能A, B, C位没有变动，D位+1，这代表紧急更新，通常是修复几个重大影响的bug。
+Official releases do not include the suffixes .dev, alpha, beta, or rc.
 
-## 🅱️测试版本
-测试版本带.dev、alpha、beta或rc后缀。
+- The A digit indicates major updates with code-level changes. For example, upgrading from 1.0 to 2.0 involves a code refactor.
+- The B digit indicates regular updates, usually introducing major features.
+- The C digit indicates patch updates, typically including minor features and bug fixes.
+- The D digit indicates the version codename, incremented whenever A, B, or C change. It may also be incremented without changes to A, B, or C for emergency updates (e.g., fixing several critical bugs).
 
-通常前面的`A.B.C.D`在一个测试周期内不变，代表下一个版本。
+## 🅱️ Pre-release Versions
 
-`.dev`代表早期开发更新，功能不稳定，bug很多，位于版本项目初期。这阶段新增的功能将会被放到实验室中，并默认关闭。
+Pre-release versions include .dev, alpha, beta, or rc suffixes. Typically, the preceding `A.B.C.D` remains unchanged during a test cycle, representing the next version.
 
-`alpha`代表晚期开发更新，功能不完善，bug较多，位于版本项目早期。这阶段新增的功能将会被放到实验室中，并默认关闭。
+- `.dev` represents early development updates, unstable features, many bugs, at the project's initial stage. New features will be placed in the lab and disabled by default.
+- `alpha` represents late development updates, incomplete features, many bugs, at the project's early stage. New features will be placed in the lab and disabled by default.
+- `beta` represents release candidate testing updates, complete features, fewer bugs, no new features added, at the project's mid stage, gradually merging lab features.
+- `rc` represents a release candidate, complete features, fewer bugs, critical security or bug fixes, closest to the official release, at the project's final stage.
 
-`beta`代表发布测试更新，功能完善，bug较少，不会再新增功能，位于版本项目中期，并且会逐步合并实验室中的feature。
+## ❓ Issues
 
-`rc`代表预备发布版本，功能完善，bug较少，会修复一些重要安全问题或bug，最接近正式版，即将发布正式版，位于版本项目末期。
+- Title format: `[Type] Title`
+- Content should accurately describe your request, optionally provide a solution, upload screenshots, and add additional information (e.g., clickmouse version number).
+- Types include `bug`, `enhancement`, `question`, etc.
+- We provide templates that can be used directly.
+- Use `labels` to mark the issue type, such as `bug`, `enhancement`, `question`, etc.
+- Set the issue's `milestone` to the version you intend to apply the issue to.
+- For security issues, refer to the [Security Documentation](./SECURITY.md).
 
-## ❓issue
-- 标题格式：`[类型] 标题`
-- 内容应准确写出你的需求，并选择性给出解决方案，上传截图，添加附加信息（如clickmouse版本号）
-- 类型为`bug`、`enhancement`、`question`等。
-- 我们给了一些模板，可直接使用。
-- 使用`labels`来标记issue的类型，比如`bug`、`enhancement`、`question`等。
-- 设置issue的`milestone`为你想应用的issue版本。
-- 安全问题请见[安全说明文档](./SECURITY.md)。
+## ❇️ Pull Requests
 
-## ❇️pr
-- 标题格式：`[类型] 标题`
-- 使用`labels`来标记pr的类型，比如`bug`、`enhancement`、`question`等。
-- 关联issue，这样我们就可以知道这个pr解决了哪个issue。
-- 需要准确写出更新内容，关联到版本号的milestone。
-- 可选添加实现思路
+- Title format: `[Type] Title`
+- Use `labels` to mark the PR type, such as `bug`, `enhancement`, `question`, etc.
+- Link to an issue so we know which issue this PR resolves.
+- Accurately describe the changes and link to the version milestone.
+- Optionally provide implementation ideas.
 
-### 🎫规范
-我们pr合并的顺序为：
+### 🎫 Guidelines
+
+The order of PR merging is as follows:
+
 ```mermaid
 graph LR
-A(其他用户的功能开发分支) --> B(develop/rp分支)
-B --> C(main分支)
+A(Other user's feature branch) --> B(develop/rp branch)
+B --> C(main branch)
 ```
 
-pr无特定格式，但是必须清晰描述更新内容，关联到版本号的milestone；标题要简略描述更新内容，若修复或添加了issue里的建议，把该issue编号写进该行为，若出现多个重复issue，则只用写一个，并简单描述此bug。
+PRs do not have a strict format but must clearly describe the changes, link to the version milestone, and have a title that briefly summarizes the changes. If the PR fixes or implements a suggestion from an issue, include the issue number in that line. For multiple duplicate issues, only write one and briefly describe the bug.
 
-### ✈️快车pr
+### ✈️ Express PR
+
 > [!WARNING]
-> 快车pr请谨慎使用
-- 快车pr的意思是跳过部分正常的pr合并分支步骤，以更快的合并到目标分支的功能。
-- 标题格式：`[✈️快车] 标题`
-- 使用快车必须在pr描述中说明使用的原因
+> Use express PRs with caution.
 
-如果有人快车合并，但没写快车合并的原因，则拒绝合并该人的分支。
+- Express PR means skipping some normal PR merge steps to merge into the target branch faster.
+- Title format: `[✈️Express] Title`
+- You must explain the reason for using an express PR in the PR description.
 
-快车pr有高优先级，会优先进行处理。
+If someone merges via express PR without stating the reason, the merge will be rejected.
 
-## 📊milestone
-- 我们给每个版本都设置了一个milestone，用来管理该版本的issue和pr。
-- 需要每个issue或pr都关联到一个milestone，这样我们才能知道该issue或pr是否在下个版本中添加。
-- milestone格式为:`dev_版本号`
+Express PRs have high priority and will be handled first.
 
-## ⬇️配置仓库
-1. 下载仓库：`git clone https://github.com/xystudiocode/pyClickMouse.git`
-2. 对于python版本安装python，推荐使用3.13，和软件开发者的版本一一致，[下载连接](https://www.python.org/downloads/release/python-31312/)
-3. 对于头文件和dll版本，可以安装[visual studio](https://visualstudio.microsoft.com/)。
-### 🖥️GUI
-1. 下载源码
-2. 放置一个`7z.exe`和`7z.dll`到`gui`目录
-3. 安装chocolately
+## 📊 Milestones
+
+- We set a milestone for each version to manage issues and PRs for that version.
+- Each issue or PR must be linked to a milestone so we know whether it will be included in the next version.
+- Milestone format: `dev_version_number`
+
+## ⬇️ Setting Up the Repository
+
+1. Clone the repository: `git clone https://github.com/xystudiocode/pyClickMouse.git`
+2. For the Python version, install Python (recommended version 3.13, consistent with the software developer's version). [Download link](https://www.python.org/downloads/release/python-31312/)
+3. For the header file and DLL versions, you can install [Visual Studio](https://visualstudio.microsoft.com/).
+
+### 🖥️ GUI
+
+1. Download the source code.
+2. Place `7z.exe` and `7z.dll` in the `gui` directory.
+3. Install Chocolatey:
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
-4. 安装make工具
+4. Install make:
 ```powershell
 choco install make
 ```
-5. 配置python包
+5. Install Python packages:
 ```powershell
 pip install -r requirements.txt
 ```
-6. 编译
+6. Build:
 ```powershell
-make clickmouse # 编译clickmouse
-make extension # 编译扩展
-make clickclean # 如果你要编译精简版，请用这个。
+make clickmouse   # Build clickmouse
+make extension    # Build extension
+make clickclean   # Use this if you want to build the slim version
 ```
-7. 运行`dist/clickmouse/clickmouse/main.exe`就可以加载clickmouse了。
-### 🥴头文件
-仅需修改头文件，就可以被调用
-### ⚙️dll调用
-使用visual studio修改`./dll/dll.sln`里的`源文件/dllmain.cpp`
-### 💾gui旧版本
+7. Run `dist/clickmouse/clickmouse/main.exe` to load clickmouse.
+
+### 🥴 Header Files
+
+You only need to modify the header files to call the library.
+
+### ⚙️ DLL Usage
+
+Modify `源文件/dllmain.cpp` in `./dll/dll.sln` using Visual Studio.
+
+### 💾 Old GUI Version
+
 > [!NOTE]
-> gui旧版本的再编译不接受pull request
-使用visual studio修改`./ClickMouse-old/ClickMouse.sln`里的`源文件/clickmouse.cpp`
-### 🐍python库调用
-修改`clickmouse/`下的代码，运行`pip install .`安装
-### 🦎pyd调用
-修改`cython/main.py`的代码，然后执行
+> Recompilation of the old GUI version will not accept pull requests.
+
+Modify `源文件/clickmouse.cpp` in `./ClickMouse-old/ClickMouse.sln` using Visual Studio.
+
+### 🐍 Python Library Usage
+
+Modify the code in `clickmouse/` and run `pip install .` to install.
+
+### 🦎 PYD Usage
+
+Modify the code in `cython/main.py`, then execute:
 ```python cython/setup.py build_ext --inplace```
-编译结束后，该目录下应该会有个以`.pyd`结尾的文件。
+After compilation, there should be a file ending with `.pyd` in the directory.

@@ -122,7 +122,7 @@ Report a bug.
 <strongCard LabelColor='#d73a4a' TypeColor='#f85149' :LangPack='{...CardLangPack, ...bugLabel}'>
 <subtitle required='true' noTopMargin='true'>Add a title</subtitle>
 <ginput text='🐛[BUG]'></ginput>
-<note title='Note'>To avoid causing more trouble, before reporting issue, first check if others have already reported same problem.<a href="https://github.com/xystudiocode/pyClickMouse/issues">Check if duplicate exists</a>😊</note>
+<note title='Note'>To avoid unnecessary trouble, please check if anyone else has already reported the same issue before filing an issue. <a href="https://github.com/xystudiocode/pyClickMouse/issues">Check if duplicate exists</a>😊</note>
 <important title='Important'>We will not handle issues on gitee, please use github to publish.🙋‍♂️</important>
 <tip title='Tip'>Please only report 1 problem at a time.😀</tip>
 <subtitle required='true' desc='Feedback three or four digit version number, can go to "Help" - "About" interface view current clickmouse version number'>🔡Clickmouse version</subtitle>

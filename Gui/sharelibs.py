@@ -88,9 +88,6 @@ with open(get_resource_path('vars', 'mem_id.json'), 'r') as f:
 
 def get_lang(lang_package_id, lang_id = None, source = None):
     source = langs if source is None else source
-    select_lang = settings.get('select_lang', 0)
-    if select_lang == -1:
-        select_lang = system_lang
     lang_id = select_lang if lang_id is None else lang_id
     for i in source:
         if i['lang_id'] == 0: # 设置默认语言包
@@ -124,6 +121,9 @@ def parse_system_language_to_lang_id():
     return 0
 
 system_lang = parse_system_language_to_lang_id()
+select_lang = settings.get('select_lang', 0)
+if select_lang == -1:
+    select_lang = system_lang
 
 def get_control_lang(lang_id):
     return get_lang(lang_id, source=control_langs)
@@ -433,29 +433,8 @@ class UIWindow(uiml.UIMLLayout):
         # 正常流程不会执行到这里
         return None
     
-    def draw_layout(self, list_content=None):
-        '''绘制布局，返回布局对象和类型字符串'''
-        list_content = self.list if list_content is None else list_content
-        if list_content.get('direction') is not None: # 这是layout类型
-            if list_content['direction'].lower() == 'h':
-                layout = uiml.QHBoxLayout()
-            elif list_content['direction'].lower() == 'v':
-                layout = uiml.QVBoxLayout()
-            else:
-                return self.extend_layout(list_content)
-            for item in list_content['content']:
-                widget = self.draw_layout(item)
-                if widget[1] == 'widget':
-                    layout.addWidget(widget[0], widget[2])
-                elif widget[1] == 'layout':
-                    layout.addLayout(widget[0])
-                else:
-                    raise ValueError('Content must be a widget or a layout')
-            if list_content.get('stretch', False):
-                layout.addStretch(1)
-            return layout, 'layout'
-        else: # 这是widget类型
-            return self.extend_widget(list_content)
+    def return_layout(self, layout):
+        return layout, 'layout', 0
 
     def extend_layout(self, list_info):
         if list_info['direction'].lower() == 'u':
@@ -465,9 +444,21 @@ class UIWindow(uiml.UIMLLayout):
                 if text.startswith('!lang '): # 语言解析
                     text = get_lang(text[6:])
                 layout.addUnitRow(text, input['content'], combo['content'])
-            return layout, 'layout'
+            return layout, 'layout', 0
         else:
             uiml.WidgetError.direction_error() # 交由 uiml 进行处理
+            
+    def adder(self, widget_info):
+        return (widget_info[0], ), {'stretch': widget_info[2]}
+    
+    def add_layout(self, list_content: Dict, layout: uiml.QLayout):
+        draw_on_end = list_content.get('stretch_place', 'end') == 'end' # 是否在布局末尾绘制拉伸
+        if not draw_on_end: # 在布局前绘制拉伸
+            self._add_stretch(list_content, layout) # 添加伸缩
+        self._for_loop(list_content, layout) # 递归绘制子布局
+        if draw_on_end: # 在布局末尾绘制拉伸
+            self._add_stretch(list_content, layout) # 添加伸缩
+        return self.return_layout(layout)
             
     def extend_widget(self, widget_info):
         widget = list(super().extend_widget(widget_info))

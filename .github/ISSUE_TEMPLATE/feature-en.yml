@@ -1,0 +1,93 @@
+name: ❇️New Feature
+description: A feature you would like to suggest.
+title: "❇️[FEATURE]"
+labels: enhancement
+type: Feature
+body:
+- type: markdown
+  attributes:
+    value: |
+      > [!NOTE]
+      > To avoid unnecessary trouble, please check if anyone else has already reported the same issue before filing an issue. [Check for duplicates](https://github.com/xystudiocode/pyClickMouse/issues) 😊
+      
+      > [!IMPORTANT]
+      > We do not handle issues on Gitee, please use GitHub. 🙋‍♂️
+
+      > [!TIP]
+      > Please report only one feature at a time. 😀
+- type: dropdown
+  attributes:
+    label: ❇️Module for the new feature
+    description: ❇️Which module does the new feature belong to?
+    multiple: true
+    options:
+      - 🖱️Clicking feature
+      - 🧮Real‑time calculation and evaluation of click delay (including main window, settings, and quick click)
+      - ⚙️Settings
+      - ✳️Adaptive theme switching
+      - ⌨️Hotkeys
+      - ️⬜System tray application
+      - ☁️Other main program features
+      - ⬇️Initialization program
+      - 📦Package manager (including the package manager during initialization)
+      - 🗑️Uninstaller
+      - 🔄️Update check service
+      - 🔧Repair tool
+      - ⤴️Update installation
+      - 💠Other extensions
+      - ♻️Cache cleaning
+      - 📄Documentation site
+      - 🏳️‍🌈Theme / styling
+      - 🟦clickClean
+      - ❓Other / unknown
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: 📄New feature description
+    placeholder: |
+      Describe in detail the feature you want to add.
+    description: 📄Please describe in detail the feature you want to add.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: ❔Reason for this feature
+    placeholder: |
+      What problem does it solve?
+      What does it improve?
+      Other reasons...
+    description: ❔Why is this feature needed?
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 🧾Implementation steps ideas
+    placeholder: |
+      - Plan 1:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Plan 2:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Plan 3:
+      - 1. Step 1
+      - 2. Step 2
+      - 3. Step 3
+      - 4. Step...
+      - Other plans...
+    description: ♻️You can provide multiple implementation plans, but each must be able to fulfill your requirement.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: ➕Additional information
+    description: 📄Anything else you know.
+    placeholder: |
+      More information.
+  validations:
+    required: false

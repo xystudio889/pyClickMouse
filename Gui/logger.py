@@ -3,6 +3,10 @@ import re
 from datetime import datetime
 from pathlib import Path
 import logging
+import functools
+import traceback
+from PySide6.QtWidgets import QMessageBox
+import sys
 
 def remove_old_log(directory_path):
     '''
@@ -69,18 +73,29 @@ class ConditionalFormatter(logging.Formatter):
                 return record.getMessage()
         else:
             return self.default_formatter.format(record)
+    
+class LogFilter(logging.Filter):
+    def __init__(self, default_service_id):
+        super().__init__()
+        self.default_service_id = default_service_id
+
+    def filter(self, record):
+        if not hasattr(record, 'service_id'):
+            record.service_id = self.default_service_id
+        return True
 
 class Logger:
-    def __init__(self, name):
+    def __init__(self, default_service_id):
+        self.default_service_id = default_service_id
         # 创建self.logger对象
-        self.logger = logging.getLogger(name)
+        self.logger = logging.getLogger(default_service_id)
         self.logger.setLevel(logging.DEBUG)  # 设置最低日志级别
 
         # 控制台处理器 - 仅WARNING及以上级别
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.WARNING)  # 设置控制台日志级别
         format = {
-            'default_format': '%(asctime)s - %(levelname)s - %(message)s', 
+            'default_format': '%(asctime)s - %(service_id)s - %(levelname)s - %(message)s', 
             'simple_format': '%(message)s' # 仅输出消息
         }
         console_fmt = ConditionalFormatter(
@@ -99,10 +114,50 @@ class Logger:
         # 添加处理器
         self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
+        self.logger.addFilter(LogFilter(default_service_id=default_service_id))
         
         self.info(f'{"-" * 50}', extra={'simple_format': True})
         self.info(f'logger Started')
         remove_old_log(folder_path)
+
+    def auto_logger(self, service_id=None, start_extra_text='', end_extra_text='', start_extra=None, end_extra=None, level=logging.INFO):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                match level:
+                    case logging.DEBUG:
+                        log_func = self.debug
+                    case logging.INFO:
+                        log_func = self.info
+                    case logging.WARNING:
+                        log_func = self.warning
+                    case logging.ERROR:
+                        log_func = self.error
+                    case logging.CRITICAL:
+                        log_func = self.critical
+                    case _:
+                        log_func = self.info
+                out_service_id = self.default_service_id if service_id is None else service_id
+                start_extra_out = {} if start_extra is None else start_extra
+                end_extra_out = {} if end_extra is None else end_extra
+
+                log_func(f'Running function: {func.__name__} args={args} kwargs={kwargs}', extra={'service_id': out_service_id, **start_extra_out})
+                if start_extra_text:
+                    log_func(start_extra_text, extra={'service_id': out_service_id, **start_extra_out})
+                try:
+                    result = func(*args, **kwargs)
+                except Exception as e:
+                    trace = traceback.format_exc()
+                    self.exception(out_service_id, trace, f'Function {func.__name__} raised an unexpected exception', extra={'service_id': out_service_id, **end_extra_out})
+                    QMessageBox.critical(None, 'An unexpected error occurred', f'An unexpected error occurred in {func.__name__}: \n{trace}\nPlease look the log path: {(folder_path / f"{log_id}.log").resolve()} and send me the log file on issue: https://github.com/xystudiocode/pyClickMouse/issues/new/choose')
+                    sys.exit(1)  # 退出程序
+                    raise e
+                log_func(f'Function {func.__name__} running successfull, returned: {result}', extra={'service_id': out_service_id, **end_extra_out})
+                if end_extra_text:
+                    log_func(end_extra_text, extra={'service_id': out_service_id, **end_extra_out})
+                return result
+            return wrapper
+        return decorator
 
     def debug(self, msg, extra=None):
         self.logger.debug(msg, extra=extra)
@@ -120,4 +175,4 @@ class Logger:
         self.logger.critical(msg, extra=extra)
         
     def exception(self, service, trace, msg='', extra=None):
-        self.critical(f'{msg}: An error occurred in {service}:\n{trace}', extra=extra)
+        self.critical(f'{msg}: An error occurred in {service}\n{trace}', extra=extra)
