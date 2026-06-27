@@ -3,12 +3,11 @@ pyautogui>=0.9.53
 requests>=2.26.0
 setuptools>=61.0.0
 cython>=0.29.24
-pywin32>=303
+pywin32>=303; sys_platform == 'win32'
 pyperclip>=1.5.2
 pynput>=1
 packaging>=22
 clickmouse
-clickMouse_api
 pytz>=2014
 nuitka>=2.8
 psutil>=1
