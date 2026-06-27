@@ -6,18 +6,20 @@
 # 以下为setup.py文件内容
 # 导入setuptools模块
 import setuptools
+from Cython.Build import cythonize
 
 # 定义setup函数
 setuptools.setup(
     name="ClickMouse", # 包名
-    version="2.1.1", # 版本号
+    version="3.3.0", # 版本号
+    package_dir={"": "src"},
+    packages=setuptools.find_packages(where="src"),
     author="xystudio", # 作者
     author_email="173288240@qq.com", # 作者邮箱 
     description="基于Python的鼠标连点工具", # 包描述
     url="https://github.com/xystudiocode/pyClickMouse", # 包的github地址
-    long_description=open("README.md", "r", encoding="utf-8").read(), # 包的readme文件
+    long_description=open("README-py.md", "r", encoding="utf-8").read(), # 包的readme文件
     long_description_content_type="text/markdown", # 指定readme文件格式为markdown
-    packages=setuptools.find_packages(), # 包的目录结构
     classifiers=[ # 包的分类列表
         "Programming Language :: Python :: 3", # python版本
         "License :: OSI Approved :: MIT License", # 许可证
@@ -29,9 +31,8 @@ setuptools.setup(
     entry_points={ # 脚本入口
         "console_scripts": [
             "clickmouse = clickmouse.__main__:main",
+            "clickmouse-apiCli = clickmouse_api.__main__:main"
         ]
     }, 
-    extras_require = {
-        "api": ["clickmouse-api"]
-    }
+    ext_modules=cythonize(["src/clickmouse/__init__.py"]), # 编译main.py为.pyd文件
 )

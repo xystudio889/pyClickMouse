@@ -1,1 +1,47 @@
-{"select_lang": "!var system_lang", "show_tray_icon": true, "soft_delay": 100, "click_delay": "", "click_times": "", "delay_unit": 0, "times_unit": 0, "failed_use_default": false, "times_failed_use_default": false, "update_enabled": true, "update_notify": true, "quiet_update": false, "update_ok_notify": true, "update_frequency": 1, "select_style": 0, "use_windows_color": true, "theme": "!var default_theme", "left_click_hotkey": ["F2"], "right_click_hotkey": ["F3"], "pause_click_hotkey": ["F4"], "stop_click_hotkey": ["F6"], "click_attr_hotkey": ["Ctrl", "Alt", "A"], "fast_click_hotkey": ["Ctrl", "Alt", "F"], "main_window_hotkey": ["Ctrl", "Alt", "M"], "default_doc_link": "https://xystudiocode.github.io/pyClickMouse/{lang}", "lang_doc": 0, "update_log_path": "updatelog", "hotkey_enabled": false, "show_warning": true, "show_package_warning": true, "feedback": "https://github.com/xystudiocode/pyClickMouse/issues/new/choose", "hide_flags": true}
+{
+    "select_lang": 0,
+    "show_tray_icon": true,
+    "soft_delay": 100,
+    "click_delay": "",
+    "click_times": "",
+    "delay_unit": 0,
+    "times_unit": 0,
+    "failed_use_default": false,
+    "times_failed_use_default": false,
+    "update_enabled": true,
+    "update_notify": true,
+    "quiet_update": false,
+    "update_ok_notify": true,
+    "update_frequency": 1,
+    "select_style": 0,
+    "use_windows_color": true,
+    "theme": "!var default_theme",
+    "hotkey": {
+        "hotkey_enabled": true,
+        "hotkeys": {
+            "left_click": ["F2"],
+            "right_click": ["F3"],
+            "pause_click": ["F4"],
+            "stop_click": ["F6"],
+            "click_attr": ["Ctrl","Alt","A"],
+            "main_window": ["Ctrl","Alt","M"]
+        },
+        "enabled": {
+            "left_click": true,
+            "right_click": true,
+            "pause_click": true,
+            "stop_click": true,
+            "click_attr": true,
+            "main_window": true
+        }
+    },
+    "default_doc_link": "https://xystudiocode.github.io/pyClickMouse/{lang}",
+    "lang_doc": 0,
+    "update_log_path": "updatelog",
+    "show_warning": true,
+    "show_package_warning": true,
+    "feedback": "https://github.com/xystudiocode/pyClickMouse/issues/new/choose",
+    "hide_flags": true,
+    "modify_using_default_input": false,
+    "modify_using_default_combo": false
+}

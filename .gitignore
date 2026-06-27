@@ -410,12 +410,8 @@ updater.old/
 updaterback/
 data/
 key.json
-gui/dev_list/*
-!gui/dev_list/in_dev
 res/packages/
 Gui/packages.json
-
-dev.dat
 *.zip
 *.7z
 source/
@@ -744,3 +740,5 @@ vite.config.ts.timestamp-*
 
 cache/
 source/
+
+demo/

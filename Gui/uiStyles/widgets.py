@@ -1,9 +1,18 @@
-from uiStyles.QUI import *
-from sharelibs import get_lang,default_button_text
+# from uiStyles.QUI import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+import ctypes # 用于获取系统风格
+from sharelibs import get_lang, default_button_text
 
-__all__ = ['UMessageBox', 'VScrollArea', 'HScrollArea', 'UCheckBox', 'UnitInputLayout', 'ULabel', 'MessageButtonTemplate', 'CustonMessageButton']
+__all__ = ['UMessageBox', 'VScrollArea', 'HScrollArea', 'UCheckBox', 'UnitInputLayout', 'ULabel', 'MessageButton', 'CustonMessageButton', 'MessageIcon']
 
-class MessageButtonTemplate:
+# 定义消息框图标对应的声音常量
+MB_ICONHAND = 0x00000010      # 错误（手形）
+MB_ICONEXCLAMATION = 0x00000030  # 警告
+MB_ICONASTERISK = 0x00000040     # 信息
+
+class MessageButton:
     NOBUTTON = 0b0
     YES = 0b1
     NO = 0b10
@@ -12,85 +21,167 @@ class MessageButtonTemplate:
     YESNO = YES | NO
     OKCANCEL = OK | CANCEL
 
+    class ReturnValue:
+        YES = 0
+        NO = 1
+        OK = 2
+        CANCEL = 3
+
+class MessageIcon:
+    INFO = 0b1
+    WARNING = 0b10
+    CRITICAL = 0b100
+    QUESTION = 0b1000
+
 class CustonMessageButton:
     def __init__(self, text, role):
         self.text = text
         self.role = role
 
-class UMessageBox(QMessageBox):
-    @staticmethod
-    def new_msg(parent, 
-                title: str, 
-                text: str, 
-                icon: QMessageBox.Icon, 
-                buttons: MessageButtonTemplate = MessageButtonTemplate.OK,
-                defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
-        
-        msg_box = QMessageBox(icon, title, text, buttons=QMessageBox.NoButton, parent=parent)
-        
-        default_btn = None
-        
-        # 虽然下面的规则匹配有点奇怪，但是为了显示整齐所以要这样写
+class UMessageBox(QDialog):
+    def __init__(self, parent: QWidget | None, title: str, text: str, icon: MessageIcon, buttons: MessageButton, defaultButton: MessageButton):
+        super().__init__(parent)
+
+        self.setWindowTitle(title)
+
+        self.text = text
+        match icon:
+            case MessageIcon.INFO:
+                self.icon = QStyle.SP_MessageBoxInformation
+            case MessageIcon.WARNING:
+                self.icon = QStyle.SP_MessageBoxWarning
+            case MessageIcon.CRITICAL:
+                self.icon = QStyle.SP_MessageBoxCritical
+            case MessageIcon.QUESTION:
+                self.icon = QStyle.SP_MessageBoxQuestion
+            case _:
+                raise ValueError('Invalid icon value')
+
+        self.buttons = {}
+        self.defaultButton = None
+
+        self.btn_id = 5 # 前四个为默认按钮id，后面为自定义按钮id
+
         if isinstance(buttons, int):
-            if buttons & MessageButtonTemplate.YES:
-                btn = msg_box.addButton(get_lang('01', source=default_button_text), QMessageBox.YesRole)
-                if defaultButton == MessageButtonTemplate.YES:
-                    default_btn = btn
-            
-            if buttons & MessageButtonTemplate.NO:
-                btn = msg_box.addButton(get_lang('02', source=default_button_text), QMessageBox.AcceptRole)
-                if defaultButton == MessageButtonTemplate.NO:
-                    default_btn = btn
-            
-            if buttons & MessageButtonTemplate.OK:
-                btn = msg_box.addButton(get_lang('03', source=default_button_text), QMessageBox.NoRole)
-                if defaultButton == MessageButtonTemplate.OK:
-                    default_btn = btn
-            
-            if buttons & MessageButtonTemplate.CANCEL:
-                btn = msg_box.addButton(get_lang('04', source=default_button_text), QMessageBox.RejectRole)
-                if defaultButton == MessageButtonTemplate.CANCEL:
-                    default_btn = btn
-        elif isinstance(buttons, CustonMessageButton):
-            btn = msg_box.addButton(buttons.text, buttons.role)
-            if defaultButton == buttons:
-                default_btn = btn
-        elif isinstance(buttons, list):
+            if buttons & MessageButton.YES:
+                btn = QPushButton(get_lang('01', source=default_button_text))
+                msg_id = 1
+
+                self.buttons[msg_id] = btn
+                if defaultButton == MessageButton.YES:
+                    self.defaultButton = btn
+            if buttons & MessageButton.NO:
+                btn = QPushButton(get_lang('02', source=default_button_text))
+                msg_id = 2
+                self.buttons[msg_id] = btn
+
+                if defaultButton == MessageButton.NO:
+                    self.defaultButton = btn
+            if buttons & MessageButton.OK:
+                btn = QPushButton(get_lang('03', source=default_button_text))
+                msg_id = 3
+                self.buttons[msg_id] = btn
+
+                if defaultButton == MessageButton.OK:
+                    self.defaultButton = btn
+            if buttons & MessageButton.CANCEL:
+                btn = QPushButton(get_lang('04', source=default_button_text))
+                msg_id = 4
+                self.buttons[msg_id] = btn
+
+                if defaultButton == MessageButton.CANCEL:
+                    self.defaultButton = btn
+        if isinstance(buttons, CustonMessageButton):
+            btn = QPushButton(buttons.text)
+            msg_id = self.btn_id
+            self.btn_id += 1
+            self.buttons[msg_id] = btn
+
+            if defaultButton == btn:
+                self.defaultButton = btn
+        if isinstance(buttons, list):
             for button in buttons:
                 if isinstance(button, CustonMessageButton):
-                    btn = msg_box.addButton(button.text, button.role)
+                    btn = QPushButton(button.text, button.role)
+                    msg_id = self.btn_id
+                    self.buttons[msg_id] = btn
                     if defaultButton == button:
-                        default_btn = btn
+                        self.defaultButton = btn
                 else:
-                    raise ValueError('buttons must be a list of CustonMessageButton') # 报错
-        else:
-            raise ValueError('buttons must be a int or a list of CustonMessageButton') # 报错
-        
-        if default_btn:
-            msg_box.setDefaultButton(default_btn)
+                    raise ValueError('buttons must be a list of CustonMessageButton')
 
-        return msg_box
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+
+        content_layout = QHBoxLayout()
+        icon = QLabel()
+        show_icon = icon.style().standardIcon(self.icon)
+        icon.setPixmap(show_icon.pixmap(32, 32))
+
+        # 将 label 保存为实例属性，以便后续设置最大宽度
+        label = QLabel(self.text)
+        label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        label.setWordWrap(True) # 文本换行
+        label.setMaximumWidth(500)
+
+        content_layout.addWidget(icon, 0)
+        content_layout.addWidget(label, 1)
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        buttons_layout.setContentsMargins(0, 8, 0, 0)
+        for k, button in self.buttons.items():
+            button.clicked.connect(lambda b, key=k: self.done(key)) # 为按钮添加点击事件
+            buttons_layout.addWidget(button)
+            if button == self.defaultButton:
+                button.setDefault(True)
+
+        layout.addLayout(content_layout)
+        layout.addLayout(buttons_layout)
+
+        self.setLayout(layout)
+
+    def showEvent(self, event):
+        match self.icon:
+            case QStyle.SP_MessageBoxInformation:
+                sound = MB_ICONASTERISK
+            case QStyle.SP_MessageBoxWarning:
+                sound = MB_ICONEXCLAMATION
+            case QStyle.SP_MessageBoxCritical:
+                sound = MB_ICONHAND
+            case _:
+                sound = None
+
+        if sound is not None:
+            ctypes.windll.user32.MessageBeep(sound)
+        return super().showEvent(event)
     
     @classmethod
-    def warning(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.OK, defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
-        msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Warning, buttons, defaultButton)
-        return msg_box.exec()
-
-    @classmethod
-    def critical(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.OK, defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
-        msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Critical, buttons, defaultButton)
-        return msg_box.exec()
+    def infomation(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
+        buttons = MessageButton.OK if buttons is None else buttons
+        defaultButton = MessageButton.OK if buttons is None else defaultButton
+        return cls(parent, title, text, MessageIcon.INFO, buttons, defaultButton).exec()
     
     @classmethod
-    def information(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.OK, defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
-        msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Information, buttons, defaultButton)
-        return msg_box.exec()
+    def warning(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
+        buttons = MessageButton.OK if buttons is None else buttons
+        defaultButton = MessageButton.OK if buttons is None else defaultButton
+        return cls(parent, title, text, MessageIcon.WARNING, buttons, defaultButton).exec()
 
     @classmethod
-    def question(cls, parent, title: str, text: str, buttons: MessageButtonTemplate = MessageButtonTemplate.YESNO, defaultButton: MessageButtonTemplate = MessageButtonTemplate.YES):
-        msg_box = cls.new_msg(parent, title, text, QMessageBox.Icon.Question, buttons, defaultButton)
-        return msg_box.exec()
-    
+    def critical(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
+        buttons = MessageButton.OK if buttons is None else buttons
+        defaultButton = MessageButton.OK if buttons is None else defaultButton
+        return cls(parent, title, text, MessageIcon.CRITICAL, buttons, defaultButton).exec()
+
+    @classmethod
+    def question(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
+        buttons = MessageButton.YESNO if buttons is None else buttons
+        defaultButton = MessageButton.YESNO if buttons is None else defaultButton
+        return cls(parent, title, text, MessageIcon.QUESTION, buttons, defaultButton).exec()
+
 class VScrollArea(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
