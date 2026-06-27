@@ -4,7 +4,7 @@ import sys
 app = QApplication(sys.argv)
 from uiStyles.QUI import *
 
-from uiStyles import PagesUI, UMessageBox, MessageButtonTemplate, styles, maps, UCheckBox
+from uiStyles import PagesUI, UMessageBox, MessageButton, styles, maps, UCheckBox
 import pyperclip
 from sharelibs import (get_lang, settings, get_inst_lang, get_icon, system_lang, parse_system_language_to_lang_id, run_software, get_resource_path, is_admin, get_init_lang, QtThread, mem_id)
 import win32com.client
@@ -143,8 +143,8 @@ class MessageBox(UMessageBox):
                 title: str, 
                 text: str, 
                 icon: QMessageBox.Icon, 
-                buttons: MessageButtonTemplate = MessageButtonTemplate.OK,
-                defaultButton: MessageButtonTemplate = MessageButtonTemplate.OK):
+                buttons: MessageButton = MessageButton.OK,
+                defaultButton: MessageButton = MessageButton.OK):
         
         msg_box = UMessageBox.new_msg(parent, title, text, icon, buttons, defaultButton)
         new_color_bar(msg_box)
@@ -216,7 +216,7 @@ class ColorGetter(QObject):
         '''应用标题栏样式'''
         hwnd = window.winId().__int__()
         
-        if select_styles.css_data['.meta']['mode'] == 'dark':
+        if select_styles.css_data['.meta']['--mode'] == 'dark':
             is_dark_mode = 1
         else:
             is_dark_mode = 0
@@ -781,7 +781,7 @@ class InstallWindow(PagesUI):
                     self,
                     get_ipk_lang('1a'),
                     get_ipk_lang('24').format('\n'.join(self.changes if self.changes else [get_ipk_lang('2f')])),
-                MessageButtonTemplate.YESNO,
+                MessageButton.YESNO,
                 )
                 
                 for i in packages_info:
@@ -793,7 +793,7 @@ class InstallWindow(PagesUI):
                     
                 self.changes = get_list_diff(select_package_id, package_id_list)
 
-                if message == 3:
+                if message == MessageButton.NO:
                     return
             else:
                 message =QMessageBox.question(

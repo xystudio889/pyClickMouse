@@ -322,6 +322,14 @@ layout: doc
 如果关闭此选项，只有在连点为空的时候才会使用默认值；开启后只要输入格式错误就会使用默认值。
 </note>
 
+- 使用默认值修改连点属性：如果启用，那么在一个输入框有值时，另一个无值的输入框会继续沿用。
+- - 类型：开关
+- - 默认值：关
+- - 字段名：`modify_using_default_input`
+- 使用默认值修改连点单位：如果启用，那么在单位变化时，默认的数值会继续沿用。
+- - 类型：开关
+- - 默认值：关
+- - 字段名：`modify_using_default_combo`
 - 连点次数默认值：控制连点次数为空的时候的默认次数
 - - 类型：输入框
 - - 默认值：空
@@ -405,35 +413,31 @@ layout: doc
 
 - - 类型：开关
 - - 默认值：开
-- - 字段名：`hotkey_enabled`
+- - 字段名：`hotkey,hotkey_enabled`
 - 左键连点热键：设置左键连点的热键。
 - - 类型：输入框
 - - 默认值：`F2`
-- - 字段名：`left_click_hotkey`
+- - 字段名：`hotkey,hotkeys,left_click_hotkey`
 - 右键连点热键：设置右键连点的热键。
 - - 类型：输入框
 - - 默认值：`F3`
-- - 字段名：`right_click_hotkey`
+- - 字段名：`hotkey,hotkeys,right_click_hotkey`
 - 暂停/重启连点热键：设置暂停/重启连点器的热键。
 - - 类型：输入框
 - - 默认值：`F4`
-- - 字段名：`pause_click_hotkey`
+- - 字段名：`hotkey,hotkeys,pause_click_hotkey`
 - 停止连点热键：设置停止连点的热键。
 - - 类型：输入框
 - - 默认值：`F6`
-- - 字段名：`stop_click_hotkey`
+- - 字段名：`hotkey,hotkeys,stop_click_hotkey`
 - 连点属性热键：设置打开连点属性的热键。
 - - 类型：输入框
 - - 默认值：`Ctrl+Alt+A`
-- - 字段名：`click_attr_hotkey`
-- 快速连点热键：设置打开快速连点的热键。
-- - 类型：输入框
-- - 默认值：`Ctrl+Alt+F`
-- - 字段名：`fast_click_hotkey`
+- - 字段名：`hotkey,hotkeys,click_attr_hotkey`
 - 主窗口热键：设置打开主窗口的热键。
 - - 类型：输入框
 - - 默认值：`Ctrl+Alt+M`
-- - 字段名：`main_window_hotkey`
+- - 字段名：`hotkey,hotkeys,main_window_hotkey`
 - 重置左键连点设置：用于恢复默认左键连点设置。
 - - 类型：按钮
 - 重置右键连点设置：用于恢复默认右键连点设置。

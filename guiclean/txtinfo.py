@@ -16,7 +16,6 @@ class SettingText:
     pause_click_hotkey = 'pause_click_hotkey'
     stop_click_hotkey ='stop_click_hotkey'
     click_attr_hotkey = 'click_attr_hotkey'
-    fast_click_hotkey = 'fast_click_hotkey'
     main_window_hotkey = 'main_window_hotkey'
     default_doc_link = 'default_doc_link'
     hotkey_enabled = 'hotkey_enabled'
@@ -90,10 +89,6 @@ class SettingValue:
     @property
     def click_attr_hotkey(self):
         return self[SettingText.click_attr_hotkey]
-    
-    @property
-    def fast_click_hotkey(self):
-        return self[SettingText.fast_click_hotkey]
     
     @property
     def main_window_hotkey(self):

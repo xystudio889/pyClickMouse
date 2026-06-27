@@ -212,7 +212,12 @@
             "d3": "Lab",
             "d4": "To test some experimental features, which may not be stable.",
             "d5": "Hide \"lab\" when no experimental features",
-            "d6": "There is already an instance running, if you can't find the window, you can wake it up from the tray."
+            "d6": "There is already an instance running, if you can't find the window, you can wake it up from the tray.",
+            "d7": "Modify click attributes using the default values",
+            "d8": "Modify click units using the default values",
+            "d9": "If you enable it, click input blanks will use the default\nvalue when another one is filled. (by default, only all of the input boxes is\nblank will use the default value).",
+            "da": "If you enable it, unit comboboxes as unit, and unit input as number.\nrepresenting the unit (by default, only the combo box equal to the settings will\nuse the default value).",
+            "db": "All"
         }
     },
     {
@@ -355,7 +360,7 @@
             "89": "需要重启以下服务",
             "8a": "响应延迟越快，软件使用越顺畅，但会造成更多的占用。",
             "8b": "Clickmouse",
-            "8c": "连点属性",
+            "8c": "连点属性(&A)",
             "8d": "离开菜单栏以显示连点进度",
             "8e": "扩展(&X)",
             "90": "官方扩展(&O)",
@@ -423,12 +428,17 @@
             "ce": "软件启动会检查资源，如果缺少一些资源，将会警告。",
             "cf": "官方扩展包丢失警告",
             "d0": "我们不建议关闭更新，因为这会让你的clickmouse变得不稳定。",
-            "d1": "如果你的开机自启动出现问题，或打开了clickmouse窗口，可尝试点击\n它来修复。",
+            "d1": "如果你的开机自启动出现问题，或打开了clickmouse窗口，可尝试点\n击它来修复。",
             "d2": "修复成功。",
             "d3": "实验室",
             "d4": "用于测试一些功能，可能不稳定。",
             "d5": "无实验项时候隐藏\"实验室\"设置项",
-            "d6": "已经有一个实例在运行，如果你没有找到窗口，可前往托盘唤醒。"
+            "d6": "已经有一个实例在运行，如果你没有找到窗口，可前往托盘唤醒。",
+            "d7": "使用默认值修改连点属性",
+            "d8": "使用默认值修改连点单位",
+            "d9": "如果启用，点击输入框空白时会使用默认值，当其他输入框有值时，不会使用默认值。\n(默认情况下，只有所有输入框都为空时才会使用默认值)",
+            "da": "如果启用，单位组合框作为单位，单位输入框作为数字代表单位(默认情况下，只有设置\n的值等于组合框的值时才会使用默认值)",
+            "db": "全部"
         }
     }
 ]

@@ -20,13 +20,7 @@ class SettingText:
     select_style = 'select_style'
     use_windows_color = 'use_windows_color'
     theme = 'theme'
-    left_click_hotkey = 'left_click_hotkey'
-    right_click_hotkey = 'right_click_hotkey'
-    pause_click_hotkey = 'pause_click_hotkey'
-    stop_click_hotkey ='stop_click_hotkey'
-    click_attr_hotkey = 'click_attr_hotkey'
-    fast_click_hotkey = 'fast_click_hotkey'
-    main_window_hotkey = 'main_window_hotkey'
+    hotkey = 'hotkey'
     default_doc_link = 'default_doc_link'
     lang_doc = 'lang_doc'
     update_log_path = 'update_log_path'
@@ -35,14 +29,13 @@ class SettingText:
     show_package_warning ='show_package_warning'
     feedback = 'feedback'
     hide_flags = 'hide_flags'
+    modify_using_default_input = 'modify_using_default_input'
+    modify_using_default_combo = 'modify_using_default_combo'
    
 class SettingValue:
     def get(self, value):
         default_value = default_settings.get(value, None)
-        if isinstance(default_value, str):
-            if default_value.startswith('!var '): # 需要加载变量
-                var_name = default_value[5:]
-                default_value = eval(var_name)
+
         return settings.get(value, default_value)
     
     def __getitem__(self, key):
@@ -122,33 +115,19 @@ class SettingValue:
     def theme(self):
         return self[SettingText.theme]
     
-    @property
-    def left_click_hotkey(self):
-        return self[SettingText.left_click_hotkey]
+    def _get_hotkey(self, val_name):
+        setting_value = settings.get(SettingText.hotkey, {}).get(val_name, {})
+        default_value = default_settings.get(SettingText.hotkey, {}).get(val_name, {})
+
+        return default_value | setting_value # 右侧覆盖左侧
     
     @property
-    def right_click_hotkey(self):
-        return self[SettingText.right_click_hotkey]
+    def hotkey_list(self):
+        return self._get_hotkey('hotkeys')
     
     @property
-    def pause_click_hotkey(self):
-        return self[SettingText.pause_click_hotkey]
-    
-    @property
-    def stop_click_hotkey(self):
-        return self[SettingText.stop_click_hotkey]
-    
-    @property
-    def click_attr_hotkey(self):
-        return self[SettingText.click_attr_hotkey]
-    
-    @property
-    def fast_click_hotkey(self):
-        return self[SettingText.fast_click_hotkey]
-    
-    @property
-    def main_window_hotkey(self):
-        return self[SettingText.main_window_hotkey]
+    def hotkey_enabled_list(self):
+        return self._get_hotkey('enabled')
     
     @property
     def default_doc_link(self):
@@ -164,7 +143,7 @@ class SettingValue:
     
     @property
     def hotkey_enabled(self):
-        return self[SettingText.hotkey_enabled]
+        return self[SettingText.hotkey].get(SettingText.hotkey_enabled, True)
     
     @property
     def show_warning(self):
@@ -181,6 +160,14 @@ class SettingValue:
     @property
     def hide_flags(self):
         return self[SettingText.hide_flags]
+    
+    @property
+    def modify_using_default_input(self):
+        return self[SettingText.modify_using_default_input]
+    
+    @property
+    def modify_using_default_combo(self):
+        return self[SettingText.modify_using_default_combo]
     
 class StyleClass:
     big_16 = 'big_text_16'

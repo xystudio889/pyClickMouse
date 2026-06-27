@@ -49,6 +49,12 @@ def remove_old_log(directory_path):
                 os.remove(file_path)
             except Exception as e:
                 pass
+
+class ExceptionVal:
+    raise_trace = 0b1
+    output_msg = 0b10
+    exit = 0b100
+    all = raise_trace | output_msg | exit
             
 # 定义日志路径
 folder_path = Path("cache/logs")
@@ -120,7 +126,7 @@ class Logger:
         self.info(f'logger Started')
         remove_old_log(folder_path)
 
-    def auto_logger(self, service_id=None, start_extra_text='', end_extra_text='', start_extra=None, end_extra=None, level=logging.INFO):
+    def auto_logger(self, service_id: str | None=None, parent:list | None=None , start_extra_text: str='', end_extra_text:str='', start_extra:str | None=None, end_extra: str | None=None, level=logging.INFO):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -140,19 +146,21 @@ class Logger:
                 out_service_id = self.default_service_id if service_id is None else service_id
                 start_extra_out = {} if start_extra is None else start_extra
                 end_extra_out = {} if end_extra is None else end_extra
+                parent_out = [] if parent is None else parent
 
-                log_func(f'Running function: {func.__name__} args={args} kwargs={kwargs}', extra={'service_id': out_service_id, **start_extra_out})
+                function_name = '.'.join(parent_out) + ('.' if parent else '') + func.__name__
+
+                log_func(f'Running function: {function_name} args={args} kwargs={kwargs}', extra={'service_id': out_service_id, **start_extra_out})
                 if start_extra_text:
                     log_func(start_extra_text, extra={'service_id': out_service_id, **start_extra_out})
                 try:
                     result = func(*args, **kwargs)
                 except Exception as e:
                     trace = traceback.format_exc()
-                    self.exception(out_service_id, trace, f'Function {func.__name__} raised an unexpected exception', extra={'service_id': out_service_id, **end_extra_out})
-                    QMessageBox.critical(None, 'An unexpected error occurred', f'An unexpected error occurred in {func.__name__}: \n{trace}\nPlease look the log path: {(folder_path / f"{log_id}.log").resolve()} and send me the log file on issue: https://github.com/xystudiocode/pyClickMouse/issues/new/choose')
+                    self.exception(out_service_id, trace, f'Function {function_name} raised an unexpected exception', extra={'service_id': out_service_id, **end_extra_out})
+                    QMessageBox.critical(None, 'An unexpected error occurred', f'An unexpected error occurred in {function_name}: \n{trace}\nPlease look the log path: {(folder_path / f"{log_id}.log").resolve()} and send me the log file on issue: https://github.com/xystudiocode/pyClickMouse/issues/new/choose')
                     sys.exit(1)  # 退出程序
-                    raise e
-                log_func(f'Function {func.__name__} running successfull, returned: {result}', extra={'service_id': out_service_id, **end_extra_out})
+                log_func(f'Function {function_name} running successfull, returned: {result}', extra={'service_id': out_service_id, **end_extra_out})
                 if end_extra_text:
                     log_func(end_extra_text, extra={'service_id': out_service_id, **end_extra_out})
                 return result
@@ -174,5 +182,13 @@ class Logger:
     def critical(self, msg, extra=None):
         self.logger.critical(msg, extra=extra)
         
-    def exception(self, service, trace, msg='', extra=None):
-        self.critical(f'{msg}: An error occurred in {service}\n{trace}', extra=extra)
+    def exception(self, service, msg='', extra=None, mode: ExceptionVal = ExceptionVal.raise_trace):
+        if mode & ExceptionVal.raise_trace: # 获取堆栈
+            trace = '\n' + traceback.format_exc()
+        else:
+            trace = ''
+        self.critical(f'{msg}: An error occurred in {service}:{trace}', extra=extra)
+        if mode & ExceptionVal.output_msg: # 输出消息
+            QMessageBox.critical(None, 'An unexpected error occurred', f'An unexpected error occurred: {trace}\nPlease look the log path: {(folder_path / f"{log_id}.log").resolve()} and send me the log file on issue: https://github.com/xystudiocode/pyClickMouse/issues/new/choose')
+        if mode & ExceptionVal.exit: # 退出程序
+            sys.exit(1)  # 退出程序

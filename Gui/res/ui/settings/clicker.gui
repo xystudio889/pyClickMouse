@@ -1,6 +1,23 @@
 <layout name='clicker' direction='v' stretch=true>
     <QLabel name='title' args=[title] style='big_text_24' />
     <QLabel name='description' args=['!lang 84'] style='dest' />
+    <layout name='attributes_layout' direction='v' stretch=true show_if=dev_flags.get('new_settings',False) >
+    <UFrame name='line4' style='frame' />
+        <UCheckBox 
+            name='modify_using_default_input'
+            args=['!lang d7'] 
+            init_steps=[{'name': 'setChecked', 'args': [setting_value.modify_using_default_input]}] 
+            signals={'checkStateChanged': lambda: self.on_clicker_changed(self.modify_using_default_input.isChecked, SettingText.modify_using_default_input)}
+        />
+        <QLabel name='allow_modify_desc' args=['!lang d9'] style='dest_small' />、
+        <UCheckBox 
+            name='modify_using_default_combo'
+            args=['!lang d8'] 
+            init_steps=[{'name': 'setChecked', 'args': [setting_value.modify_using_default_combo]}] 
+            signals={'checkStateChanged': lambda: self.on_clicker_changed(self.modify_using_default_combo.isChecked, SettingText.modify_using_default_combo)}
+        />
+        <QLabel name='allow_modify_desc' args=['!lang da'] style='dest_small' />
+    </layout>
     <UFrame name='line1' style='frame' />
     <layout name='delay_layout' direction='v' stretch=true>
         <layout name='delay_input_layout' direction='h' stretch=true>
@@ -25,7 +42,7 @@
             name='error_use_default_delay' 
             args=['!lang 47'] 
             init_steps=[{'name': 'setChecked', 'args': [setting_value.delay_error_use_default]}] 
-            signals={'checkStateChanged': lambda: self.on_setting_changed(self.use_default_delay.isChecked, SettingText.delay_error_use_default)}
+            signals={'checkStateChanged': lambda: self.on_clicker_changed(self.use_default_delay.isChecked, SettingText.delay_error_use_default)}
         />
     </layout>
     <UFrame name='line2' style='frame' />
@@ -50,11 +67,11 @@
         </layout>
         <UCheckBox 
             name='error_use_default_times' 
-            args=['!lang 47'] 
+            args=['!lang 86'] 
             init_steps=[{'name': 'setChecked', 'args': [setting_value.times_error_use_default]}] 
-            signals={'checkStateChanged': lambda: self.on_setting_changed(self.use_default_times.isChecked, SettingText.times_error_use_default)}
+            signals={'checkStateChanged': lambda: self.on_clicker_changed(self.use_default_times.isChecked, SettingText.times_error_use_default)}
         />
     </layout>
-    <UFrame name='line2' style='frame' />
+    <UFrame name='line3' style='frame' />
     <QLabel name='total_time_label' args=[get_lang('2c')+': '+get_lang('61')] style='big_text_16' init_steps=[{'name': 'setAlignment', 'args': [Qt.AlignHCenter]}] />
 </layout>

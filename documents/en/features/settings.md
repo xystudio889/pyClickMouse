@@ -314,6 +314,7 @@ Setting items include:
 - - Type: Checkbox
 - - Default value: Off
 - - Field name: `delay_error_use_default`
+
 <note title='Tip'>
 This operation is disabled when <code>Click Delay</code> parameter is set to empty
 </note>
@@ -322,6 +323,14 @@ This operation is disabled when <code>Click Delay</code> parameter is set to emp
 If turn off this option, only when click is empty will use default value; after enabling, as long as input format error will use default value.
 </note>
 
+- Modify click attributes using the default values: If enabled, then in the click delay change, the default value will continue to use.
+- - Type：Checkbox
+- - Field name: Off
+- - Field name: `modify_using_default_input`
+- Modify click units using the default values: If enabled, then in the unit change, the default value will continue to use.
+- - Type：Checkbox
+- - Field name: Off
+- - Field name: `modify_using_default_combo`
 - Click Count Default Value: Control default count when click count is empty
 - - Type: Input box
 - - Default value: Empty
@@ -405,35 +414,31 @@ Setting items include:
 
 - - Type: Checkbox
 - - Default value: On
-- - Field name: `hotkey_enabled`
+- - Field name: `hotkey,hotkey_enabled`
 - Left Click Hotkey: Set left click hotkey.
 - - Type: Input box
 - - Default value: `F2`
-- - Field name: `left_click_hotkey`
+- - Field name: `hotkey,hotkeys,left_click_hotkey`
 - Right Click Hotkey: Set right click hotkey.
 - - Type: Input box
 - - Default value: `F3`
-- - Field name: `right_click_hotkey`
+- - Field name: `hotkey,hotkeys,right_click_hotkey`
 - Pause/Restart Click Hotkey: Set pause/restart clicker hotkey.
 - - Type: Input box
 - - Default value: `F4`
-- - Field name: `pause_click_hotkey`
+- - Field name: `hotkey,hotkeys,pause_click_hotkey`
 - Stop Click Hotkey: Set stop click hotkey.
 - - Type: Input box
 - - Default value: `F6`
-- - Field name: `stop_click_hotkey`
+- - Field name: `hotkey,hotkeys,stop_click_hotkey`
 - Click Attribute Hotkey: Set open click attribute hotkey.
 - - Type: Input box
 - - Default value: `Ctrl+Alt+A`
-- - Field name: `click_attr_hotkey`
-- Fast Click Hotkey: Set open fast click hotkey.
-- - Type: Input box
-- - Default value: `Ctrl+Alt+F`
-- - Field name: `fast_click_hotkey`
+- - Field name: `hotkey,hotkeys,click_attr_hotkey`
 - Main Window Hotkey: Set open main window hotkey.
 - - Type: Input box
 - - Default value: `Ctrl+Alt+M`
-- - Field name: `main_window_hotkey`
+- - Field name: `hotkey,hotkeys,main_window_hotkey`
 - Reset Left Click Settings: Used to restore default left click settings.
 - - Type: Button
 - Reset Right Click Settings: Used to restore default right click settings.

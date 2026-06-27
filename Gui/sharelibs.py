@@ -10,7 +10,6 @@ from PySide6.QtCore import QThread, Signal
 import os
 import subprocess
 import winreg
-import sys
 import ctypes
 import win32com.client
 import hashlib
@@ -19,14 +18,6 @@ from typing import *
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
-
-def _show_message(message, title, status):
-    if status == 0:
-        QMessageBox.information(None, title, message)
-    elif status == 1:
-        QMessageBox.warning(None, title, message)
-    elif status == 2:
-        QMessageBox.critical(None, title, message)
         
 def multi_replace(text, replace_dict):
     '''一次性替换多个子串'''
@@ -40,31 +31,20 @@ def get_resource_path(*paths):
     '''
     获取资源文件路径
     '''
-    try:
-        resource = Path('res') # 获取当前目录的资源文件夹路径
-        if not resource.exists():
-            raise FileNotFoundError('Resource folder missing: res not found')
-        return str(resource.joinpath(*paths))
-    except Exception as e:
-        _show_message(f'Resource file missing: {e}', 'Error', 2)
-        sys.exit(1)
+    resource = Path('res') # 获取当前目录的资源文件夹路径
+    if not resource.exists():
+        raise FileNotFoundError('Resource not found')
+    return str(resource.joinpath(*paths))
 
-try:
-    lang_path = Path('res', 'langs')
-    with open(lang_path / 'langs.json', 'r', encoding='utf-8') as f:
-        langs = json.load(f)
-        
-    with open(lang_path / 'control.json', 'r', encoding='utf-8') as f:
-        control_langs = json.load(f)
+lang_path = Path('res', 'langs')
+with open(lang_path / 'langs.json', 'r', encoding='utf-8') as f:
+    langs = json.load(f)
     
-    with open(lang_path / 'init.json', 'r', encoding='utf-8') as f:
-        init_langs = json.load(f)
-except FileNotFoundError:
-    _show_message('Resource file missing: langs not found', 'Error', 2)
-    sys.exit(1)
-except json.JSONDecodeError:
-    _show_message('Resource file damaged: langs format error', 'Error', 2)
-    sys.exit(1)
+with open(lang_path / 'control.json', 'r', encoding='utf-8') as f:
+    control_langs = json.load(f)
+
+with open(lang_path / 'init.json', 'r', encoding='utf-8') as f:
+    init_langs = json.load(f)
     
 def load_settings():
     '''
@@ -313,7 +293,8 @@ def widget_replacer(ui_data: str):
     else:
         return uiml.default_replacer(ui_data) # 交由uiml进行替换
         
-def layout_parser(ui_data: Dict[str, Any], namespace=None):
+def layout_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
+    additional_value = additional if additional is not None else {} # 额外参数
     if not ui_data.get('show_if', True):
         return None
     if ui_data.get('direction').lower() == 'u':
@@ -323,22 +304,27 @@ def layout_parser(ui_data: Dict[str, Any], namespace=None):
         # 索引2 -- 选择框
         inputs = ui_data['content'][1]
         for input in inputs['content']:
-            input_compiled_list.append(uiml.compile_ui(input, namespace)) # 递归解析
+            input_compiled_list.append(uiml.compile_ui(input, namespace, additional_value)) # 递归解析
         combos = ui_data['content'][2] # 组合框
         combos_compiled_list = []
         for combo in combos['content']:
-            combos_compiled_list.append(uiml.compile_ui(combo, namespace)) # 递归解析
+            combos_compiled_list.append(uiml.compile_ui(combo, namespace, additional_value)) # 递归解析
         return {'name': ui_data.get('name'), 'direction': ui_data.get('direction'), "texts": ui_data['content'][0]['values'], 'inputs': input_compiled_list, 'combos': combos_compiled_list}
-    return uiml.default_layout_parser(ui_data, namespace) # 交由uiml进行替换
+    return uiml.default_layout_parser(ui_data, namespace, additional_value) # 交由uiml进行替换
 
-def widget_parser(ui_data: Dict[str, Any], namespace=None):
+def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
+    additional_value = additional if additional is not None else {} # 额外参数
     show_value = ui_data.get('show_if', True)
-    uiml_value = uiml.default_widget_parser(ui_data, namespace) # 交由uiml进行替换
+    uiml_value = uiml.default_widget_parser(ui_data, namespace, additional_value) # 交由uiml进行替换
     if not show_value:
         return None
     return uiml_value
 
-uiml.set_namespace(value_replace_func=widget_replacer, layout_parser_func=layout_parser, widget_parser_func=widget_parser, additional_used_widget_key=['show_if'], additional_used_layout_key=['show_if'], reverse=True) # 设置uiml的控制函数
+uiml.set_namespace(
+    value_replace_func=widget_replacer, layout_parser_func=layout_parser, widget_parser_func=widget_parser, 
+    additional_used_widget_key=['show_if'], additional_used_layout_key=['show_if'], reverse=True,
+    enable_value_convert=True
+) # 设置uiml的控制函数
 
 class UIWindow(uiml.UIMLLayout):
     def __init__(self, list=None):
