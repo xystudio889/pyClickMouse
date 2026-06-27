@@ -2292,15 +2292,6 @@ class SettingWindow(SelectUI, UMainWindow):
         self.page_update = self.page_choice_buttons[3] # 更新设置
         self.page_hotkey = self.page_choice_buttons[4] # 热键设置
         self.page_doc = self.page_choice_buttons[5] # 文档设置
-        if dev_flags.get('new_settings', False):
-            self.page_notify = self.page_choice_buttons[6] # 提示设置
-            self.page_flags = self.page_choice_buttons[7] # 实验室
-        else:
-            self.page_notify = ''
-            self.page_flags = self.page_choice_buttons[6] # 实验室
-            
-        if (setting_value.hide_flags and len(dev_settings) == 0):
-            del self.page_choice_buttons[self.page_choice_buttons.index(self.page_flags)]
         
     def check_values(self):
         '''检查设置值'''
@@ -2481,8 +2472,6 @@ class SettingWindow(SelectUI, UMainWindow):
                 # 布局
                 default_doc_layout.addWidget(QLabel(get_lang('c2')), 1) # 默认打开文档提示
                 default_doc_layout.addWidget(default_doc_link, 6)
-                if dev_flags.get('new_settings', False):
-                    default_doc_layout.addWidget(repair_default_doc_link_button, 1)
                 default_doc_layout.addStretch()
                 
                 default_lang_layout = QHBoxLayout() # 默认文档语言布局
@@ -2504,8 +2493,6 @@ class SettingWindow(SelectUI, UMainWindow):
                 # 布局
                 update_log_path_layout.addWidget(QLabel(get_lang('c6')), 1) # 更新日志路径提示
                 update_log_path_layout.addWidget(update_log_path_input, 6)
-                if dev_flags.get('new_settings', False):
-                    update_log_path_layout.addWidget(repair_update_log_path_button, 1)
                 update_log_path_layout.addStretch()
                 
                 label = QLabel(get_lang('c7'))
@@ -2640,15 +2627,11 @@ class SettingWindow(SelectUI, UMainWindow):
     
     def on_sync_notice(self, state):
         '''提示同步'''
-        self.notice_update_notify.setChecked(state)
-        self.notice_update_notify.setEnabled(setting_value.update_enabled)
         self.update_notify.setChecked(state)
         self.update_notify.setEnabled(setting_value.update_enabled)
     
     def on_sync_ok_notice(self, state):
         '''提示同步'''
-        self.notice_update_ok_notify.setChecked(state)
-        self.notice_update_ok_notify.setEnabled(setting_value.update_enabled)
         self.update_ok.setChecked(state)
         self.update_ok.setEnabled(setting_value.update_enabled)
     
@@ -2683,9 +2666,6 @@ class SettingWindow(SelectUI, UMainWindow):
         self.quiet_install.setEnabled(state)
         self.update_ok.setEnabled(state)
         self.update_frequency.setEnabled(state)
-        if dev_flags.get('new_settings', False):
-            self.notice_update_notify.setEnabled(state)
-            self.notice_update_ok_notify.setEnabled(state)
         
     def repair_auto_start(self):
         logger.info('Repair auto start')
