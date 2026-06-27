@@ -234,7 +234,7 @@ export default withMermaid({
                       collapsed: true,
                       items: [
                         {
-                          text: '3.2.3.22',
+                          text: '3.3.0.23alpha6',
                           link: '/en/updatelog/beta/3/33023a6',
                         },
                         {
@@ -654,7 +654,7 @@ export default withMermaid({
                       collapsed: true,
                       items: [
                         {
-                          text: '3.2.3.22',
+                          text: '3.3.0.23alpha6',
                           link: '/zh-CN/updatelog/beta/3/33023a6',
                         },
                         {
