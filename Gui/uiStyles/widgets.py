@@ -22,10 +22,10 @@ class MessageButton:
     OKCANCEL = OK | CANCEL
 
     class ReturnValue:
-        YES = 0
-        NO = 1
-        OK = 2
-        CANCEL = 3
+        YES = 1
+        NO = 2
+        OK = 3
+        CANCEL = 4
 
 class MessageIcon:
     INFO = 0b1

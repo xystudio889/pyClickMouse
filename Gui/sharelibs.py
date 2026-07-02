@@ -170,7 +170,9 @@ def create_shortcut(path, target, description, work_dir = None, icon_path = None
         pass
 
 with open(get_resource_path('versions.json'), 'r') as f:
-    __version__ = json.load(f)['clickmouse']
+    _data = json.load(f)
+    __version__ = _data['clickmouse']
+    build_number = _data['build_number']
     
 with open(get_resource_path('langs', 'units.json'), 'r', encoding='utf-8') as f:
     unit_lang = json.load(f)

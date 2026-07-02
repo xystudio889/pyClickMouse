@@ -1611,7 +1611,8 @@ class AboutWindow(UDialog):
 
         # 版本信息
         version_status_text = get_lang('65') if is_pre else ''
-        version = QLabel(get_lang('1c').format(__version__, version_status_text))
+
+        version = QLabel(get_lang('1c').format(__version__, version_status_text, build_number))
         about = QLabel(get_lang('1d'))
 
         # 按钮
@@ -1621,9 +1622,9 @@ class AboutWindow(UDialog):
 
         # 布局
         central_layout.addWidget(self.image_label, 0, 0, 1, 1)
-        central_layout.addWidget(version, 0, 1, 1, 2)
-        central_layout.addWidget(about, 2, 0, 1, 3)
-        central_layout.addWidget(ok_button, 3, 2)
+        central_layout.addWidget(version, 0, 1, 1, 4)
+        central_layout.addWidget(about, 2, 0, 1, 5)
+        central_layout.addWidget(ok_button, 3, 4)
 
         self.setLayout(central_layout)
 
@@ -2292,6 +2293,12 @@ class SettingWindow(SelectUI, UMainWindow):
         self.page_update = self.page_choice_buttons[3] # 更新设置
         self.page_hotkey = self.page_choice_buttons[4] # 热键设置
         self.page_doc = self.page_choice_buttons[5] # 文档设置
+        if dev_flags.get('new_settings', False):
+            self.page_notify = self.page_choice_buttons[6] # 通知设置
+            self.page_flags = self.page_choice_buttons[7] # 标志设置
+        else:
+            self.page_flags = self.page_choice_buttons[6] # 标志设置
+            self.page_notify = ''
         
     def check_values(self):
         '''检查设置值'''
@@ -3112,6 +3119,7 @@ if __name__ == '__main__':
     is_running = any(list(map(lambda x: QSharedMemory(x).attach(), mem_id[3:4])))
     if is_running:
         # 已经有一个实例在运行
+        QMessageBox.critical(None, get_lang('14'), get_lang('d6'))
         sys.exit(2)
 
     with open(get_resource_path('langs', 'packages.json'), 'r', encoding='utf-8') as f:
