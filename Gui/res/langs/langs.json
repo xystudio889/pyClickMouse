@@ -33,7 +33,7 @@
             "19": "Current is the latest version.",
             "1a": "Please enter a valid positive integer delay.",
             "1b": "An error occurred: ",
-            "1c": "ClickMouse {1},Version {0}\n\n A fast,simple and convinient mouse clicker \nmade with python.",
+            "1c": "ClickMouse {1},Version {0}\nBuild number {2}\n\n A fast,simple and convinient mouse clicker \nmade with python.",
             "1d": "This software is open source under the MIT license, and you\ncan copy, modify, and distribute it. The author is xystudio.",
             "1e": "OK",
             "1f": "Cancel",
@@ -217,7 +217,8 @@
             "d8": "Modify click units using the default values",
             "d9": "If you enable it, click input blanks will use the default\nvalue when another one is filled. (by default, only all of the input boxes is\nblank will use the default value).",
             "da": "If you enable it, unit comboboxes as unit, and unit input as number.\nrepresenting the unit (by default, only the combo box equal to the settings will\nuse the default value).",
-            "db": "All"
+            "db": "All",
+            "dc": "Refresh"
         }
     },
     {
@@ -254,7 +255,7 @@
             "19": "当前已是最新版本。",
             "1a": "请输入有效的正整数延迟。",
             "1b": "发生错误: ",
-            "1c": "ClickMouse{1},版本{0}\n\n一款快捷，简洁，轻便；使用python制作的鼠标连点\n器。",
+            "1c": "ClickMouse{1},版本{0}\n编译号{2}\n\n一款快捷，简洁，轻便；使用python制作的鼠标连点\n器。",
             "1d": "本软件使用MIT许可证开源,可以复制，修改，分发等;作者为\nxystudio。",
             "1e": "确定",
             "1f": "取消",
@@ -438,7 +439,8 @@
             "d8": "使用默认值修改连点单位",
             "d9": "如果启用，点击输入框空白时会使用默认值，当其他输入框有值时，不会使用默认值。\n(默认情况下，只有所有输入框都为空时才会使用默认值)",
             "da": "如果启用，单位组合框作为单位，单位输入框作为数字代表单位(默认情况下，只有设置\n的值等于组合框的值时才会使用默认值)",
-            "db": "全部"
+            "db": "全部",
+            "dc": "刷新"
         }
     }
 ]

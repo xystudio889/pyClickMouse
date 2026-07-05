@@ -22,10 +22,10 @@ class MessageButton:
     OKCANCEL = OK | CANCEL
 
     class ReturnValue:
-        YES = 0
-        NO = 1
-        OK = 2
-        CANCEL = 3
+        YES = 1
+        NO = 2
+        OK = 3
+        CANCEL = 4
 
 class MessageIcon:
     INFO = 0b1
@@ -159,7 +159,7 @@ class UMessageBox(QDialog):
         return super().showEvent(event)
     
     @classmethod
-    def infomation(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
+    def information(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
         buttons = MessageButton.OK if buttons is None else buttons
         defaultButton = MessageButton.OK if buttons is None else defaultButton
         return cls(parent, title, text, MessageIcon.INFO, buttons, defaultButton).exec()

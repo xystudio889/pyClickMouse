@@ -157,7 +157,7 @@ class Logger:
                     result = func(*args, **kwargs)
                 except Exception as e:
                     trace = traceback.format_exc()
-                    self.exception(out_service_id, trace, f'Function {function_name} raised an unexpected exception', extra={'service_id': out_service_id, **end_extra_out})
+                    self.exception(out_service_id, f'Function {function_name} raised an unexpected exception', extra={'service_id': out_service_id, **end_extra_out}, mode=ExceptionVal.raise_trace | ExceptionVal.output_msg | ExceptionVal.exit)
                     QMessageBox.critical(None, 'An unexpected error occurred', f'An unexpected error occurred in {function_name}: \n{trace}\nPlease look the log path: {(folder_path / f"{log_id}.log").resolve()} and send me the log file on issue: https://github.com/xystudiocode/pyClickMouse/issues/new/choose')
                     sys.exit(1)  # 退出程序
                 log_func(f'Function {function_name} running successfull, returned: {result}', extra={'service_id': out_service_id, **end_extra_out})

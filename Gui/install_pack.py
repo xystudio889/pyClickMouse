@@ -216,7 +216,7 @@ class ColorGetter(QObject):
         '''应用标题栏样式'''
         hwnd = window.winId().__int__()
         
-        if select_styles.css_data['.meta']['--mode'] == 'dark':
+        if select_styles.css_data['.meta']['mode'] == 'dark':
             is_dark_mode = 1
         else:
             is_dark_mode = 0
@@ -614,6 +614,9 @@ class InstallWindow(PagesUI):
             self.next_btn.setVisible(True)
             self.cancel_btn.setVisible(True)
             self.finish_btn.setVisible(False)
+
+        if self.current_page == self.PAGE_read_license:
+            self.next_btn.setEnabled(False)
             
         # 复制错误
         if self.current_page == self.PAGE_error:
@@ -813,6 +816,12 @@ class InstallWindow(PagesUI):
         if self.current_page == self.PAGE_set_components and is_ipk:
             # 第四页ipk：回滚要跳跃
             self.set_page(self.PAGE_hello)
+            return
+        if self.current_page == self.PAGE_read_license:
+            # 读取许可协议返回：回复启用按钮
+            self.next_btn.setEnabled(True)
+        self.emua_checkbox.setChecked(False)
+        super().on_prev()
         
     def closeEvent(self, event):
         if self.current_page < self.PAGE_finish:

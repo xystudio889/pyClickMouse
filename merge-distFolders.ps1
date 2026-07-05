@@ -5,8 +5,8 @@
     扫描当前目录下所有以 .dist 结尾的文件夹。
     - 对于普通 .dist 文件夹，将其直接子文件/子文件夹（包括隐藏文件）移动到 test 文件夹，
       若目标已存在同名条目则跳过该子项。移动完成后，若该 .dist 文件夹已为空，则将其删除。
-    - 对于名为 2.dist 的文件夹，将其整个重命名为 2 后移动到 test 文件夹，
-      若目标已存在名为 2 的文件夹则跳过。
+    - 对于名为 updater.dist 的文件夹，将其整个重命名为 updater 后移动到 test 文件夹，
+      若目标已存在名为 updater 的文件夹则跳过。
 .NOTES
     此脚本始终处理 PowerShell 的当前工作目录。
 .EXAMPLE
@@ -33,6 +33,13 @@ $allAllowdNotNoneFolder = $false
 # 获取所有 .dist 文件夹（包括隐藏文件夹）
 $distFolders = Get-ChildItem -Path $SourcePath -Directory -Force | Where-Object { $_.Name -like "*.dist" }
 
+# 排序优先级：main.dist 最优先（排最前），其余普通 .dist 次之，updater.dist 特殊处理不变
+$distFolders = $distFolders | Sort-Object {
+    if ($_.Name -eq "main.dist")      { 0 }
+    elseif ($_.Name -eq "updater.dist") { 2 }
+    else                               { 1 }
+}
+
 if ($distFolders.Count -eq 0) {
     Write-Warning "No .dist folders found."
     exit 0
@@ -44,15 +51,15 @@ if (-not (Test-Path -Path $targetDir)) {
     Write-Host "Created target folder: $targetDir"
 } else {
     Write-Host "Target folder already exists: $targetDir"
-    $choice = Read-Host "Do you want to force delete it? (Y/N, default is N)"
+    $choice = Read-Host "Do you want to force delete it? (Y/N, default is Y)"
     $choice = $choice.Trim().ToUpper()
-    if ($choice -eq "Y") {
+    if ($choice -eq "N" ) {
+        Write-Warning "You refused to delete the target folder, which may cause merge conflicts, and the software cannot run."
+    } else {
         Remove-Item -Path $targetDir -Recurse -Force
         Write-Host "Deleted target folder: $targetDir"
         New-Item -Path $targetDir -ItemType Directory | Out-Null
         Write-Host "Created target folder: $targetDir"
-    } else {
-        Write-Warning "You refused to delete the target folder, which may cause merge conflicts, and the software cannot run."
     }
 }
 
