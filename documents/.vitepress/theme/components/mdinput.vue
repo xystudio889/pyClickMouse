@@ -1440,6 +1440,10 @@ export default {
   border-radius: .375rem;
 }
 
+.file-Btn:hover {
+  background-color: #f2f3f4
+}
+
 .file-Btn span {
   display: flex;
   flex-direction: row;
@@ -1450,7 +1454,7 @@ export default {
   color: #9198a1;
 }
 
-.file-Btn:hover {
+.dark .file-Btn:hover {
   background-color: #15191f;
 }
 </style>

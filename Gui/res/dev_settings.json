@@ -8,5 +8,10 @@
         "name": "Decoupling UI and program",
         "key": "decoupling",
         "desc": "To decouple the UI and program.This need to restart the program to\nake effect."
+    },
+    {
+        "name": "Inline website",
+        "key": "inline_website",
+        "desc": "Website will show as a window if this is enabled."
     }
 ]

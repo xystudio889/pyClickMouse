@@ -11,12 +11,13 @@ try:
 except:
     logger.exception('clickmouse.main', mode=ExceptionVal.all)
 from uiStyles.QUI import *
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineScript
 from uiStyles import *
 from datetime import datetime # 检查时间
 from pynput import keyboard # 热键功能库
 import pyautogui # 鼠标操作库
 from time import sleep, time # 延迟
-from webbrowser import open as open_url # 关于作者
 from check_update import check_update, web_data, download_file # 更新检查
 from uiStyles import indexes as style_indexes
 from sharelibs import __version__ # 版本号
@@ -507,7 +508,15 @@ def on_input_change(*, type:str ):
     if type == InputChange.setting_window:
         on_input_change(type=InputChange.main_window) # 刷新主窗口
     return 0
-        
+
+@logger.auto_logger('clickmouse.main')
+def open_url(url, title: str=None, width:int=None, height:int=None, fixed:bool=False):
+    if dev_flags.get('inline_website'):
+        webview.show(url, title, width, height, fixed)
+    else:
+        from webbrowser import open as open_webbrowser
+        open_webbrowser(url)
+
 class UMainWindow(QMainWindow):
     '''自定义窗口基类'''
     def __init__(self):   
@@ -532,7 +541,7 @@ class UMainWindow(QMainWindow):
         '''窗口关闭事件'''
         color_getter.style_changed.disconnect(self.func)
         return super().closeEvent(event)
-    
+
 class UDialog(QDialog):
     '''自定义对话框基类'''
     def __init__(self):
@@ -558,6 +567,51 @@ class UDialog(QDialog):
         '''窗口关闭事件'''
         color_getter.style_changed.disconnect(self.func)
         return super().closeEvent(event)
+    
+class UWebView(UMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlags(
+            Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
+        ) # 设置窗口属性
+        self.web = QWebEngineView()
+        self.profile = QWebEngineProfile.defaultProfile()
+        self.engine_script = QWebEngineScript()
+
+        self.setCentralWidget(self.web)
+
+    def show(self, url, title: str=None, width:int=None, height:int=None, fixed:bool=False):
+        title = title if title is not None else 'UWebView'
+        _width = width if width is not None  else 640
+        _height = height if height is not None  else 480
+
+        webview.setWindowTitle(title)
+        webview.resize(_width, _height)
+        if fixed:
+            webview.setFixedSize(_width, _height)
+
+        self.update_script(color_getter.is_dark_mode)
+
+        self.web.setUrl(QUrl(url))
+        
+        return super().show()
+    
+    def closeEvent(self, event):
+        '''窗口关闭事件'''
+        self.web.setUrl(QUrl('about:blank')) # 隐藏网页
+        return super().closeEvent(event)
+    
+    @logger.auto_logger('clickmouse.webview', ['UWebView'])
+    def update_script(self, is_dark_mode: bool):
+        with open(get_resource_path('WebviewTheme.js'), "r", encoding='utf-8') as f:
+            self.script = f"var theme = '{'dark' if is_dark_mode else 'light'}';\n" + f.read()
+
+        self.engine_script.setName('dark-mode')
+        self.engine_script.setInjectionPoint(QWebEngineScript.DocumentCreation)  # 尽早注入
+        self.engine_script.setWorldId(QWebEngineScript.MainWorld)
+        self.engine_script.setRunsOnSubFrames(True)
+        self.engine_script.setSourceCode(self.script) # 设置代码，配置深色浅色模式
+        self.profile.scripts().insert(self.engine_script)
     
 class MessageBox(UMessageBox):
     def __init__(self, parent: QWidget | None, title: str, text: str, icon: MessageIcon, buttons: MessageButton, defaultButton: MessageButton):
@@ -871,7 +925,7 @@ class Refresh:
                 logger.error(f'Step {code.__name__} Running failed: {e}')
 
     def refresh_title(self):
-        QTimer.singleShot(setting_value.soft_delay, color_getter.style_changed.emit)
+        QTimer.singleShot(setting_value.soft_delay, lambda: color_getter.style_changed.emit(bool(color_getter.is_dark_mode)))
 
     def left_check(self):
         if clicker.left_clicked:
@@ -914,7 +968,7 @@ class RunAfter:
                 run_software(python_path, exe_path)
 
 class ColorGetter(QObject):
-    style_changed = Signal()
+    style_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -923,6 +977,7 @@ class ColorGetter(QObject):
 
         # 记录当前主题
         self.style = setting_value.select_style
+        self.is_dark_mode = 0
 
         self.current_theme, self.windows_theme, self.windows_color, self.use_windows_color = self.load_theme()
         try:
@@ -1020,15 +1075,15 @@ class ColorGetter(QObject):
         hwnd = window.winId().__int__()
 
         if select_styles.css_data['.meta']['mode'] == 'dark':
-            is_dark_mode = 1
+            self.is_dark_mode = 1
         else:
-            is_dark_mode = 0
+            self.is_dark_mode = 0
 
         # 设置深色模式
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             wintypes.HWND(hwnd),
             DWMWA_USE_IMMERSIVE,
-            ctypes.byref(wintypes.INT(is_dark_mode)),
+            ctypes.byref(wintypes.INT(self.is_dark_mode)),
             ctypes.sizeof(wintypes.INT)
         )
 
@@ -1212,40 +1267,40 @@ class MainWindow(UMainWindow):
         menu_bar = self.menuBar()
 
         # 文件菜单
-        file_menu = menu_bar.addMenu(get_lang('01'))
+        file_menu: QMenu = menu_bar.addMenu(get_lang('01'))
 
         # 清理缓存动作
-        clean_cache_action = file_menu.addAction(get_lang('02'))
+        clean_cache_action: QAction = file_menu.addAction(get_lang('02'))
 
         # 退出动作
-        exit_action = file_menu.addAction(get_lang('03'))
+        exit_action: QAction = file_menu.addAction(get_lang('03'))
 
         # 设置菜单
-        settings_menu = menu_bar.addMenu(get_lang('04'))
-        settings_action = settings_menu.addAction(get_lang('05'))
-        attr_action = settings_menu.addAction(get_lang('8c'))
+        settings_menu: QMenu = menu_bar.addMenu(get_lang('04'))
+        settings_action: QAction = settings_menu.addAction(get_lang('05'))
+        attr_action: QAction = settings_menu.addAction(get_lang('8c'))
 
         # 更新菜单
-        update_menu = menu_bar.addMenu(get_lang('06'))
+        update_menu: QMenu = menu_bar.addMenu(get_lang('06'))
 
         # 更新菜单动作
-        update_check = update_menu.addAction(get_lang('07'))
-        update_log = update_menu.addAction(get_lang('08'))
+        update_check: QAction = update_menu.addAction(get_lang('07'))
+        update_log: QAction = update_menu.addAction(get_lang('08'))
 
         # 帮助菜单
-        help_menu = menu_bar.addMenu(get_lang('09'))
-        about_action = help_menu.addAction(get_lang('0a'))
+        help_menu: QMenu = menu_bar.addMenu(get_lang('09'))
+        about_action: QAction = help_menu.addAction(get_lang('0a'))
 
         # 发送反馈
-        create_issue_action = help_menu.addAction(get_lang('ba'))
+        create_issue_action: QAction = help_menu.addAction(get_lang('ba'))
 
         # 文档菜单
-        doc = help_menu.addAction(get_lang('5f'))
+        doc: QAction = help_menu.addAction(get_lang('5f'))
         doc.triggered.connect(self.open_doc)
 
         # 扩展菜单
-        extension_menu = menu_bar.addMenu(get_lang('8e'))
-        official_extension_menu = extension_menu.addMenu(get_lang('90'))
+        extension_menu: QMenu = menu_bar.addMenu(get_lang('8e'))
+        official_extension_menu: QMenu = extension_menu.addMenu(get_lang('90'))
         if not any(show_list):
             # 无官方扩展提示
             official_extension_menu.addAction(get_lang('91')).setDisabled(True)
@@ -1254,7 +1309,7 @@ class MainWindow(UMainWindow):
             for name, show, package_id in zip(package_names, show_list, package_ids):
                 if show:
                     official_extension_menu.addAction(name).triggered.connect(lambda chk, idx=package_id: self.do_extension(idx)) # 给菜单项添加ID，方便绑定事件
-        manage_extension_menu = official_extension_menu.addAction(get_lang('92'))
+        manage_extension_menu: QAction = official_extension_menu.addAction(get_lang('92'))
         manage_extension_menu.triggered.connect(self.show_manage_extension) # 管理扩展菜单
         manage_extension_menu.setEnabled(has_packages)
 
@@ -1288,7 +1343,7 @@ class MainWindow(UMainWindow):
         update_check.triggered.connect(lambda: self.on_update(True))
         settings_action.triggered.connect(self.show_setting)
         exit_action.triggered.connect(app.quit)
-        create_issue_action.triggered.connect(lambda: open_url(setting_value.feedback))
+        create_issue_action.triggered.connect(lambda: open_url(setting_value.feedback, filter_hotkey(get_lang('ba')), 1000, 600, True))
         attr_action.triggered.connect(self.show_attr)
         
     def open_doc(self, *, path: str=''):
@@ -1307,7 +1362,7 @@ class MainWindow(UMainWindow):
         if doc_choice_lang not in supported_doc_lang: # 不受支持的语言包
             doc_choice_lang = 'en' # 默认英文
 
-        open_url(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang))
+        open_url(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang), filter_hotkey(get_lang('5f')), 1000, 600, True)
         
         logger.info(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang))
 
@@ -1425,7 +1480,7 @@ class MainWindow(UMainWindow):
     def save(self):
         '''保存更新缓存'''
         if should_check_update_res:
-            save_update_cache(should_update=result[0], latest_version=result[1], update_info=result[2], hash=result[3], update_version_tag=result[4]) # 缓存最新版本
+            save_update_cache(should_update=result[0], latest_version=result[1], hash=result[3], update_version_tag=result[4]) # 缓存最新版本
 
     def on_check_update_result(self, check_data):
         '''检查更新结果'''
@@ -3179,12 +3234,15 @@ if __name__ == '__main__':
         DWMNCRP_ENABLED = 1
 
         logger.info('Loading services')
+        icon = get_icon('icon')
+
         refresh = Refresh()
         setting_value = SettingValue()
         clicker = Click()
         auto_start_manager = StartManager()
         color_getter = ColorGetter()
         run_after = RunAfter()
+        webview = UWebView()
         hotkey_listener = get_hotkey_listener_instance()
 
         logger.info('Loading value')
@@ -3208,7 +3266,6 @@ if __name__ == '__main__':
         # 创建资源
         update_cache = load_update_cache()
         should_check_update_res = should_check_update() if setting_value.update_enabled else False
-        icon = get_icon('icon')
         
         settings_need_restart = False
         can_update = False

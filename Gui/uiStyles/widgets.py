@@ -159,7 +159,7 @@ class UMessageBox(QDialog):
         return super().showEvent(event)
     
     @classmethod
-    def infomation(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
+    def information(cls, parent: QWidget | None, title: str, text: str, buttons: MessageButton = None, defaultButton: MessageButton = None):
         buttons = MessageButton.OK if buttons is None else buttons
         defaultButton = MessageButton.OK if buttons is None else defaultButton
         return cls(parent, title, text, MessageIcon.INFO, buttons, defaultButton).exec()
