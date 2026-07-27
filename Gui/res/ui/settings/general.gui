@@ -1,5 +1,5 @@
 <layout name='general' direction='v' stretch=true>
-    <QLabel name='title' args=[title] style='big_text_24' />
+    <QLabel name='title' args=[title] style='big_text_20' />
     <QLabel name='description' args=['!lang 7f'] style='dest' />
     <UFrame name='line1' style='frame' />
     <layout name='lang_choice_layout' direction='h' stretch=true>
@@ -63,14 +63,6 @@
         <QLabel name='delay_label' style='big_text_16' />
         <QLabel name='delay_dest' style='dest_small' args=['!lang 8a'] />
     </layout>
-    <UFrame name='line5' style='frame' />
-    <UCheckBox 
-        name='hide_flag' 
-        args=['!lang d5'] 
-        init_steps=[{'name': 'setChecked', 'args': [setting_value.hide_flags]}] 
-        signals={'checkStateChanged': self.on_hide_flag_changed} 
-        show_if=dev_flags.get('new_settings',False) 
-    />
     <UFrame name='line6' style='frame' show_if=dev_flags.get('new_settings',False) />
     <layout name='repair_layout' direction='h' stretch=true>
         <QPushButton name='repair_button' args=['!lang 5e'] signals={'clicked': self.repair_all_settings} />

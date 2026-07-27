@@ -1,18 +1,69 @@
 from uiStyles.QUI import *
 from uiStyles.widgets import VScrollArea
+from uiml import set_style
 
 __all__ = ['SelectUI', 'PagesUI']
 
 class SelectUI(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        self.page_choice_buttons = [] # 用于存储页面选择按钮文字
+        self.items = [] # 用于存储页面选择按钮文字
         self.buttons = []  # 用于存储所有按钮对象
-        self.stacked_widget = None  # 右侧堆叠窗口部件
-        self.pages = []  # 用于存储所有页面
 
-        self.init_base_ui()
+    def init_ui(self, name: str=None):
+        # 创建中央部件和主布局
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)  # 去除边距使侧边栏贴边
+        main_layout.setSpacing(0)
+
+        # 侧边栏
+        sidebar_layout = QVBoxLayout()
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)  # 去除边距使侧边栏贴边
+        sidebar_layout.setSpacing(0)
+
+        if name is None:
+            self.sidebar_title = None
+        else:
+            self.sidebar_title = QLabel(name)
+            set_style(self.sidebar_title, 'sidebar_title')
+
+        self.sidebar = QListWidget()
+        self.sidebar.setFixedWidth(96)          # 固定宽度
+
+        # 添加项目（名称与对应的图标可自行设置）
+        for name in self.items:
+            item = QListWidgetItem(name)
+            item.setFont(QFont('Microsoft YaHei', 9))
+            self.sidebar.addItem(item)
+
+        # 设置默认选中第一项
+        self.sidebar.setCurrentRow(0)
+
+        # 页面堆叠
+        self.stacked_widget = QStackedWidget()
+        self.scroll_area = VScrollArea()
+
+        # 创建页面
+        for page_id in self.items:
+            page = self.create_page(page_id)
+            self.stacked_widget.addWidget(page)
+
+        self.scroll_area.setWidget(self.stacked_widget)
+
+        # 信号连接
+        # 当侧边栏当前行改变时，切换堆叠页面
+        self.sidebar.currentRowChanged.connect(self.switch_page)
+
+        # 布局组合
+        if self.sidebar_title is not None:
+            sidebar_layout.addWidget(self.sidebar_title)
+        sidebar_layout.addWidget(self.sidebar)
+
+        main_layout.addLayout(sidebar_layout)
+        main_layout.addWidget(self.scroll_area)
     
     def init_base_ui(self):
         '''创建基础UI'''
@@ -20,19 +71,22 @@ class SelectUI(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.main_layout = QHBoxLayout(self.central_widget)
+
+        self.main_layout.setContentsMargins(0, 0, 0, 0)  # 去除边距
+        self.main_layout.setSpacing(0)  # 去除间距
         
         # 设置两个滚动区域之间的间距为15像素
         self.main_layout.setSpacing(15)
         
         # 创建左侧滚动区域
-        self.left_scroll = QScrollArea()
+        self.left_scroll = VScrollArea()
         self.main_layout.addWidget(self.left_scroll, 1)  # 拉伸系数为1
         
         # 创建右侧滚动区域
         self.right_scroll = VScrollArea()
         self.main_layout.addWidget(self.right_scroll, 5)  # 拉伸系数为5
         
-    def init_ui(self):
+    def init_ui_old(self):
         '''创建设置界面'''
         self.draw_page_choice()
         self.init_right_pages()
@@ -43,10 +97,10 @@ class SelectUI(QMainWindow):
         content_layout = QVBoxLayout(content)
         
         # 为每个页面创建按钮
-        for i, page_title in enumerate(self.page_choice_buttons):
+        for i, page_title in enumerate(self.items):
             button = QPushButton(page_title)
             # 连接按钮点击信号到槽函数
-            button.clicked.connect(lambda checked, idx=i: (self.on_page_button_clicked(idx)))
+            button.clicked.connect(lambda checked, idx=i: (self.switch_page(idx)))
             content_layout.addWidget(button)
             self.buttons.append(button)
         
@@ -55,10 +109,9 @@ class SelectUI(QMainWindow):
         
         self.left_scroll.setWidget(content)
         
-    def on_page_button_clicked(self, idx):
+    def switch_page(self, idx):
         '''页面按钮点击槽函数'''
-        # 请自行实现
-        pass
+        self.stacked_widget.setCurrentIndex(idx)
     
     def init_right_pages(self):
         '''初始化右侧设置页面'''
@@ -66,15 +119,14 @@ class SelectUI(QMainWindow):
         self.stacked_widget = QStackedWidget()
         
         # 为每个左侧选项创建一个对应的右侧页面
-        for i, page_title in enumerate(self.page_choice_buttons):
-            page = self.create_setting_page(page_title)
+        for i, page_title in enumerate(self.items):
+            page = self.create_page(page_title)
             self.stacked_widget.addWidget(page)
-            self.pages.append(page)
-            
+
         # 将堆叠窗口部件设置为右侧滚动区域的内容
         self.right_scroll.setWidget(self.stacked_widget)
     
-    def create_setting_page(self, title):
+    def create_page(self, title):
         '''创建设置页面'''
         # 添加：
         # page = QWidget()

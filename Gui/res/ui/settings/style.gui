@@ -1,5 +1,5 @@
 <layout name='style' direction='v' stretch=true>
-    <QLabel name='title' args=[title] style='big_text_24' />
+    <QLabel name='title' args=[title] style='big_text_20' />
     <QLabel name='description' args=['!lang a7'] style='dest' />
     <UFrame name='line1' style='frame' />
     <layout name='style_layout' direction='h' stretch=true>
@@ -29,6 +29,5 @@
             <QLabel name='theme_label' args=['!lang 23']  />
             <QComboBox init_steps=[{'name': 'addItems', 'args':[QStyleFactory.keys()]}, {'name': 'setCurrentText', 'args':[setting_value.theme]}] signals={'currentIndexChanged': self.on_theme_updated} />
         </layout>
-        <QLabel name='theme_tip' args=['!lang 4b'] style='dest_small' />
     </layout>
 </layout>

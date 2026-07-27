@@ -1,5 +1,5 @@
 <layout name='clicker' direction='v' stretch=true>
-    <QLabel name='title' args=[title] style='big_text_24' />
+    <QLabel name='title' args=[title] style='big_text_20' />
     <QLabel name='description' args=['!lang 84'] style='dest' />
     <layout name='attributes_layout' direction='v' stretch=true show_if=dev_flags.get('new_settings',False) >
     <UFrame name='line4' style='frame' />

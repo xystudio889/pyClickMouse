@@ -69,5 +69,7 @@
             "envManager": "ms-python.python:system",
             "packageManager": "ms-python.python:pip"
         }
-    ]
+    ],
+	"prettier.tabWidth": 2,
+	"js/ts.suggest.autoImports": false 
 }

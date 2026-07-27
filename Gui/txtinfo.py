@@ -28,7 +28,6 @@ class SettingText:
     show_warning = 'show_warning'
     show_package_warning ='show_package_warning'
     feedback = 'feedback'
-    hide_flags = 'hide_flags'
     modify_using_default_input = 'modify_using_default_input'
     modify_using_default_combo = 'modify_using_default_combo'
    
@@ -170,6 +169,7 @@ class SettingValue:
         return self[SettingText.modify_using_default_combo]
     
 class StyleClass:
+    big_14 = 'big_text_14'
     big_16 = 'big_text_16'
     big_20 = 'big_text_20'
     big_24 = 'big_text_24'

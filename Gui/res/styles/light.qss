@@ -1,5 +1,7 @@
 * {
-    color: black;
+    color: #1a1a1a;
+    font-size: 12px;
+    font-family: "Segoe UI", "Microsoft YaHei", "DengXian", Arial, sans-serif;
 }
 
 QMainWindow {
@@ -11,16 +13,23 @@ QDialog {
 }
 
 QPushButton {
-    background-color: white;
+    background-color: #fefefe;
     color: black;
+    padding: 4px 10px;
+    min-width: 40px;
+    min-height: 10px;
+    border-radius: 3px;
+    border: 1px solid #e7e7e7;
+    border-bottom-color: #d3d3d3;
 }
 
 QPushButton:hover {
-    background-color: lightgray;
+    background-color: #f6f6f6;
 }
 
 QPushButton:pressed {
-    background-color: gray;
+    background-color: #f5f5f5;
+    color: #878787
 }
 
 QPushButton:disabled {
@@ -29,7 +38,9 @@ QPushButton:disabled {
 }
 
 QComboBox {
-    background-color: white;
+    background-color: #fefefe;
+    padding: 3px 40px 3px 2px;
+    font-size: 12px;
 }
 
 QComboBox:disabled {
@@ -38,7 +49,7 @@ QComboBox:disabled {
 }
 
 QComboBox:hover {
-    background-color: lightgray;
+    background-color: #f6f6f6;
 }
 
 QComboBox QAbstractItemView {
@@ -88,36 +99,63 @@ QCheckBox {
     color: white;
 }
 
+QListWidget {
+    background-color: #f3f3f3;
+    border: none;
+    outline: 0;
+    margin: 0;
+}
+
+QListWidget::item {
+    padding: 0 5px;
+    margin: 3px 0;
+    border-radius: 5px;
+}
+
+QListWidget::item:selected {
+    background-color: #e0e0e0;
+    color: #1a1a1a;
+}
+
+QListWidget::item:hover {
+    background-color: #e5e5e5;
+}
+
+QListWidget::item:hover:selected {
+    background-color: #ccc;
+}
+
+QStatusBar {
+    background-color: lightgray;
+}
+
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
     background-color: #f3f3f3;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px /* 圆角 */
 }
 
 /* 滚动条样式：白底灰边 */
 QScrollBar:vertical {
-    background-color: white;
-    width: 12px;
-    border: 1px solid gray;  /* 灰色边框 */
+    background-color: #f3f3f3;
+    width: 8px;
     margin: 0px;  /* 确保滚动条与容器间无缝隙 */
 }
 
 /* 滚动条滑块样式 */
 QScrollBar::handle:vertical {
-    background-color: lightgray;  /* 浅灰色滑块 */
+    background-color: #d0d0d0;  /* 浅灰色滑块 */
     min-height: 30px;
+    border-radius: 4px;
 }
 
 /* 滚动条滑块悬停样式 */
 QScrollBar::handle:vertical:hover {
-    background-color: darkgray;  /* 深灰色滑块 */
+    background-color: #bababa;  /* 灰色滑块 */
 }
 
 /* 滚动条上下箭头样式 */
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    background-color: white;
-    border: 1px solid gray;
+    background-color: #999;
     height: 10px;
 }
 
@@ -129,27 +167,26 @@ QScrollArea > QWidget > QWidget {
 /* 横向滚动条样式 */
 /* 滚动条样式：白底灰边 */
 QScrollBar:horizontal {
-    background-color: white;
+    background-color: #f3f3f3;
     width: 12px;
-    border: 1px solid gray;  /* 灰色边框 */
     margin: 0px;  /* 确保滚动条与容器间无缝隙 */
 }
 
 /* 滚动条滑块样式 */
 QScrollBar::handle:horizontal {
-    background-color: lightgray;  /* 浅灰色滑块 */
+    background-color: #d0d0d0;  /* 浅灰色滑块 */
     min-height: 30px;
+    border-radius: 4px;
 }
 
 /* 滚动条滑块悬停样式 */
 QScrollBar::handle:horizontal:hover {
-    background-color: darkgray;  /* 深灰色滑块 */
+    background-color: #bababa;  /* 深灰色滑块 */
 }
 
 /* 滚动条上下箭头样式 */
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    background-color: white;
-    border: 1px solid gray;
+    background-color: #999;
     height: 10px;
 }
 
@@ -160,27 +197,43 @@ QStatusBar {
 /* 类型提示框样式 */
 .selected {
     background-color: dodgerblue;
+    border: 1px solid #1473c5;
+    border-bottom-color: #003e73;
     color: white;
 }
 
 .selected:hover {
     background-color: #30a0f0;
+    border: 1px solid #2b80ca;
+    border-bottom-color: #003e73;
     color: white;
 }
 
 .selected:pressed {
     background-color: #2078c5;
-    color: white;
+    color: #c2daef;
 }
 
 .top_widget {
     background-color: white;
 }
 
+.sidebar_title {
+    font-size: 18px;
+    background-color: #e0e0e0;
+    padding: 5px 3px;
+}
+
+.background_level1 {
+    border: 2px solid #e0e0e0;
+    background-color: #e7e7e7;
+    border-radius: 5px;
+}
+
 /* 描述栏样式 */
 .dest {
     color: gray;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .dest_small { 
@@ -190,26 +243,26 @@ QStatusBar {
 /* 大字 */
 .big_text_14 {
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .big_text_16 {
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .big_text_20 {
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .big_text_24 {
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .bold {
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .frame {
