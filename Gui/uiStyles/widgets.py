@@ -227,15 +227,34 @@ class UCheckBox(QWidget):
         return self.checkbox.isChecked()
     
 class UnitInputLayout(QLayout):
+    '''单位输入行布局：文本与下拉框使用真实尺寸，输入框拉伸填充空白，整行占满可用宽度'''
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._item_list = []      # 存储所有子项
-        self._row_breaks = []     # 记录每行结束的索引位置（记录上一行最后一个项的索引）
+        self._item_list = []         # 存储所有子项
+        self._row_breaks = []        # 记录每行结束的索引位置（记录上一行最后一个项的索引）
+        self._stretch_widgets = []   # 需要在行内拉伸填充剩余空间的控件
         self.setContentsMargins(0, 0, 0, 0)
 
     def addItem(self, item: QLayoutItem):
         '''添加子项到列表末尾'''
         self._item_list.append(item)
+
+    def addWidget(self, widget: QWidget, stretch: int = 0):
+        '''
+        添加控件
+        
+        Args:
+            widget: 要添加的控件
+            stretch: 大于 0 时该控件会拉伸填充行内的剩余空间
+        '''
+        super().addWidget(widget)
+        if stretch > 0:
+            self._stretch_widgets.append(widget)
+
+    def _is_stretch_item(self, item: QLayoutItem) -> bool:
+        '''判断子项是否为需要拉伸填充剩余空间的控件'''
+        widget = item.widget()
+        return widget is not None and any(widget is w for w in self._stretch_widgets)
 
     def newRow(self):
         '''标记换行位置'''
@@ -260,6 +279,11 @@ class UnitInputLayout(QLayout):
         '''移除并返回指定索引的子项'''
         if 0 <= index < len(self._item_list):
             item = self._item_list.pop(index)
+
+            # 不再追踪被移除子项的拉伸设置
+            widget = item.widget()
+            if widget is not None:
+                self._stretch_widgets = [w for w in self._stretch_widgets if w is not widget]
             
             # 移除后需要更新换行标记
             for i in range(len(self._row_breaks)):
@@ -329,7 +353,7 @@ class UnitInputLayout(QLayout):
         return rows
 
     def setGeometry(self, rect: QRect):
-        '''核心方法，按行排列所有子项'''
+        '''核心方法，按行排列所有子项：固定尺寸子项保持真实尺寸，可拉伸子项填充剩余空间'''
         super().setGeometry(rect)
         
         if not self._item_list:
@@ -344,56 +368,49 @@ class UnitInputLayout(QLayout):
             -margins.bottom()
         )
         
-        x = available_rect.x()
-        y = available_rect.y()
         spacing = self.spacing()
-        
-        # 获取按行分组的子项
-        rows = self._get_rows()
+        y = available_rect.y()
         
         # 遍历每一行
-        for row_items in rows:
+        for row_items in self._get_rows():
             if not row_items:
                 continue
-                
-            # 计算当前行所有子项的总宽度（包括间距）
-            total_items_width = sum(item.sizeHint().width() for item in row_items)
-            total_spacing = spacing * (len(row_items) - 1)
-            available_width = available_rect.width()
             
             # 计算当前行的最大高度
             row_height = max(item.sizeHint().height() for item in row_items)
             
-            # 如果行内总宽度超过可用宽度，按比例压缩
-            if total_items_width + total_spacing > available_width:
-                scale_factor = available_width / (total_items_width + total_spacing)
-                row_x = x
-                for item in row_items:
-                    hint = item.sizeHint()
-                    item_width = int(hint.width() * scale_factor)
-                    item_height = int(hint.height() * scale_factor)
-                    # 垂直居中
-                    item_y = y + (row_height - item_height) // 2
-                    item.setGeometry(QRect(row_x, item_y, item_width, item_height))
-                    row_x += item_width + spacing
-            else:
-                # 正常排列，保持原大小
-                row_x = x
-                for item in row_items:
-                    hint = item.sizeHint()
-                    # 垂直居中
-                    item_y = y + (row_height - hint.height()) // 2
-                    item.setGeometry(QRect(row_x, item_y, hint.width(), hint.height()))
-                    row_x += hint.width() + spacing
+            stretch_flags = [self._is_stretch_item(item) for item in row_items]
+            stretch_count = sum(stretch_flags)
+            
+            # 固定尺寸子项占用真实尺寸，剩余空间由可拉伸子项均分
+            fixed_width = sum(item.sizeHint().width() for item, is_stretch in zip(row_items, stretch_flags) if not is_stretch)
+            remaining_width = max(0, available_rect.width() - fixed_width - spacing * (len(row_items) - 1))
+            stretch_sizes = []
+            if stretch_count:
+                base_size, extra = divmod(remaining_width, stretch_count)
+                # 多余的像素分给前面的拉伸项，保证整行占满可用宽度
+                stretch_sizes = [base_size + 1] * extra + [base_size] * (stretch_count - extra)
+            
+            row_x = available_rect.x()
+            for item, is_stretch in zip(row_items, stretch_flags):
+                if is_stretch:
+                    item_width = stretch_sizes.pop(0)
+                else:
+                    item_width = item.sizeHint().width()
+                item_height = item.sizeHint().height()
+                # 垂直居中
+                item_y = y + (row_height - item_height) // 2
+                item.setGeometry(QRect(row_x, item_y, item_width, item_height))
+                row_x += item_width + spacing
             
             # 换行：更新y坐标，重置x坐标
             y += row_height + spacing
 
     def addUnitRow(self, text: str, input: QLineEdit, unit: QComboBox):
-        '''添加单位选择控件'''
+        '''添加单位选择控件：文本与下拉框使用真实尺寸，输入框拉伸填充空白'''
         self.newRow() # 换行
         self.addWidget(QLabel(text + ': '))
-        self.addWidget(input)
+        self.addWidget(input, stretch=1)
         self.addWidget(unit)
 
 class ULabel(QLabel):

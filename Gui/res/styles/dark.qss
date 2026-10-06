@@ -1,5 +1,7 @@
 * {
     color: white;
+    font-size: 14px;
+    font-family: "Segoe UI", "Microsoft YaHei", "DengXian", Arial, sans-serif;
 }
 
 QMainWindow {
@@ -11,7 +13,9 @@ QDialog {
 }
 
 QComboBox {
-    background-color: #353535;
+    background-color: #2d2d2d;
+    padding: 3px 40px 3px 2px;
+    font-size: 12px;
 }
 
 QComboBox:disabled {
@@ -20,7 +24,12 @@ QComboBox:disabled {
 }
 
 QComboBox:hover {
-    background-color: #505050;
+    background-color: #323232;
+}
+
+QComboBox:pressed {
+    background-color: #373737;
+    border: 1px solid #303030;
 }
 
 QComboBox:disabled {
@@ -33,25 +42,25 @@ QComboBox QAbstractItemView {
 }
 
 QPushButton {
-    background-color: #404040;
-}
-
-QPushButton:disabled {
-    background-color:#252525;
-    color: #505050;
+    background-color: #3e3e3e;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #3c3c3c;
 }
 
 QPushButton:hover {
-    background-color: #505050;
+    background-color: #444444;
 }
 
 QPushButton:disabled {
-    background-color:#252525;
-    color: #505050;
+    background-color: #373737;
+    color: #808080;
 }
 
 QPushButton:pressed {
-    background-color: #353535;
+    background-color: #393939;
+
+    color: #cecece;
 }
 
 QMenu {
@@ -80,7 +89,10 @@ QMenuBar::item:selected {
 }
 
 QLineEdit {
-    background-color: #353535;
+    height: 30px;
+    padding: 0;
+
+    background-color: #2d2d2d;
 }
 
 QLineEdit:disabled {
@@ -99,8 +111,6 @@ QCheckBox {
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
     background-color: #202020;
-    border: 1px solid #353535;
-    border-radius: 5px;
 }
 
 /* 滚动条角部样式（确保无缝隙） */
@@ -109,76 +119,89 @@ QScrollArea > QWidget > QWidget {
 }
 
 /* 滚动条样式：白底灰边 */
-QScrollBar:vertical {
-    background-color: #202020;
-    width: 12px;
+QScrollBar:vertical, QScrollBar:horizontal {
+    background-color: #303030;
+    width: 8px;
     border: 1px solid gray;  /* 灰色边框 */
 }
 
 /* 滚动条滑块样式 */
-QScrollBar::handle:vertical {
-    background-color: lightgray;  /* 浅灰色滑块 */
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background-color: #a0a0a0;  /* 浅灰色滑块 */
     min-height: 30px;
 }
 
 /* 滚动条滑块悬停样式 */
-QScrollBar::handle:vertical:hover {
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
     background-color: gray;  /* 灰色滑块 */
 }
 
 /* 滚动条上下箭头样式 */
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    background-color: #353535;
-    border: 1px solid gray;
-    height: 10px;
-}
-
-/* 横向滚动条样式 */
-
-/* 滚动条样式：白底灰边 */
-QScrollBar:horizontal {
-    background-color: #202020;
-    width: 12px;
-    border: 1px solid gray;  /* 灰色边框 */
-    margin: 0px;  /* 确保滚动条与容器间无缝隙 */
-}
-
-/* 滚动条滑块样式 */
-QScrollBar::handle:horizontal {
-    background-color: lightgray;  /* 浅灰色滑块 */
-    min-height: 30px;
-}
-
-/* 滚动条滑块悬停样式 */
-QScrollBar::handle:horizontal:hover {
-    background-color: gray;  /* 灰色滑块 */
-}
-
-/* 滚动条上下箭头样式 */
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    background-color: #202020;
-    border: 1px solid gray;
-    height: 10px;
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical, QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    background-color: #cfcfcf;
 }
 
 QStatusBar {
     background-color: #404040;
 }
 
+QListWidget {
+    background-color: #2d2d2d;
+
+    outline: 0;
+    margin: 0;
+}
+
+QListWidget::item {
+    padding: 0;
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+QListWidget::item:selected {
+    background-color: #323232;
+    border-left: 4px solid #61b1ff;
+
+    color: #f0f0f0;
+}
+
+QListWidget::item:hover {
+    background-color: #272727;
+}
+
+QListWidget::item:hover:selected {
+    background-color: #363636;
+}
+
 /* 类型提示框样式 */
 .selected {
-    background-color: dodgerblue;
-    color: white;
+    background-color: #61b1ff;
+    border: 1px solid #65b2ff;
+    border-bottom-color: #3fa0ff;
+
+    color: black;
 }
 
 .selected:hover {
-    background-color: #30a0f0;
-    color: white;
+    background-color: #52a9ff;
+    color: black;
 }
 
 .selected:pressed {
-    background-color: #2078c5;
-    color: white;
+    background-color: #3fa0ff;
+    color: #00254a;
+}
+
+.sidebar_title {
+    font-size: 18px;
+    background-color: #323232;
+    padding: 5px 3px;
+}
+
+.background_level1 {
+    border: 1px solid #303030;
+    background-color: #2b2b2b;
+    border-radius: 4px;
 }
 
 .top_widget {

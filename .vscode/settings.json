@@ -41,9 +41,10 @@
     "git.openRepositoryInParentFolders": "never",
     "github.copilot.enable": {
         "*": false,
-        "plaintext": false,
         "markdown": false,
-        "scminput": false
+        "scminput": false,
+        "plaintext": false,
+        "jsonc": false
     },
     "python.createEnvironment.trigger": "off",
     "editor.unicodeHighlight.ambiguousCharacters": false,

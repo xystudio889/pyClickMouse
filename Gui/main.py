@@ -445,7 +445,6 @@ def on_input_change(*, type:str ):
     delay = get_num(input_delay, setting_value.click_delay, setting_value.delay_error_use_default, 'delay')
 
     if not is_inf:
-        print(setting_value.click_delay, setting_value.click_times)
         if not(setting_value.click_times) and not(setting_value.click_delay):
             on_delay_error(get_lang('61'))
             return 1
@@ -589,7 +588,6 @@ class UWebView(UMainWindow):
     def show(self, url, width:int=None, height:int=None, fixed:bool=False):
         _width = width if width is not None  else 640
         _height = height if height is not None  else 480
-        print(color_getter.is_dark_mode)
         if color_getter.is_dark_mode:
             os.environ['QTWEBENGINE_CHROMIUM_FLAGS'] = '--force-dark-mode'
         else:
@@ -1106,13 +1104,16 @@ class ColorGetter(QObject):
         if self.use_windows_color:
             steps = []
             if select_styles.css_data['.meta']['mode'] == 'dark':
+                accent_color = lighten_color_hex(self.windows_color, 0.4)
                 steps.extend([
-                    [['.selected', 'background-color'], lighten_color_hex(self.windows_color, 0.4)],
-                    [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.45)],
-                    [['.selected', 'color'], 'black'],
-                    [['.selected:hover', 'color'], 'black'],
-                    [['.selected:pressed', 'color'], 'black'],
+                    [['.selected', 'background-color'], accent_color],
+                    [['.selected:hover', 'background-color'], lighten_color_hex(accent_color, -0.1)],
+                    [['.selected:pressed', 'background-color'], lighten_color_hex(accent_color, -0.15)],
+                    [['.selected:pressed', 'color'], lighten_color_hex(accent_color, -0.8)],
+                    [['.selected', 'border'], f'1px solid {lighten_color_hex(accent_color, -0.05)}',],
+                    [['.selected', 'border-bottom-color'], lighten_color_hex(accent_color, -0.15),],
                     [['QCheckBox', 'color'], 'black'],
+                    [['QListWidget::item:selected', 'border-left-color'], accent_color],
                 ])
             else:
                 steps.extend([
@@ -1121,8 +1122,9 @@ class ColorGetter(QObject):
                     [['.selected', 'border-bottom-color'], lighten_color_hex(self.windows_color, -0.35),],
                     [['.selected:pressed', 'background-color'], lighten_color_hex(self.windows_color, 0.3)],
                     [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.2)],
-                    [['.selected:hover', 'border'], f'1px solid {lighten_color_hex(self.windows_color, 0.1)}',],
-                    [['.selected:hover', 'border-bottom-color'], lighten_color_hex(self.windows_color, -0.35),],
+                    [['.selected:pressed', 'border'], f'1px solid {lighten_color_hex(self.windows_color, 0.1)}',],
+                    [['.selected:pressed', 'border-bottom-color'], lighten_color_hex(self.windows_color, -0.35),],
+                    [['QListWidget::item:selected', 'border-left-color'], self.windows_color],
                 ])
             for step in steps:
                 select_styles = select_styles.replace(step[0], StyleReplaceMode.ALL, step[1], output_json=False)
@@ -1153,7 +1155,7 @@ class MainWindow(UMainWindow):
         else:
             self.setGeometry(100, 100, 555, 300)
             self.init_ui_old()
-        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
+        #self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
         logger.debug('Check updates')
         self.on_check_update()
@@ -1169,12 +1171,12 @@ class MainWindow(UMainWindow):
         self.setCentralWidget(central_widget)
         central_layout = QVBoxLayout(central_widget)
 
-        widgetsView = QGridLayout()
-        widgetsView.setContentsMargins(0, 0, 10, 5)
+        widgetsView = QVBoxLayout()
+        widgetsView.setContentsMargins(0, 0, 8, 4)
 
         click_widget = QWidget()
         set_style(click_widget, 'background_level1')
-        click_layout = QGridLayout()
+        click_layout = QVBoxLayout()
         click_widget.setLayout(click_layout)
 
         click_tip = QLabel('Start clicker')
@@ -1182,7 +1184,7 @@ class MainWindow(UMainWindow):
 
         control_widget = QWidget()
         set_style(control_widget, 'background_level1')
-        control_layout = QGridLayout()
+        control_layout = QVBoxLayout()
         control_widget.setLayout(control_layout)
 
         control_tip = QLabel('Control clicker')
@@ -1190,7 +1192,7 @@ class MainWindow(UMainWindow):
 
         input_widget = QWidget()
         set_style(input_widget, 'background_level1')
-        input_layout = QGridLayout()
+        input_layout = QVBoxLayout()
         input_widget.setLayout(input_layout)
 
         input_tip = QLabel('Input attributes')
@@ -1203,9 +1205,9 @@ class MainWindow(UMainWindow):
         self.left_click_button = QPushButton(get_lang('0c'))
         self.left_click_button.setEnabled(False)
 
-        # debug_button = QPushButton('Debug: Reload Window Style')
-        # debug_button.clicked.connect(self._set_style)
-        # central_layout.addWidget(debug_button)
+        debug_button = QPushButton('Debug: Reload Window Style')
+        debug_button.clicked.connect(self._set_style)
+        central_layout.addWidget(debug_button)
 
         self.right_click_button = QPushButton(get_lang('0d'))
         self.right_click_button.setEnabled(False)
@@ -1222,8 +1224,6 @@ class MainWindow(UMainWindow):
         unit_layout = UnitInputLayout()
 
         self.input_delay = QLineEdit()
-        self.input_delay.setFixedWidth(300)
-        self.input_delay.setFixedHeight(30)
 
         self.delay_combo = QComboBox()
         self.delay_combo.addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
@@ -1231,8 +1231,6 @@ class MainWindow(UMainWindow):
         unit_layout.addUnitRow(get_lang('11'), self.input_delay, self.delay_combo)
 
         self.input_times = QLineEdit()
-        self.input_times.setFixedWidth(300)
-        self.input_times.setFixedHeight(30)
 
         self.times_combo = QComboBox()
         self.times_combo.addItems([get_lang('66'), get_lang('2a'), get_lang('2b')])
@@ -1254,25 +1252,30 @@ class MainWindow(UMainWindow):
 
         # 创建布局
         logger.debug('Setting layout')
-        click_layout.addWidget(click_tip, 0, 0, 1, 4)
-        click_layout.addWidget(self.left_click_button, 1, 0)
-        click_layout.addWidget(self.right_click_button, 2, 0)
+        click_layout.addWidget(click_tip)
+        click_layout.addWidget(self.left_click_button, alignment=Qt.AlignLeft)
+        click_layout.addWidget(self.right_click_button, alignment=Qt.AlignLeft)
+        click_layout.addStretch()
 
-        control_layout.addWidget(control_tip, 0, 0, 1, 4)
-        control_layout.addWidget(self.pause_button, 1, 0)
-        control_layout.addWidget(self.stop_button, 2, 0)
+        control_layout.addWidget(control_tip)
+        control_layout.addWidget(self.pause_button, alignment=Qt.AlignLeft)
+        control_layout.addWidget(self.stop_button, alignment=Qt.AlignLeft)
+        click_layout.addStretch()
 
-        input_layout.addWidget(input_tip, 0, 0, 1, 4)
-        input_layout.addLayout(unit_layout, 1, 0, 1, 4)
-        input_layout.addWidget(self.total_time_label, 2, 0, 1, 4)
+        input_layout.addWidget(input_tip)
+        input_layout.addLayout(unit_layout)
+        click_layout.addStretch()
 
-        widgetsView.addWidget(click_widget, 0, 0)
-        widgetsView.addWidget(control_widget, 1, 0)
-        widgetsView.addWidget(input_widget, 2, 0)
+        widgetsView.addWidget(click_widget)
+        widgetsView.addWidget(control_widget)
+        widgetsView.addWidget(input_widget)
+        widgetsView.addWidget(self.total_time_label)
+        click_layout.addStretch()
 
         central_layout.addWidget(title)
+        central_layout.addWidget(QPushButton())
         central_layout.addLayout(widgetsView)
-        central_layout.addStretch(1)
+        central_layout.addStretch()
         self.setLayout(central_layout)
 
         # 按钮信号连接

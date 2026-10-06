@@ -1,11 +1,11 @@
 ---
-title: Decoupling code and ui
+title: Decoupling UI and program
 layout: doc
 ---
 
 # Decoupling UI and program
 
-## Background
+## Reason
 
 - To increase extensibility, users can import other player's gui files.
 - To reduce code redundancy.
@@ -18,35 +18,52 @@ Make the source code a code library, and modify the operation through the `name`
 
 ## Format
 
-The `gui` file is in json format, like:
+<del>The `.gui` file is in json format, like:<br />
+{<br />
+&nbsp;&nbsp;"name": "layout",<br />
+&nbsp;&nbsp;"value": {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;"direction": "h",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;"content": [<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "button",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"value": {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "QPushButton",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"args": ["hello"],<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"style": "selected",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"init_steps": { "setFixedHeight": [30], "setFixedWidth": [100] }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "label",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"value": {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "QLabel",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"args": ["world"],<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"style": "big_text_16",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"init_steps": { "setFixedHeight": [30], "setFixedWidth": [100] }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;]<br />
+&nbsp;&nbsp;}<br />
+}<br />
+</del><br />
 
-```json
-{
-  "name": "layout",
-  "value": {
-    "direction": "h",
-    "content": [
-      {
-        "name": "button",
-        "value": {
-          "type": "QPushButton",
-          "args": ["hello"],
-          "style": "selected",
-          "init_steps": { "setFixedHeight": [30], "setFixedWidth": [100] }
-        }
-      },
-      {
-        "name": "label",
-        "value": {
-          "type": "QLabel",
-          "args": ["world"],
-          "style": "big_text_16",
-          "init_steps": { "setFixedHeight": [30], "setFixedWidth": [100] }
-        }
-      }
-    ]
-  }
-}
+> **Note**: We abandoned the `json` format and switched to `uiml`
+
+`.gui` files use `uiml`, a highly extensible Qt UI language we developed ourselves, similar to:
+
+```xml
+<layout name='central_layout' direction='v'>
+    <QLabel name='left_clicked' args=['!lang 0d'] />
+    <QLabel name='right_clicked' args=['!lang 0e'] />
+    <QLabel name='paused' args=['!lang 71'] />
+    <QLabel name='stopped' args=['!lang 73'] />
+    <QLabel name='click_delay' args=['!lang 78'] />
+    <QLabel name='click_times' args=['!lang 5c'] />
+    <QLabel name='total_run_time' args=['!lang 2c'] />
+    <layout name='bottom_layout' direction='h' stretch='true' stretch_place='start'>
+        <QPushButton name='ok_button' args=['!lang 1e'] style='selected' signals={'clicked': self.close} />
+    </layout>
+</layout>
 ```
 
 ## Enable method
