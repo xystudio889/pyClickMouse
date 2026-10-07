@@ -21,11 +21,11 @@ jobs:
     steps:
       # 步骤1: 签出你的仓库代码到虚拟机
       - name: Checkout 🛎️
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       # 设置 Node.js 环境
       - name: Setup Node.js 🔧
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm' # 启用 npm 缓存以加速后续安装
