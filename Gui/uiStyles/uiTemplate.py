@@ -22,7 +22,6 @@ class SelectUI(QMainWindow):
         # 侧边栏
         sidebar_layout = QVBoxLayout()
         sidebar_layout.setContentsMargins(0, 0, 0, 0)  # 去除边距使侧边栏贴边
-        sidebar_layout.setSpacing(0)
 
         if name is None:
             self.sidebar_title = None
@@ -31,7 +30,7 @@ class SelectUI(QMainWindow):
             set_style(self.sidebar_title, 'sidebar_title')
 
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(96)          # 固定宽度
+        self.sidebar.setFixedWidth(160)          # 固定宽度
 
         # 添加项目（名称与对应的图标可自行设置）
         for name in self.items:
@@ -45,6 +44,9 @@ class SelectUI(QMainWindow):
         # 页面堆叠
         self.stacked_widget = QStackedWidget()
         self.scroll_area = VScrollArea()
+        # 让右侧内容跟随窗口：宽度撑满侧边栏右侧的剩余空间，高度撑满窗口
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
 
         # 创建页面
         for page_id in self.items:
@@ -63,7 +65,7 @@ class SelectUI(QMainWindow):
         sidebar_layout.addWidget(self.sidebar)
 
         main_layout.addLayout(sidebar_layout)
-        main_layout.addWidget(self.scroll_area)
+        main_layout.addWidget(self.scroll_area, 1)
     
     def init_base_ui(self):
         '''创建基础UI'''
@@ -76,7 +78,7 @@ class SelectUI(QMainWindow):
         self.main_layout.setSpacing(0)  # 去除间距
         
         # 设置两个滚动区域之间的间距为15像素
-        self.main_layout.setSpacing(15)
+        self.main_layout.setSpacing(16)
         
         # 创建左侧滚动区域
         self.left_scroll = VScrollArea()

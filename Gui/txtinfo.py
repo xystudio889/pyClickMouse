@@ -180,6 +180,12 @@ class StyleClass:
     b = 'bold'
     d_11 = 'dest_small'
 
+    content = 'content'
+
+    desc_card = 'CardDescription-text'
+    code = 'code'
+    d_code = 'desc_code'
+
     none = ''
     
 class InputChange:

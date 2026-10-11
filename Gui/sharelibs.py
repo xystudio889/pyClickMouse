@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 import uiml
 from uiml import set_style
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QThread, Signal
 import os
@@ -18,6 +17,13 @@ from typing import *
 
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
+
+_UNICODE = re.compile(r'&#[xX]([0-9a-fA-F]+);',)
+_WIDGET_MAPPING = {
+    'title': 'headerIcon',
+    'subtitle': 'header',
+    'description': 'description'
+}
         
 def multi_replace(text, replace_dict):
     '''一次性替换多个子串'''
@@ -282,19 +288,38 @@ class QtThread(QThread):
         '''线程执行函数'''
         result = self.func(*self.args, **self.kwargs)
         self.finished.emit(result)
+
+def _move_content(d):
+    '''移动 content，同义转换'''
+    contents = d.pop("content", [])
+    for item in contents:
+        if not isinstance(item, dict):
+            continue
+        key = item.get("type")
+        if key is None:
+            continue
+        d.setdefault(key, item.get("content"))  # 根里已有同名键时不覆盖
+    return d
         
 def widget_replacer(ui_data: str):
     '''
     替换UI中的widget，使用函数式返回
     '''
+    if not isinstance(ui_data, str):
+        return ui_data # 如果不是字符串，直接返回原始数据 
     if ui_data.startswith('!lang '):
         if len(ui_data.split(' ')) == 2:
             return get_lang(ui_data.split(' ')[1]) # 语言解析
         else:
             return get_lang(ui_data.split(' ')[1], source=globals()[ui_data.split(' ')[2]]) # 语言解析
     else:
-        return uiml.default_replacer(ui_data) # 交由uiml进行替换
-        
+        unicode = re.sub(
+            _UNICODE,
+            lambda m: chr(int(m.group(1), 16)),
+            ui_data
+        )
+        return uiml.default_replacer(unicode) # 交由uiml进行替换
+
 def layout_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
     additional_value = additional if additional is not None else {} # 额外参数
     if not ui_data.get('show_if', True):
@@ -317,9 +342,32 @@ def layout_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
 def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
     additional_value = additional if additional is not None else {} # 额外参数
     show_value = ui_data.get('show_if', True)
-    uiml_value = uiml.default_widget_parser(ui_data, namespace, additional_value) # 交由uiml进行替换
     if not show_value:
         return None
+
+    if ui_data['type'] == 'clickmouse_Expander':
+        from uiStyles.widgets import Expander, fonticon
+
+        _move_content(ui_data)
+
+        for key in list(ui_data.keys()):  # 用 list 复制键，避免遍历时修改字典结构
+            if key not in ('name', 'type'):
+                ui_data[key] = widget_replacer(ui_data[key])
+
+        headericon = ui_data.get('headerIcon', None)
+
+        if isinstance(headericon, list):
+            show_headericon = widget_parser(headericon[0], namespace, additional_value)['content']
+        elif isinstance(headericon, str):
+            show_headericon = fonticon(headericon, size=20)
+
+        header = ui_data.get('header', None)
+        description = ui_data.get('description', None)
+
+        return {'name': ui_data.get('name'), 'content': Expander(title=show_headericon, subtitle=header, description=description)}
+
+    uiml_value = uiml.default_widget_parser(ui_data, namespace, additional_value) # 交由uiml进行替换
+
     return uiml_value
 
 uiml.set_namespace(

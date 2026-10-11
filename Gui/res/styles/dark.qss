@@ -1,7 +1,6 @@
 * {
-    color: white;
     font-size: 14px;
-    font-family: "Segoe UI", "Microsoft YaHei", "DengXian", Arial, sans-serif;
+    color: white;
 }
 
 QMainWindow {
@@ -14,8 +13,11 @@ QDialog {
 
 QComboBox {
     background-color: #2d2d2d;
-    padding: 3px 40px 3px 2px;
-    font-size: 12px;
+
+    font-size: 14px;
+    padding: 0 12px;
+
+    height: 30px;
 }
 
 QComboBox:disabled {
@@ -28,8 +30,7 @@ QComboBox:hover {
 }
 
 QComboBox:pressed {
-    background-color: #373737;
-    border: 1px solid #303030;
+    background-color: #272727;
 }
 
 QComboBox:disabled {
@@ -89,8 +90,9 @@ QMenuBar::item:selected {
 }
 
 QLineEdit {
+    font-size: 14px;
     height: 30px;
-    padding: 0;
+    padding: 0 0 0 12px;
 
     background-color: #2d2d2d;
 }
@@ -146,15 +148,17 @@ QStatusBar {
 }
 
 QListWidget {
-    background-color: #2d2d2d;
+    font-size: 14px;
 
+    background-color: #202020;
     outline: 0;
     margin: 0;
+    padding: 0;
 }
 
 QListWidget::item {
-    padding: 0;
-    margin: 2px 0;
+    padding: 3px 0 3px 10px;
+    margin: 0 0 0 2px;
     border-radius: 4px;
 }
 
@@ -199,13 +203,20 @@ QListWidget::item:hover:selected {
 }
 
 .background_level1 {
-    border: 1px solid #303030;
+    border: 1px solid #232323;
     background-color: #2b2b2b;
     border-radius: 4px;
 }
 
 .top_widget {
     background-color: #404040;
+}
+
+.content {
+    background-color: #272727;
+    
+    padding: 36px;
+    border-radius: 8px 0 0 0;
 }
 
 /* 描述栏样式 */
@@ -215,6 +226,7 @@ QListWidget::item:hover:selected {
 }
 
 .dest_small { 
+    font-size: 12px;
     color: gray;
 }
 
@@ -246,6 +258,91 @@ QListWidget::item:hover:selected {
 .frame {
     border: none;
     border-bottom: 2px solid #505050;
+}
+
+/* ============================================================
+   Card / PressableRow / Expander / HighLightPanel —— 配色（临时导出）
+   ------------------------------------------------------------
+   * 只导出配色：圆角、边框宽度、内边距、间距等形状属性仍在代码里。
+   * 全部使用 .class 选择器，配合代码里的 set_style(widget, class) 使用，
+     不写任何全局（类型）选择器。
+   * 自绘控件（Card / Expander / HighLightPanel / FontIcon / 分割线）
+     用 qproperty-*，由代码里声明的 Qt Property 接收颜色；
+     文字标签用 text_color 属性（它由标签自身样式表上色，
+     优先级高于主样式库里的 `* { color: ... }`）。
+   * 把这些规则合并进 styles/dark.qss 后，本文件即可删除。
+   ============================================================ */
+
+/* ---------- Card：底色 / 边框 ---------- */
+.Card {
+    qproperty-bg_color: #323232;
+    qproperty-border_color: #232323;
+}
+
+/* ---------- ContentCard 文字 ---------- */
+.CardSubtitle {
+    qproperty-text_color: #FFFFFF;
+}
+
+.CardDescription {
+    qproperty-text_color: #D1D1D1;
+}
+
+/* ---------- PressableRow：普通 / 悬浮 / 按下 ---------- */
+.PressableRow {
+    qproperty-bg_color: #343434;
+    qproperty-border_color: #232323;
+}
+
+.PressableRowHover {
+    qproperty-bg_color: #3A3A3A;
+    qproperty-border_color: #373737;
+}
+
+.PressableRowPressed {
+    qproperty-bg_color: #2E2E2E;
+    qproperty-border_color: #373737;
+}
+
+/* ---------- Expander：下拉区底色 / 文字 / 箭头 / 分割线 ---------- */
+.Expander {
+    qproperty-bg_color: #323232;
+    qproperty-border_color: #232323;
+}
+
+.ExpanderSubtitle {
+    qproperty-text_color: #FFFFFF;
+}
+
+.ExpanderDescription {
+    qproperty-text_color: #D1D1D1;
+}
+
+.ExpanderArrow {
+    qproperty-icon_color: #F7F7F7;
+}
+
+.ExpanderDivider {
+    qproperty-color: #232323;
+}
+
+/* ---------- HighLightPanel：底色 ---------- */
+.HighLightPanel {
+    qproperty-bg_color: #272727;
+}
+
+.CardDescription-text {
+    color: #d4d4d4;
+    font-size: 12px;
+}
+
+.code {
+    font-family: "Consolas", "Courier New", Courier, monospace;
+}
+
+.desc_code {
+    color: #C1C1C1;
+    font-size: 13px;
 }
 
 /* 元数据 */

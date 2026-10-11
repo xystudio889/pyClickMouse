@@ -12,7 +12,6 @@ except:
     logger.exception('clickmouse.main', mode=ExceptionVal.all)
 from uiStyles.QUI import *
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineScript
 from uiStyles import *
 from datetime import datetime # 检查时间
 from pynput import keyboard # 热键功能库
@@ -34,6 +33,7 @@ import os # 系统库
 import shutil # 用于删除文件夹
 import json # 用于读取json文件
 from pathlib import Path # 路径库
+import pyperclip # 剪贴板
 
 # 系统api
 import ctypes
@@ -137,7 +137,7 @@ def get_packages():
         lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
         package_id.append(package.get('package_name', None))
         show.append(package.get('show_in_extension_list', True))
-    return (lang_index, show, package_id)
+    return (set(lang_index), set(show), set(package_id))
 
 @logger.auto_logger()
 def get_application_instance():
@@ -1099,6 +1099,9 @@ class ColorGetter(QObject):
 
         current_theme = self.current_theme.replace('auto-', '')
 
+        if not dev_flags.get('new_visual', False): # 使用经典样式
+            current_theme += '-old' if current_theme in ['light', 'dark'] else ''
+
         select_styles = styles[current_theme]
         
         if self.use_windows_color:
@@ -1161,7 +1164,7 @@ class MainWindow(UMainWindow):
         self.on_check_update()
 
     def _set_style(self):
-        with open(get_resource_path('styles/light.qss'), 'r', encoding='utf-8') as f:
+        with open(get_resource_path('styles/dark.qss'), 'r', encoding='utf-8') as f:
             style = f.read()
         app.app.setStyleSheet(style)
 
@@ -1244,11 +1247,13 @@ class MainWindow(UMainWindow):
         self.total_time_label.textChanged.emit()
 
         # 创建状态栏
-        self.status_bar = QLabel()
-        set_style(self.status_bar, 'status-bar')
+        # self.status_bar = QLabel()
+        # set_style(self.status_bar, 'status-bar')
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
 
         # 设置默认状态
-        self.status_bar.setText(get_lang('5d'))
+        # self.status_bar.setText(get_lang('5d'))
 
         # 创建布局
         logger.debug('Setting layout')
@@ -2455,7 +2460,8 @@ class SettingWindow(SelectUI, UMainWindow):
         super().__init__()
         logger.debug('Initizalizing setting window')
         self.setGeometry(300, 300, 625, 400)
-        self.setFixedSize(self.width(), self.height())
+        self.setMinimumWidth(475)
+        # self.setFixedSize(self.width(), self.height())
         self.setWindowTitle(filter_hotkey(get_lang('04')))
         self.setParent(main_window)
         self.setWindowFlags(
@@ -2464,11 +2470,11 @@ class SettingWindow(SelectUI, UMainWindow):
 
         # 变量
         if dev_flags.get('new_settings', False):
-            self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
-            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui']
+            self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3'), 'About']
+            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui', 'about.gui']
         else:
             self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
-            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui']
+            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui', 'about.gui']
 
         # 主程序
         self.app = get_application_instance()
@@ -2502,8 +2508,10 @@ class SettingWindow(SelectUI, UMainWindow):
         if dev_flags.get('new_settings', False):
             self.page_notify = self.items[6] # 通知设置
             self.page_flags = self.items[7] # 标志设置
+            self.page_about = self.items[8]
         else:
             self.page_flags = self.items[6] # 标志设置
+            self.page_about = ''
             self.page_notify = ''
         
     def check_values(self):
@@ -2538,6 +2546,7 @@ class SettingWindow(SelectUI, UMainWindow):
             self.code_list[self.ui_file_name[self.items.index(title)]] = layout_code
             
             layout = layout_code.show()
+
             page.setLayout(layout)
         else:
             layout = QVBoxLayout(page)
@@ -2553,6 +2562,9 @@ class SettingWindow(SelectUI, UMainWindow):
             layout.addWidget(title_label)
             layout.addWidget(content_label)
             layout.addWidget(create_horizontal_line())
+
+        layout.setContentsMargins(0, 0, 12, 0)
+        set_style(page, StyleClass.content)
 
         # 添加一些示例设置控件
         match title:
@@ -2660,9 +2672,9 @@ class SettingWindow(SelectUI, UMainWindow):
 
                     # 添加布局
                     hotkey_layout = QHBoxLayout()
-                    hotkey_layout.addWidget(QLabel(f'{filter_hotkey(get_lang(lang[0])) if lang[1] else get_lang(lang[0])}: '), 1)
-                    hotkey_layout.addWidget(input, 6)
-                    hotkey_layout.addWidget(repair_button, 1)
+                    hotkey_layout.addWidget(QLabel(f'{filter_hotkey(get_lang(lang[0])) if lang[1] else get_lang(lang[0])}: '), 0)
+                    hotkey_layout.addWidget(input, 1)
+                    hotkey_layout.addWidget(repair_button, 0)
                     hotkey_layout.addStretch()
 
                     layout.addLayout(hotkey_layout)
@@ -2721,7 +2733,7 @@ class SettingWindow(SelectUI, UMainWindow):
                 
                 # 链接信号
                 default_doc_link.textChanged.connect(lambda: self.on_setting_changed(default_doc_link.text, SettingText.default_doc_link))
-                lang_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(self.lang_choice.currentIndex, SettingText.lang_doc))
+                lang_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(lang_choice.currentIndex, SettingText.select_lang))
                 update_log_path_input.textChanged.connect(lambda: self.on_setting_changed(update_log_path_input.text, SettingText.update_log_path))
                 repair_default_doc_link_button.clicked.connect(lambda: self.repair_settings(SettingText.default_doc_link))
                 repair_update_log_path_button.clicked.connect(lambda: self.repair_settings(SettingText.update_log_path))
@@ -2776,20 +2788,75 @@ class SettingWindow(SelectUI, UMainWindow):
                         else:
                             checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx)))   
                         checkbox.setChecked(dev_flags.get(i['key'], False))
+
+                        key = QLabel(i['key'])
                         desc = QLabel(i['desc'])
+
+                        set_style(key, StyleClass.code + ' ' + StyleClass.d_code)
                         set_style(desc, StyleClass.d_11)                        
 
                         layout.addWidget(checkbox)
+                        layout.addWidget(key)
                         layout.addWidget(desc)
                         layout.addWidget(create_horizontal_line())
+            case self.page_about:
+                version_layout = QHBoxLayout()
+
+                version = QLabel(__version__)
+                set_style(version, StyleClass.desc_card)
+                version_layout.addWidget(version)
+
+                iconImg = QLabel()
+                # 按窗口大小自适应缩放，保持宽高比
+                iconImg.setPixmap(icon.pixmap(24, 24))
+
+                copy_command_layout = QHBoxLayout() # 复制代码的 layout
+                copy_command_layout.setSpacing(16)
+
+                code_label = QLabel(code)
+                code_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+                set_style(code_label, StyleClass.code)
+
+                copy_icon = fonticon('\uE8C8', 14)
+
+                copy_command_layout.addStretch()
+                copy_command_layout.addWidget(code_label)
+                copy_command_layout.addWidget(copy_icon)
+
+                clone_layout = create_expander_row(QLabel('To clone this repository'), copy_command_layout, lambda: pyperclip.copy(code))
+
+                expander = Expander(
+                        title=iconImg,
+                        subtitle="Clickmouse",
+                        description="© 2026 XyStudio. All rights reserved.",
+                        right_layout = version_layout,
+                        layouts=[
+                            clone_layout,
+                        ]
+                    )
+
+                layout.addWidget(expander)
             
         restart = uiml.compile_ui_file(get_resource_path('ui', 'settings', 'bottom.gui'), additional=self.addtional_local_value)
         
         layout.addLayout(UIWindow(restart).show())
         layout.addStretch(1)
 
-        return page
-    
+        if dev_flags.get('new_visual', False):
+            # d_11(dest_small) 说明文字自动换行，否则其最小宽度会阻止内容区域随窗口压缩
+            for label in page.findChildren(QLabel):
+                if label.property('class') == StyleClass.d_11:
+                    label.setWordWrap(True)
+
+            card = HighLightPanel()
+            # 让内容区域的宽度可以随窗口任意压缩，而不是被内容的最小宽度卡住
+            card.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+            card.setContent(page)
+
+            return card
+        else:
+            return page
+        
     def on_clicker_changed(self, func, value, checkbox: UCheckBox=None):
         '''clicker更新状态改变事件'''
         if checkbox is not None:
@@ -3371,6 +3438,27 @@ if __name__ == '__main__':
             if os.path.exists('extensions') and os.path.isdir('extensions'):
                 shutil.rmtree('extensions')
             pass
+
+        try:
+            with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
+                dev_flags = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            dev_flags = {}
+            
+        try:
+            with open(get_resource_path('dev_settings.json'), 'r', encoding='utf-8') as f:
+                dev_settings = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            dev_settings = {}
+        
+        dev_back = dev_flags.copy()
+        for k in dev_flags.keys():
+            if k not in [i['key'] for i in dev_settings]:
+                del dev_back[k]
+                logger.warning(f'Beta feature ID:{k} is deprecated. Auto delete.')
+        dev_flags = dev_back.copy()
+        with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
+            json.dump(dev_flags, f)
         
         # Windows API常量
         logger.debug('Setting WinAPI const value')
@@ -3416,27 +3504,6 @@ if __name__ == '__main__':
         
         settings_need_restart = False
         can_update = False
-        
-        try:
-            with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
-                dev_flags = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            dev_flags = {}
-            
-        try:
-            with open(get_resource_path('dev_settings.json'), 'r', encoding='utf-8') as f:
-                dev_settings = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            dev_settings = {}
-        
-        dev_back = dev_flags.copy()
-        for k in dev_flags.keys():
-            if k not in [i['key'] for i in dev_settings]:
-                del dev_back[k]
-                logger.warning(f'Beta feature ID:{k} is deprecated. Auto delete.')
-        dev_flags = dev_back.copy()
-        with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
-            json.dump(dev_flags, f)
 
         # 单位控制
         latest_index = 2
@@ -3450,6 +3517,7 @@ if __name__ == '__main__':
         can_run_hotkey = True # 热键是否可用
         result = (None, None, None, None) # 更新检查结果
         setting_keys = list(setting_value.hotkey_list.keys()) # 热键列表
+        code = 'git clone https://github.com/xystudiocode/pyClickMouse' # 复制代码
 
         if in_dev:
             logger.info('In development mode')
@@ -3497,4 +3565,5 @@ if __name__ == '__main__':
         app = TrayApp()
         app.app.setStyle(setting_value.theme)
         init_success = True
+
         app.run()

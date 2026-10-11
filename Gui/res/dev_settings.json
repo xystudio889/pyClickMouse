@@ -2,13 +2,13 @@
     {
         "name": "More settings",
         "key": "new_settings",
-        "desc": "To add more settings include:\nToast settings\nEnable hotkey checkbox\nFeedback settings and more...",
+        "desc": "To add more settings include: Toast settings, Enable hotkey checkbox, Feedback settings and more...",
         "need_restart": true
     },
     {
         "name": "Decoupling UI and program",
         "key": "decoupling",
-        "desc": "To decouple the UI and program.This need to restart the program to\nake effect."
+        "desc": "To decouple the UI and program.This need to restart the program to take effect."
     },
     {
         "name": "Inline website",
@@ -18,7 +18,7 @@
     {
         "name": "New UI visual",
         "key": "new_visual",
-        "desc": "New Clickmouse visual.This needs to restart.",
+        "desc": "New Clickmouse visual. This needs to restart.",
         "need_restart": true
     }
 ]
