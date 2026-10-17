@@ -1,4 +1,5 @@
 * {
+    font-size: 14px;
     color: white;
 }
 
@@ -11,7 +12,12 @@ QDialog {
 }
 
 QComboBox {
-    background-color: #353535;
+    background-color: #2d2d2d;
+
+    font-size: 14px;
+    padding: 0 12px;
+
+    height: 30px;
 }
 
 QComboBox:disabled {
@@ -20,7 +26,11 @@ QComboBox:disabled {
 }
 
 QComboBox:hover {
-    background-color: #505050;
+    background-color: #323232;
+}
+
+QComboBox:pressed {
+    background-color: #272727;
 }
 
 QComboBox:disabled {
@@ -33,25 +43,25 @@ QComboBox QAbstractItemView {
 }
 
 QPushButton {
-    background-color: #404040;
-}
-
-QPushButton:disabled {
-    background-color:#252525;
-    color: #505050;
+    background-color: #3e3e3e;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #3c3c3c;
 }
 
 QPushButton:hover {
-    background-color: #505050;
+    background-color: #444444;
 }
 
 QPushButton:disabled {
-    background-color:#252525;
-    color: #505050;
+    background-color: #373737;
+    color: #808080;
 }
 
 QPushButton:pressed {
-    background-color: #353535;
+    background-color: #393939;
+
+    color: #cecece;
 }
 
 QMenu {
@@ -80,7 +90,11 @@ QMenuBar::item:selected {
 }
 
 QLineEdit {
-    background-color: #353535;
+    font-size: 14px;
+    height: 30px;
+    padding: 0 0 0 12px;
+
+    background-color: #2d2d2d;
 }
 
 QLineEdit:disabled {
@@ -99,8 +113,6 @@ QCheckBox {
 /* 滚动区域容器样式：白底黑边 */
 QScrollArea {
     background-color: #202020;
-    border: 1px solid #353535;
-    border-radius: 5px;
 }
 
 /* 滚动条角部样式（确保无缝隙） */
@@ -109,80 +121,120 @@ QScrollArea > QWidget > QWidget {
 }
 
 /* 滚动条样式：白底灰边 */
-QScrollBar:vertical {
-    background-color: #202020;
-    width: 12px;
+QScrollBar:vertical, QScrollBar:horizontal {
+    background-color: #303030;
+    width: 8px;
     border: 1px solid gray;  /* 灰色边框 */
 }
 
 /* 滚动条滑块样式 */
-QScrollBar::handle:vertical {
-    background-color: lightgray;  /* 浅灰色滑块 */
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background-color: #a0a0a0;  /* 浅灰色滑块 */
     min-height: 30px;
 }
 
 /* 滚动条滑块悬停样式 */
-QScrollBar::handle:vertical:hover {
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
     background-color: gray;  /* 灰色滑块 */
 }
 
 /* 滚动条上下箭头样式 */
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    background-color: #353535;
-    border: 1px solid gray;
-    height: 10px;
-}
-
-/* 横向滚动条样式 */
-
-/* 滚动条样式：白底灰边 */
-QScrollBar:horizontal {
-    background-color: #202020;
-    width: 12px;
-    border: 1px solid gray;  /* 灰色边框 */
-    margin: 0px;  /* 确保滚动条与容器间无缝隙 */
-}
-
-/* 滚动条滑块样式 */
-QScrollBar::handle:horizontal {
-    background-color: lightgray;  /* 浅灰色滑块 */
-    min-height: 30px;
-}
-
-/* 滚动条滑块悬停样式 */
-QScrollBar::handle:horizontal:hover {
-    background-color: gray;  /* 灰色滑块 */
-}
-
-/* 滚动条上下箭头样式 */
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    background-color: #202020;
-    border: 1px solid gray;
-    height: 10px;
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical, QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    background-color: #cfcfcf;
 }
 
 QStatusBar {
     background-color: #404040;
 }
 
+QListWidget {
+    font-size: 14px;
+
+    background-color: #202020;
+    outline: 0;
+    margin: 0;
+    padding: 0;
+}
+
+QListWidget::item {
+    padding: 3px 0 3px 10px;
+    margin: 0 0 0 2px;
+    border-radius: 4px;
+}
+
+QListWidget::item:selected {
+    background-color: #323232;
+    border-left: 4px solid #61b1ff;
+
+    color: #f0f0f0;
+}
+
+QListWidget::item:hover {
+    background-color: #272727;
+}
+
+QListWidget::item:hover:selected {
+    background-color: #363636;
+}
+
 /* 类型提示框样式 */
 .selected {
-    background-color: dodgerblue;
-    color: white;
+    background-color: #61b1ff;
+    border: 1px solid #65b2ff;
+    border-bottom-color: #3fa0ff;
+
+    color: black;
 }
 
 .selected:hover {
-    background-color: #30a0f0;
-    color: white;
+    background-color: #52a9ff;
+    color: black;
 }
 
 .selected:pressed {
-    background-color: #2078c5;
-    color: white;
+    background-color: #3fa0ff;
+    color: #00254a;
+}
+
+/* 超链接样式 */
+.hyperlink {
+    color: #61b1ff;
+    border: none;
+    background-color: transparent;
+
+    padding: 8px;
+}
+
+.hyperlink:hover {
+    background-color: #2d2d2d;
+}
+
+.hyperlink:pressed {
+    color: #3fa0ff;
+    background-color: #292929;
+}
+
+.sidebar_title {
+    font-size: 18px;
+    background-color: #323232;
+    padding: 5px 3px;
+}
+
+.background_level1 {
+    border: 1px solid #232323;
+    background-color: #2b2b2b;
+    border-radius: 4px;
 }
 
 .top_widget {
     background-color: #404040;
+}
+
+.content {
+    background-color: #272727;
+    
+    padding: 36px;
+    border-radius: 8px 0 0 0;
 }
 
 /* 描述栏样式 */
@@ -192,6 +244,7 @@ QStatusBar {
 }
 
 .dest_small { 
+    font-size: 12px;
     color: gray;
 }
 
@@ -216,6 +269,18 @@ QStatusBar {
     font-weight: bold;
 }
 
+.title_text {
+    font-size: 28px;
+    font-weight: bold;
+
+    margin: 0; /* 确保被完全隐藏 Margin */
+    margin-bottom: 4px;
+}
+
+.desc_text {
+    margin-bottom: 8px;
+}
+
 .bold {
     font-weight: bold;
 }
@@ -223,6 +288,111 @@ QStatusBar {
 .frame {
     border: none;
     border-bottom: 2px solid #505050;
+}
+
+/* ============================================================
+   Card / PressableRow / Expander / HighLightPanel —— 配色（临时导出）
+   ------------------------------------------------------------
+   * 只导出配色：圆角、边框宽度、内边距、间距等形状属性仍在代码里。
+   * 全部使用 .class 选择器，配合代码里的 set_style(widget, class) 使用，
+     不写任何全局（类型）选择器。
+   * 自绘控件（Card / Expander / HighLightPanel / 分割线）用 qproperty-*，
+     由代码里声明的 Qt Property 接收颜色；文字标签用 text_color 属性
+     （它由标签自身样式表上色，优先级高于主样式库里的 `* { color: ... }`）。
+   * FontIcon 用普通 color 属性：默认 `.FontIcon` 决定，个别位置
+     （如 `.ExpanderArrow`）用自己的 class 覆盖。
+   * 把这些规则合并进 styles/dark.qss 后，本文件即可删除。
+   ============================================================ */
+
+/* ---------- FontIcon：默认配色（个别位置用自己的 class 覆盖 color） ---------- */
+.FontIcon {
+    color: #FFFFFF;
+}
+
+/* ---------- Card：底色 / 边框 ---------- */
+.Card {
+    qproperty-bg_color: #323232;
+    qproperty-border_color: #232323;
+}
+
+/* ---------- ContentCard 文字 ---------- */
+.CardSubtitle {
+    qproperty-text_color: #FFFFFF;
+}
+
+.CardDescription {
+    qproperty-text_color: #D1D1D1;
+}
+
+/* ---------- PressableRow（独立挂载）：无边框 / 透明背景，悬浮与按下只改背景 ---------- */
+.PressableRow {
+    qproperty-bg_color: transparent;
+    qproperty-border_color: transparent;
+}
+
+.PressableRowHover {
+    qproperty-bg_color: #2d2d2d;
+}
+
+.PressableRowPressed {
+    qproperty-bg_color: #292929;
+}
+
+/* ---------- PressableRow（挂载在 Expander 下）：卡片底色 / 边框配色 ---------- */
+.ExpanderRow {
+    qproperty-bg_color: #343434;
+    qproperty-border_color: #232323;
+}
+
+.ExpanderRowHover {
+    qproperty-bg_color: #3A3A3A;
+    qproperty-border_color: #373737;
+}
+
+.ExpanderRowPressed {
+    qproperty-bg_color: #2E2E2E;
+    qproperty-border_color: #373737;
+}
+
+/* ---------- Expander：下拉区底色 / 文字 / 箭头 / 分割线 ---------- */
+.Expander {
+    qproperty-bg_color: #323232;
+    qproperty-border_color: #232323;
+}
+
+.ExpanderSubtitle {
+    qproperty-text_color: #FFFFFF;
+}
+
+.ExpanderDescription {
+    qproperty-text_color: #D1D1D1;
+}
+
+.ExpanderArrow {
+    color: #F7F7F7;
+}
+
+.ExpanderDivider {
+    qproperty-color: #232323;
+}
+
+/* ---------- HighLightPanel：底色 ---------- */
+.HighLightPanel {
+    qproperty-bg_color: #272727;
+}
+
+.CardDescription-text {
+    color: #d4d4d4;
+    font-size: 12px;
+}
+
+.code {
+    font-family: "Consolas", "Courier New", Courier, monospace;
+}
+
+.desc_code {
+    color: #C1C1C1;
+    font-size: 13px;
 }
 
 /* 元数据 */

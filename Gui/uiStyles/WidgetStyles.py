@@ -101,7 +101,7 @@ class StyleSheet:
     
     def _update_nested_dict(self, keys, nested_dict, new_value):
         '''
-        根据键列表更新嵌套字典中的值
+        根据键列表更新嵌套字典中的值，中间层级不存在时会自动创建
         
         Args:
             keys: 键列表，如 ['a', 'b']
@@ -109,18 +109,25 @@ class StyleSheet:
             new_value: 要设置的新值，如 'd'
         
         Returns:
-            修改后的字典
+            修改后的字典（原字典不会被修改）
         '''
-        current = nested_dict.copy()
+        result = nested_dict.copy()
+        current = result
         
-        # 遍历到倒数第二个键
+        # 遍历到倒数第二个键，缺失时自动创建
         for key in keys[:-1]:
-            current = current[key]
+            child = current.get(key)
+            if not isinstance(child, dict):
+                child = {}
+            else:
+                child = child.copy()
+            current[key] = child
+            current = child
         
         # 用最后一个键设置新值
         current[keys[-1]] = new_value
         
-        return nested_dict
+        return result
     
     def serialize_to_jsonstr(self, css: str, indent: None | int = None) -> str:
         '''
@@ -249,30 +256,32 @@ class StyleSheet:
         替换CSS数据中的值
         
         Args:
-            css_data: CSS数据字典
             index: 要替换值的索引
-            old_value: 旧值
+            old_value: 旧值；为 StyleReplaceMode.ALL 时直接覆盖，键不存在时自动创建
             new_value: 新值
+            output_json: True 返回字典，False 返回 StyleSheet
             
         Returns:
-            新的CSS数据字典
+            新的CSS数据字典或 StyleSheet
         '''
         data = self.css_data.copy()
+        
+        if old_value == StyleReplaceMode.ALL:
+            # 全匹配：即使键不存在也会创建
+            new_data = self._update_nested_dict(index, data, new_value)
+            if output_json:
+                return new_data
+            return StyleSheet(self.deserialize(new_data))
+        
         value = self._get_value_by_indices(index, data)
         
-        if isinstance(value, str) or isinstance(value, StyleReplaceMode):
-            if old_value == StyleReplaceMode.ALL:
-                if output_json:
-                    return self._update_nested_dict(index, data, new_value)
-                else:
-                    return StyleSheet(self.deserialize(self._update_nested_dict(index, data, new_value)))
-            else:
-                if output_json:
-                    return self._update_nested_dict(index, data, value.replace(old_value, new_value))
-                else:
-                    return StyleSheet(self.deserialize(self._update_nested_dict(index, self.serialize_to_jsonstr(value.replace(old_value, new_value)), value.replace(old_value, new_value))))
-        else:
+        if not isinstance(value, str):
             raise ValueError(f'索引{index}处的值不是字符串')
+        
+        new_data = self._update_nested_dict(index, data, value.replace(old_value, new_value))
+        if output_json:
+            return new_data
+        return StyleSheet(self.deserialize(new_data))
 
 styles: dict[str, StyleSheet] = {}
 style_path = 'styles/'

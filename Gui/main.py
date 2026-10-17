@@ -12,7 +12,6 @@ except:
     logger.exception('clickmouse.main', mode=ExceptionVal.all)
 from uiStyles.QUI import *
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineScript
 from uiStyles import *
 from datetime import datetime # 检查时间
 from pynput import keyboard # 热键功能库
@@ -34,6 +33,7 @@ import os # 系统库
 import shutil # 用于删除文件夹
 import json # 用于读取json文件
 from pathlib import Path # 路径库
+import pyperclip # 剪贴板
 
 # 系统api
 import ctypes
@@ -137,7 +137,7 @@ def get_packages():
         lang_index.append(get_lang(package.get('package_name_index', '-1'), source=package_lang))
         package_id.append(package.get('package_name', None))
         show.append(package.get('show_in_extension_list', True))
-    return (lang_index, show, package_id)
+    return (set(lang_index), set(show), set(package_id))
 
 @logger.auto_logger()
 def get_application_instance():
@@ -266,9 +266,10 @@ def on_update_setting_window():
         values = setting_window.values.copy()
         setting_window.close()
         setting_window = SettingWindow(values)
+        on_input_change(type=InputChange.setting_window)
         setting_window.click_setting_changed.connect(lambda: on_input_change(type=InputChange.main_window))
         setting_window.window_restarted.connect(on_update_setting_window)
-        setting_window.on_page_button_clicked(page)
+        setting_window.switch_page(page)
         setting_window.show()
 
 @logger.auto_logger('clickmouse.setting.hotkeyManager', level=logging.DEBUG)
@@ -510,9 +511,9 @@ def on_input_change(*, type:str ):
     return 0
 
 @logger.auto_logger('clickmouse.main')
-def open_url(url, title: str=None, width:int=None, height:int=None, fixed:bool=False):
+def open_url(url, width:int=None, height:int=None, fixed:bool=False):
     if dev_flags.get('inline_website'):
-        webview.show(url, title, width, height, fixed)
+        webview.show(url, width, height, fixed)
     else:
         from webbrowser import open as open_webbrowser
         open_webbrowser(url)
@@ -575,48 +576,48 @@ class UWebView(UMainWindow):
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
         self.web = QWebEngineView()
-        self.profile = QWebEngineProfile.defaultProfile()
-        self.engine_script = QWebEngineScript()
-
         self.setCentralWidget(self.web)
+        self.web.titleChanged.connect(self.onTitleChanged)
 
-    def show(self, url, title: str=None, width:int=None, height:int=None, fixed:bool=False):
-        title = title if title is not None else 'UWebView'
+    @logger.auto_logger('clickmouse.webview.ui', ['UWebView'])
+    def onTitleChanged(self, title):
+        '''窗口标题改变事件'''
+        self.setWindowTitle(title)
+
+    @logger.auto_logger('clickmouse.webview.ui', ['UWebView'])
+    def show(self, url, width:int=None, height:int=None, fixed:bool=False):
         _width = width if width is not None  else 640
         _height = height if height is not None  else 480
-
-        webview.setWindowTitle(title)
+        if color_getter.is_dark_mode:
+            os.environ['QTWEBENGINE_CHROMIUM_FLAGS'] = '--force-dark-mode'
+        else:
+            if "QTWEBENGINE_CHROMIUM_FLAGS" in os.environ:
+                del os.environ["QTWEBENGINE_CHROMIUM_FLAGS"]
         webview.resize(_width, _height)
         if fixed:
             webview.setFixedSize(_width, _height)
 
-        self.update_script(color_getter.is_dark_mode)
-
+        self.web.reload()
         self.web.setUrl(QUrl(url))
         
         return super().show()
     
+    @logger.auto_logger('clickmouse.webview.ui', ['UWebView'])
     def closeEvent(self, event):
         '''窗口关闭事件'''
         self.web.setUrl(QUrl('about:blank')) # 隐藏网页
         return super().closeEvent(event)
     
-    @logger.auto_logger('clickmouse.webview', ['UWebView'])
-    def update_script(self, is_dark_mode: bool):
-        with open(get_resource_path('WebviewTheme.js'), "r", encoding='utf-8') as f:
-            self.script = f"var theme = '{'dark' if is_dark_mode else 'light'}';\n" + f.read()
-
-        self.engine_script.setName('dark-mode')
-        self.engine_script.setInjectionPoint(QWebEngineScript.DocumentCreation)  # 尽早注入
-        self.engine_script.setWorldId(QWebEngineScript.MainWorld)
-        self.engine_script.setRunsOnSubFrames(True)
-        self.engine_script.setSourceCode(self.script) # 设置代码，配置深色浅色模式
-        self.profile.scripts().insert(self.engine_script)
-    
 class MessageBox(UMessageBox):
     def __init__(self, parent: QWidget | None, title: str, text: str, icon: MessageIcon, buttons: MessageButton, defaultButton: MessageButton):
         super().__init__(parent, title, text, icon, buttons, defaultButton)
         self.func = lambda: color_getter.apply_titleBar(self)
+
+    def init_ui(self):
+        super().init_ui()
+        for k, button in self.buttons.items():
+            if button == self.defaultButton:
+                set_style(button, StyleClass.selected)
 
     @logger.auto_logger('clickmouse.ui', ['MessageBox'])
     def showEvent(self, event):
@@ -1098,25 +1099,35 @@ class ColorGetter(QObject):
 
         current_theme = self.current_theme.replace('auto-', '')
 
+        if not dev_flags.get('new_visual', False): # 使用经典样式
+            current_theme += '-old' if current_theme in ['light', 'dark'] else ''
+
         select_styles = styles[current_theme]
         
         if self.use_windows_color:
-            steps = [
-                [['.selected:pressed', 'background-color'], lighten_color_hex(self.windows_color, -0.165)]
-            ]
+            steps = []
             if select_styles.css_data['.meta']['mode'] == 'dark':
+                accent_color = lighten_color_hex(self.windows_color, 0.4)
                 steps.extend([
-                    [['.selected', 'background-color'], lighten_color_hex(self.windows_color, 0.4)],
-                    [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.45)],
-                    [['.selected', 'color'], 'black'],
-                    [['.selected:hover', 'color'], 'black'],
-                    [['.selected:pressed', 'color'], 'black'],
+                    [['.selected', 'background-color'], accent_color],
+                    [['.selected:hover', 'background-color'], lighten_color_hex(accent_color, -0.1)],
+                    [['.selected:pressed', 'background-color'], lighten_color_hex(accent_color, -0.15)],
+                    [['.selected:pressed', 'color'], lighten_color_hex(accent_color, -0.8)],
+                    [['.selected', 'border'], f'1px solid {lighten_color_hex(accent_color, -0.05)}',],
+                    [['.selected', 'border-bottom-color'], lighten_color_hex(accent_color, -0.15),],
                     [['QCheckBox', 'color'], 'black'],
+                    [['QListWidget::item:selected', 'border-left-color'], accent_color],
                 ])
             else:
                 steps.extend([
                     [['.selected', 'background-color'], self.windows_color],
-                    [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.4)],
+                    [['.selected', 'border'], f'1px solid {lighten_color_hex(self.windows_color, -0.1)}',],
+                    [['.selected', 'border-bottom-color'], lighten_color_hex(self.windows_color, -0.35),],
+                    [['.selected:pressed', 'background-color'], lighten_color_hex(self.windows_color, 0.3)],
+                    [['.selected:hover', 'background-color'], lighten_color_hex(self.windows_color, 0.2)],
+                    [['.selected:pressed', 'border'], f'1px solid {lighten_color_hex(self.windows_color, 0.1)}',],
+                    [['.selected:pressed', 'border-bottom-color'], lighten_color_hex(self.windows_color, -0.35),],
+                    [['QListWidget::item:selected', 'border-left-color'], self.windows_color],
                 ])
             for step in steps:
                 select_styles = select_styles.replace(step[0], StyleReplaceMode.ALL, step[1], output_json=False)
@@ -1129,12 +1140,9 @@ class MainWindow(UMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('ClickMouse')
-        self.setGeometry(100, 100, 500, 375)
         self.setWindowFlags(
             Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint
         ) # 设置窗口属性
-
-        self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
         logger.debug('Initializing value')
         self.show_update_in_start = False # 是否在启动时显示更新提示
@@ -1143,12 +1151,160 @@ class MainWindow(UMainWindow):
         self.is_start_from_tray = False # 是否从托盘启动
 
         logger.debug('Initializing clicker')
-        self.init_ui()
+
+        if dev_flags.get('new_visual', False):
+            self.setGeometry(100, 100, 555, 445)
+            self.init_ui()
+        else:
+            self.setGeometry(100, 100, 555, 300)
+            self.init_ui_old()
+        #self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
         logger.debug('Check updates')
         self.on_check_update()
 
+    def _set_style(self):
+        with open(get_resource_path('styles/dark.qss'), 'r', encoding='utf-8') as f:
+            style = f.read()
+        app.app.setStyleSheet(style)
+
     def init_ui(self):
+        # 创建主控件和布局
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        central_layout = QVBoxLayout(central_widget)
+
+        widgetsView = QVBoxLayout()
+        widgetsView.setContentsMargins(0, 0, 8, 4)
+
+        click_widget = QWidget()
+        set_style(click_widget, 'background_level1')
+        click_layout = QVBoxLayout()
+        click_widget.setLayout(click_layout)
+
+        click_tip = QLabel('Start clicker')
+        set_style(click_tip, StyleClass.big_14)
+
+        control_widget = QWidget()
+        set_style(control_widget, 'background_level1')
+        control_layout = QVBoxLayout()
+        control_widget.setLayout(control_layout)
+
+        control_tip = QLabel('Control clicker')
+        set_style(control_tip, StyleClass.big_14)
+
+        input_widget = QWidget()
+        set_style(input_widget, 'background_level1')
+        input_layout = QVBoxLayout()
+        input_widget.setLayout(input_layout)
+
+        input_tip = QLabel('Input attributes')
+        set_style(input_tip, StyleClass.big_14)
+
+        # 创建标题大字
+        title = QLabel(get_lang('0b'))
+        set_style(title, StyleClass.big_16)
+
+        self.left_click_button = QPushButton(get_lang('0c'))
+        self.left_click_button.setEnabled(False)
+
+        debug_button = QPushButton('Debug: Reload Window Style')
+        debug_button.clicked.connect(self._set_style)
+        central_layout.addWidget(debug_button)
+
+        self.right_click_button = QPushButton(get_lang('0d'))
+        self.right_click_button.setEnabled(False)
+
+        self.pause_button = QPushButton(get_lang('0f'))
+        self.pause_button.setEnabled(False)
+
+        self.stop_button = QPushButton(get_lang('0e'))
+        self.stop_button.setEnabled(False)
+
+        logger.debug('Initializing layout')
+
+        # 单位输入框
+        unit_layout = UnitInputLayout()
+
+        self.input_delay = QLineEdit()
+
+        self.delay_combo = QComboBox()
+        self.delay_combo.addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
+
+        unit_layout.addUnitRow(get_lang('11'), self.input_delay, self.delay_combo)
+
+        self.input_times = QLineEdit()
+
+        self.times_combo = QComboBox()
+        self.times_combo.addItems([get_lang('66'), get_lang('2a'), get_lang('2b')])
+
+        unit_layout.addUnitRow(get_lang('5c'), self.input_times, self.times_combo)
+
+        # 总连点时长提示
+        self.total_time_label = ULabel(get_lang('2c'))
+        self.total_time_label.setAlignment(Qt.AlignHCenter)
+        set_style(self.total_time_label, StyleClass.big_16)
+        self.total_time_label.textChanged.emit()
+
+        # 创建状态栏
+        # self.status_bar = QLabel()
+        # set_style(self.status_bar, 'status-bar')
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
+        # 设置默认状态
+        # self.status_bar.setText(get_lang('5d'))
+
+        # 创建布局
+        logger.debug('Setting layout')
+        click_layout.addWidget(click_tip)
+        click_layout.addWidget(self.left_click_button, alignment=Qt.AlignLeft)
+        click_layout.addWidget(self.right_click_button, alignment=Qt.AlignLeft)
+        click_layout.addStretch()
+
+        control_layout.addWidget(control_tip)
+        control_layout.addWidget(self.pause_button, alignment=Qt.AlignLeft)
+        control_layout.addWidget(self.stop_button, alignment=Qt.AlignLeft)
+        click_layout.addStretch()
+
+        input_layout.addWidget(input_tip)
+        input_layout.addLayout(unit_layout)
+        click_layout.addStretch()
+
+        widgetsView.addWidget(click_widget)
+        widgetsView.addWidget(control_widget)
+        widgetsView.addWidget(input_widget)
+        widgetsView.addWidget(self.total_time_label)
+        click_layout.addStretch()
+
+        central_layout.addWidget(title)
+        central_layout.addWidget(QPushButton())
+        central_layout.addLayout(widgetsView)
+        central_layout.addStretch()
+        self.setLayout(central_layout)
+
+        # 按钮信号连接
+        logger.debug('Singnal connection')
+        self.left_click_button.clicked.connect(lambda:clicker.mouse_left(delay_num, time_num))
+        self.right_click_button.clicked.connect(lambda:clicker.mouse_right(delay_num, time_num))
+
+        self.pause_button.clicked.connect(clicker.pause_click)
+        self.stop_button.clicked.connect(self.on_stop)
+
+        self.input_delay.textChanged.connect(lambda: on_input_change(type=InputChange.main_window))
+        self.input_times.textChanged.connect(lambda: on_input_change(type=InputChange.main_window))
+        self.delay_combo.currentIndexChanged.connect(lambda: on_input_change(type=InputChange.main_window))
+        self.times_combo.currentIndexChanged.connect(lambda: on_input_change(type=InputChange.main_window))
+
+        # self.status_bar.messageChanged.connect(self.reload_status)
+
+        # 创建菜单栏
+        logger.debug('Creating menu bar')
+        self.create_menu_bar()
+
+        logger.debug('Initializing color successd.')
+
+    def init_ui_old(self):
         # 创建主控件和布局
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -1192,8 +1348,6 @@ class MainWindow(UMainWindow):
 
         self.delay_combo = QComboBox()
         self.delay_combo.addItems([get_lang('ms', source=unit_lang), get_lang('s', source=unit_lang)])
-        self.delay_combo.setFixedWidth(60)
-        self.delay_combo.setFixedHeight(30)
 
         unit_layout.addUnitRow(get_lang('11'), self.input_delay, self.delay_combo)
 
@@ -1230,6 +1384,7 @@ class MainWindow(UMainWindow):
         central_layout.addLayout(grid_layout)
         central_layout.addLayout(unit_layout)
         central_layout.addWidget(self.total_time_label)
+        central_layout.addStretch(1)
         self.setLayout(central_layout)
 
         # 按钮信号连接
@@ -1343,7 +1498,7 @@ class MainWindow(UMainWindow):
         update_check.triggered.connect(lambda: self.on_update(True))
         settings_action.triggered.connect(self.show_setting)
         exit_action.triggered.connect(app.quit)
-        create_issue_action.triggered.connect(lambda: open_url(setting_value.feedback, filter_hotkey(get_lang('ba')), 1000, 600, True))
+        create_issue_action.triggered.connect(lambda: open_url(setting_value.feedback, 1000, 600, True))
         attr_action.triggered.connect(self.show_attr)
         
     def open_doc(self, *, path: str=''):
@@ -1362,7 +1517,7 @@ class MainWindow(UMainWindow):
         if doc_choice_lang not in supported_doc_lang: # 不受支持的语言包
             doc_choice_lang = 'en' # 默认英文
 
-        open_url(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang), filter_hotkey(get_lang('5f')), 1000, 600, True)
+        open_url(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang), 1000, 600, True)
         
         logger.info(f'{setting_value.default_doc_link}/{path}'.format(lang=doc_choice_lang))
 
@@ -2303,10 +2458,10 @@ class SettingWindow(SelectUI, UMainWindow):
 
     def __init__(self, values:dict | None = None):
         super().__init__()
-
         logger.debug('Initizalizing setting window')
         self.setGeometry(300, 300, 625, 400)
-        self.setFixedSize(self.width(), self.height())
+        self.setMinimumWidth(475)
+        # self.setFixedSize(self.width(), self.height())
         self.setWindowTitle(filter_hotkey(get_lang('04')))
         self.setParent(main_window)
         self.setWindowFlags(
@@ -2314,45 +2469,46 @@ class SettingWindow(SelectUI, UMainWindow):
         ) # 设置窗口属性
 
         # 变量
+        self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui']
         if dev_flags.get('new_settings', False):
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
-            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui']
+            self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
         else:
-            self.page_choice_buttons = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
-            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui']
+            self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
 
         # 主程序
         self.app = get_application_instance()
-
-        self.create_setting_page_value()
+        self.create_page_value()
 
         self.last_page = None
         self.now_page = 0
         self.values = {} if values is None else values
         self.code_list = {}
 
-        self.init_ui()
+        if dev_flags.get('new_visual', False):
+            self.init_ui(filter_hotkey(get_lang('04')))
+        else:
+            self.init_base_ui()
+            self.init_ui_old()
+
         self.check_values() # 检查设置值
 
         # 连接信号
         clicker.started.connect(self.on_clicker_started)
 
         logger.debug('Initizalizing setting window successful.')
-        # 将堆叠窗口部件设置为右侧滚动区域的内容
-        self.right_scroll.setWidget(self.stacked_widget)
         
-    def create_setting_page_value(self):
-        self.page_general = self.page_choice_buttons[0] # 默认设置
-        self.page_style = self.page_choice_buttons[1] # 样式设置
-        self.page_click = self.page_choice_buttons[2] # 连点器设置
-        self.page_update = self.page_choice_buttons[3] # 更新设置
-        self.page_hotkey = self.page_choice_buttons[4] # 热键设置
-        self.page_doc = self.page_choice_buttons[5] # 文档设置
+    def create_page_value(self):
+        self.page_general = self.items[0] # 默认设置
+        self.page_style = self.items[1] # 样式设置
+        self.page_click = self.items[2] # 连点器设置
+        self.page_update = self.items[3] # 更新设置
+        self.page_hotkey = self.items[4] # 热键设置
+        self.page_doc = self.items[5] # 文档设置
         if dev_flags.get('new_settings', False):
-            self.page_notify = self.page_choice_buttons[6] # 通知设置
-            self.page_flags = self.page_choice_buttons[7] # 标志设置
+            self.page_notify = self.items[6] # 通知设置
+            self.page_flags = self.items[7] # 标志设置
         else:
-            self.page_flags = self.page_choice_buttons[6] # 标志设置
+            self.page_flags = self.items[6] # 标志设置
             self.page_notify = ''
         
     def check_values(self):
@@ -2365,9 +2521,22 @@ class SettingWindow(SelectUI, UMainWindow):
     def get_code(self, id) -> UIWindow:
         return self.code_list[id+'.gui']
 
-    def create_setting_page(self, title):
+    def create_page(self, title):
         logger.info(f'Loading setting page: {title}')
         page = QWidget()
+
+        # 标题标签
+        title_label = QLabel(title)
+
+        # 内容标签
+        content_label = QLabel('')
+
+        if dev_flags.get('new_visual', False):
+            set_style(title_label, StyleClass.title)
+            set_style(content_label, StyleClass.desc)
+        else:
+            set_style(title_label, StyleClass.big_20)
+            set_style(content_label, StyleClass.dest)
 
         def set_content_label(text):
             logger.debug(f'Set content label: {text}')
@@ -2383,32 +2552,36 @@ class SettingWindow(SelectUI, UMainWindow):
         
         self.addtional_local_value.update({'title': title})
         if title in [self.page_general, self.page_style, self.page_click]:
-            layout_code = UIWindow(uiml.compile_ui_file(get_resource_path('ui', 'settings', self.ui_file_name[self.page_choice_buttons.index(title)]), additional=self.addtional_local_value))
-            self.code_list[self.ui_file_name[self.page_choice_buttons.index(title)]] = layout_code
+            layout_code = UIWindow(uiml.compile_ui_file(get_resource_path('ui', 'settings', self.ui_file_name[self.items.index(title)]), additional=self.addtional_local_value))
+            self.code_list[self.ui_file_name[self.items.index(title)]] = layout_code
             
             layout = layout_code.show()
+
             page.setLayout(layout)
         else:
             layout = QVBoxLayout(page)
-            # 标题标签
-            title_label = QLabel(title)
-            set_style(title_label, StyleClass.big_24)
 
-            # 内容标签
-            content_label = QLabel(get_lang('7d'))
-            set_style(content_label, StyleClass.dest)
-            
-            # 布局
-            layout.addWidget(title_label)
-            layout.addWidget(content_label)
-            layout.addWidget(create_horizontal_line())
+        # 布局
+        if not dev_flags.get('new_visual', False):
+            layout.insertWidget(0, create_horizontal_line())
+        layout.insertWidget(0, content_label)
+        layout.insertWidget(0, title_label)
+
+        layout.setContentsMargins(0, 0, 12, 0)
+        set_style(page, StyleClass.content)
 
         # 添加一些示例设置控件
         match title:
             case self.page_general:
+                set_content_label(get_lang('7f'))
+
                 auto_start_manager.updated.connect(lambda enb: self.get_code('general').find_widget('general.start_layout.start_checkbox').setChecked(enb))
                 self.get_code('general').find_widget('general.delay_layout.delay_label').setText(f'{get_lang('b0')}:{setting_value.soft_delay}{get_lang("ms", source=unit_lang)}')
+            case self.page_style:
+                set_content_label(get_lang('a7'))
             case self.page_click:
+                set_content_label(get_lang('84'))
+
                 self.default_delay: QLineEdit = self.get_code('clicker').find_widget('clicker.delay_layout.delay_input_layout.delay_input')
                 self.delay_combo: QComboBox = self.get_code('clicker').find_widget('clicker.delay_layout.delay_input_layout.delay_combo')
                 self.use_default_delay: QCheckBox = self.get_code('clicker').find_widget('clicker.delay_layout.error_use_default_delay')
@@ -2509,9 +2682,9 @@ class SettingWindow(SelectUI, UMainWindow):
 
                     # 添加布局
                     hotkey_layout = QHBoxLayout()
-                    hotkey_layout.addWidget(QLabel(f'{filter_hotkey(get_lang(lang[0])) if lang[1] else get_lang(lang[0])}: '), 1)
-                    hotkey_layout.addWidget(input, 6)
-                    hotkey_layout.addWidget(repair_button, 1)
+                    hotkey_layout.addWidget(QLabel(f'{filter_hotkey(get_lang(lang[0])) if lang[1] else get_lang(lang[0])}: '), 0)
+                    hotkey_layout.addWidget(input, 1)
+                    hotkey_layout.addWidget(repair_button, 0)
                     hotkey_layout.addStretch()
 
                     layout.addLayout(hotkey_layout)
@@ -2570,7 +2743,7 @@ class SettingWindow(SelectUI, UMainWindow):
                 
                 # 链接信号
                 default_doc_link.textChanged.connect(lambda: self.on_setting_changed(default_doc_link.text, SettingText.default_doc_link))
-                lang_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(self.lang_choice.currentIndex, SettingText.lang_doc))
+                lang_choice.currentIndexChanged.connect(lambda: self.on_setting_changed(lang_choice.currentIndex, SettingText.select_lang))
                 update_log_path_input.textChanged.connect(lambda: self.on_setting_changed(update_log_path_input.text, SettingText.update_log_path))
                 repair_default_doc_link_button.clicked.connect(lambda: self.repair_settings(SettingText.default_doc_link))
                 repair_update_log_path_button.clicked.connect(lambda: self.repair_settings(SettingText.update_log_path))
@@ -2620,25 +2793,45 @@ class SettingWindow(SelectUI, UMainWindow):
                 else:
                     for i in dev_settings:
                         checkbox = UCheckBox(i['name'])
-                        if i['key'] == 'new_settings':
+                        if i.get('need_restart', False):
                             checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx),self.window_restarted.emit(),))
                         else:
                             checkbox.checkStateChanged.connect(lambda chk,idx=i['key']:(self.save_dev_config(chk, idx)))   
                         checkbox.setChecked(dev_flags.get(i['key'], False))
+
+                        key = QLabel(i['key'])
                         desc = QLabel(i['desc'])
+
+                        set_style(key, StyleClass.code + ' ' + StyleClass.d_code)
                         set_style(desc, StyleClass.d_11)                        
 
                         layout.addWidget(checkbox)
+                        layout.addWidget(key)
                         layout.addWidget(desc)
-                        layout.addWidget(create_horizontal_line())
-            
+                        layout.addWidget(create_horizontal_line())    
         restart = uiml.compile_ui_file(get_resource_path('ui', 'settings', 'bottom.gui'), additional=self.addtional_local_value)
         
         layout.addLayout(UIWindow(restart).show())
         layout.addStretch(1)
 
-        return page
-    
+        if not content_label.text().strip():
+            layout.removeWidget(content_label)
+
+        if dev_flags.get('new_visual', False):
+            # d_11(dest_small) 说明文字自动换行，否则其最小宽度会阻止内容区域随窗口压缩
+            for label in page.findChildren(QLabel):
+                if label.property('class') == StyleClass.d_11:
+                    label.setWordWrap(True)
+
+            card = HighLightPanel()
+            # 让内容区域的宽度可以随窗口任意压缩，而不是被内容的最小宽度卡住
+            card.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+            card.setContent(page)
+
+            return card
+        else:
+            return page
+        
     def on_clicker_changed(self, func, value, checkbox: UCheckBox=None):
         '''clicker更新状态改变事件'''
         if checkbox is not None:
@@ -2655,10 +2848,6 @@ class SettingWindow(SelectUI, UMainWindow):
         self.on_setting_changed(lambda: style_list[theme], SettingText.theme)
         refresh.run()
         self.app.setStyle(style_list[theme])
-    
-    def on_hide_flag_changed(self, state):
-        self.on_setting_changed(self.get_code('general').find_widget('general.hide_flag').isChecked, SettingText.hide_flags)
-        self.restart_window()
     
     def on_soft_delay_changed(self, value):
         soft_delay: QSlider = self.get_code('general').find_widget('general.delay_layout.software_delay_layout.software_delay')
@@ -2760,7 +2949,7 @@ class SettingWindow(SelectUI, UMainWindow):
     def repair_all_settings(self):
         logger.info('Reset all settings')
         global settings
-        if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButton.YESNO) != MessageButton.ReturnValue.NO: # 不确认重置
+        if MessageBox.warning(self, get_lang('15'), get_lang('22'), MessageButton.YESNO) == MessageButton.ReturnValue.NO: # 不确认重置
             return
         settings = {}
         save_settings()
@@ -2836,10 +3025,10 @@ class SettingWindow(SelectUI, UMainWindow):
         # 在最后一级键处赋值
         check_dic(current, keys[-1], value)
 
-    def on_page_button_clicked(self, index):
+    def switch_page(self, index):
         '''处理页面按钮点击事件'''
         # 切换到对应的页面
-        if index == self.page_choice_buttons.index(get_lang('43')) and clicker.running:
+        if index == self.items.index(get_lang('43')) and clicker.running:
             MessageBox.critical(self, get_lang('14'), get_lang('aa'))
             return
         self.last_page = self.now_page
@@ -2862,8 +3051,8 @@ class SettingWindow(SelectUI, UMainWindow):
 
     def on_clicker_started(self):
         '''连点器启动事件'''
-        if self.now_page == self.page_choice_buttons.index(get_lang('43')):
-            self.on_page_button_clicked(self.last_page)
+        if self.now_page == self.items.index(get_lang('43')):
+            self.switch_page(self.last_page)
             MessageBox.critical(self, get_lang('14'), get_lang('aa'))
             return
 
@@ -3224,6 +3413,27 @@ if __name__ == '__main__':
             if os.path.exists('extensions') and os.path.isdir('extensions'):
                 shutil.rmtree('extensions')
             pass
+
+        try:
+            with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
+                dev_flags = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            dev_flags = {}
+            
+        try:
+            with open(get_resource_path('dev_settings.json'), 'r', encoding='utf-8') as f:
+                dev_settings = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            dev_settings = {}
+        
+        dev_back = dev_flags.copy()
+        for k in dev_flags.keys():
+            if k not in [i['key'] for i in dev_settings]:
+                del dev_back[k]
+                logger.warning(f'Beta feature ID:{k} is deprecated. Auto delete.')
+        dev_flags = dev_back.copy()
+        with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
+            json.dump(dev_flags, f)
         
         # Windows API常量
         logger.debug('Setting WinAPI const value')
@@ -3269,27 +3479,6 @@ if __name__ == '__main__':
         
         settings_need_restart = False
         can_update = False
-        
-        try:
-            with open(data_path / 'dev_flags.json', 'r', encoding='utf-8') as f:
-                dev_flags = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            dev_flags = {}
-            
-        try:
-            with open(get_resource_path('dev_settings.json'), 'r', encoding='utf-8') as f:
-                dev_settings = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            dev_settings = {}
-        
-        dev_back = dev_flags.copy()
-        for k in dev_flags.keys():
-            if k not in [i['key'] for i in dev_settings]:
-                del dev_back[k]
-                logger.warning(f'Beta feature ID:{k} is deprecated. Auto delete.')
-        dev_flags = dev_back.copy()
-        with open(data_path / 'dev_flags.json', 'w', encoding='utf-8') as f:
-            json.dump(dev_flags, f)
 
         # 单位控制
         latest_index = 2
@@ -3303,6 +3492,7 @@ if __name__ == '__main__':
         can_run_hotkey = True # 热键是否可用
         result = (None, None, None, None) # 更新检查结果
         setting_keys = list(setting_value.hotkey_list.keys()) # 热键列表
+        code = 'git clone https://github.com/xystudiocode/pyClickMouse' # 复制代码
 
         if in_dev:
             logger.info('In development mode')
@@ -3350,4 +3540,5 @@ if __name__ == '__main__':
         app = TrayApp()
         app.app.setStyle(setting_value.theme)
         init_success = True
+
         app.run()

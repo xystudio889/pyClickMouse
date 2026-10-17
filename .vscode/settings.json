@@ -41,9 +41,10 @@
     "git.openRepositoryInParentFolders": "never",
     "github.copilot.enable": {
         "*": false,
-        "plaintext": false,
         "markdown": false,
-        "scminput": false
+        "scminput": false,
+        "plaintext": false,
+        "jsonc": false
     },
     "python.createEnvironment.trigger": "off",
     "editor.unicodeHighlight.ambiguousCharacters": false,
@@ -69,5 +70,7 @@
             "envManager": "ms-python.python:system",
             "packageManager": "ms-python.python:pip"
         }
-    ]
+    ],
+	"prettier.tabWidth": 2,
+	"js/ts.suggest.autoImports": false 
 }

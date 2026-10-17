@@ -1,6 +1,7 @@
-import { withMermaid } from "vitepress-plugin-mermaid";
+// import { withMermaid } from 'vitepress-plugin-mermaid' // 暂时禁用，兼容性出问题了
+import { defineConfig } from 'vitepress'
 
-export default withMermaid({
+export default defineConfig({
   base: '/pyClickMouse/',
   head: [['link', { rel: 'icon', href: '/imgs/icons/icon.ico' }]],
   markdown: {
@@ -89,7 +90,10 @@ export default withMermaid({
         darkModeSwitchTitle: 'Switch to dark mode',
         // 社交链接
         socialLinks: [
-          { icon: 'github', link: 'https://github.com/xystudiocode/pyClickMouse' },
+          {
+            icon: 'github',
+            link: 'https://github.com/xystudiocode/pyClickMouse',
+          },
           { icon: 'gitee', link: 'https://gitee.com/xystudio889/pyClickMouse' },
         ],
         sidebar: {
@@ -99,9 +103,9 @@ export default withMermaid({
               items: [
                 { text: 'Introduction', link: '/en/guide/' },
                 { text: 'Getting Started', link: '/en/guide/getting-started' },
-                { text: 'FAQ', link: '/en/guide/faq',},
-                { text: 'Version Naming', link: '/en/guide/version-naming',},
-                { text: 'License', link: '/en/guide/license',},
+                { text: 'FAQ', link: '/en/guide/faq' },
+                { text: 'Version Naming', link: '/en/guide/version-naming' },
+                { text: 'License', link: '/en/guide/license' },
               ],
             },
           ],
@@ -357,6 +361,19 @@ export default withMermaid({
                     },
                   ],
                 },
+                {
+                  text: 'Feature',
+                  collapsed: true,
+                  items: [
+                    {
+                      text: 'New UI Visual',
+                      collapsed: true,
+                      items: [
+                        { text: '2026-10-17', link: '/en/updatelog/feature/new-ui-visual/2026-10-17' }
+                      ],
+                    },
+                  ],
+                },
               ],
             },
           ],
@@ -391,24 +408,27 @@ export default withMermaid({
                 {
                   text: 'Extensions',
                   collapsed: true,
-                  items: [{ text: 'Introducing', link: '/en/features/extensions' }, { text: 'Repair', link: '/en/features/extensions/repair' }],
+                  items: [
+                    { text: 'Introducing', link: '/en/features/extensions' },
+                    { text: 'Repair', link: '/en/features/extensions/repair' },
+                  ],
                 },
               ],
             },
           ],
           '/en/develop': [
             {
-            text: 'Developers',
-            items: [
-              {
-                text: 'Introduction',
-                link: '/en/develop/index',
-              },
-              {
-                text: 'Dependencies',
-                link: '/en/develop/dependencies',
-              },
-              {
+              text: 'Developers',
+              items: [
+                {
+                  text: 'Introduction',
+                  link: '/en/develop/index',
+                },
+                {
+                  text: 'Dependencies',
+                  link: '/en/develop/dependencies',
+                },
+                {
                   text: 'Clickmouse library usage',
                   collapsed: true,
                   items: [
@@ -423,7 +443,7 @@ export default withMermaid({
                     {
                       text: 'Calling using C++/dll',
                       link: '/en/develop/clicker/cpp',
-                    }
+                    },
                   ],
                 },
                 {
@@ -444,17 +464,32 @@ export default withMermaid({
                     },
                     {
                       text: 'Issue template',
-                      link: '/en/develop/contributing/issue_template'
+                      link: '/en/develop/contributing/issue_template',
                     },
                     {
                       text: 'Security policy',
-                      link: '/en/develop/contributing/security'
+                      link: '/en/develop/contributing/security',
                     },
                     {
                       text: 'License',
-                      link: '/en/develop/contributing/license'
-                    }
+                      link: '/en/develop/contributing/license',
+                    },
                   ],
+                },
+              ],
+            },
+          ],
+          '/en/blog': [
+            {
+              text: 'Blog',
+              items: [
+                {
+                  text: 'Introduction',
+                  link: '/en/blog/index',
+                },
+                {
+                  text: 'Decoupling UI and program',
+                  link: '/en/blog/decoupling-code-and-ui',
                 },
               ],
             },
@@ -465,7 +500,8 @@ export default withMermaid({
           { text: 'Guide', link: '/en/guide/' },
           { text: 'Features', link: '/en/features/' },
           { text: 'Update log', link: '/en/updatelog/' },
-          { text: 'Developers', link: '/en/develop/'}
+          { text: 'Developers', link: '/en/develop/' },
+          { text: 'Blog', link: '/en/blog/' },
         ],
         returnToTopLabel: 'Return to top',
       },
@@ -498,7 +534,10 @@ export default withMermaid({
         darkModeSwitchLabel: '主题',
         // 社交链接
         socialLinks: [
-          { icon: 'github', link: 'https://github.com/xystudiocode/pyClickMouse'},
+          {
+            icon: 'github',
+            link: 'https://github.com/xystudiocode/pyClickMouse',
+          },
           { icon: 'gitee', link: 'https://gitee.com/xystudio889/pyClickMouse' },
         ],
         nav: [
@@ -506,7 +545,8 @@ export default withMermaid({
           { text: '指南', link: '/zh-CN/guide/' },
           { text: '功能', link: '/zh-CN/features/' },
           { text: '更新日志', link: '/zh-CN/updatelog/' },
-          { text: '开发者', link: '/zh-CN/develop/' }
+          { text: '开发者', link: '/zh-CN/develop/' },
+          { text: '博客', link: '/zh-CN/blog/' },
         ],
         docFooter: {
           prev: '上一页',
@@ -523,9 +563,9 @@ export default withMermaid({
               items: [
                 { text: '介绍', link: '/zh-CN/guide/' },
                 { text: '开始使用', link: '/zh-CN/guide/getting-started' },
-                { text: 'FAQ', link: '/zh-CN/guide/faq',},
-                { text: '版本命名', link: '/zh-CN/guide/version-naming',},
-                { text: '用户协议', link: '/zh-CN/guide/license',},
+                { text: 'FAQ', link: '/zh-CN/guide/faq' },
+                { text: '版本命名', link: '/zh-CN/guide/version-naming' },
+                { text: '用户协议', link: '/zh-CN/guide/license' },
               ],
             },
           ],
@@ -551,7 +591,7 @@ export default withMermaid({
                         },
                         {
                           text: '3.2.1.20',
-                          link: '/zh-CN/updatelog/final/3/32120'
+                          link: '/zh-CN/updatelog/final/3/32120',
                         },
                         {
                           text: '3.2.0.19',
@@ -781,6 +821,19 @@ export default withMermaid({
                     },
                   ],
                 },
+                {
+                  text: 'Feature 版',
+                  collapsed: true,
+                  items: [
+                    {
+                      text: '新的 UI 视觉',
+                      collapsed: true,
+                      items: [
+                        { text: '2026-10-17', link: '/zh-CN/updatelog/feature/new-ui-visual/2026-10-17' }
+                      ],
+                    },
+                  ],
+                },
               ],
             },
           ],
@@ -822,17 +875,17 @@ export default withMermaid({
           ],
           '/zh-CN/develop': [
             {
-            text: '开发人员',
-            items: [
-              {
-                text: '介绍',
-                link: '/zh-CN/develop/index',
-              },
-              {
-                text: '依赖',
-                link: '/zh-CN/develop/dependencies',
-              },
-              {
+              text: '开发人员',
+              items: [
+                {
+                  text: '介绍',
+                  link: '/zh-CN/develop/index',
+                },
+                {
+                  text: '依赖',
+                  link: '/zh-CN/develop/dependencies',
+                },
+                {
                   text: 'clickmouse库调用',
                   collapsed: true,
                   items: [
@@ -847,7 +900,7 @@ export default withMermaid({
                     {
                       text: '基于C++/dll的调用',
                       link: '/zh-CN/develop/clicker/cpp',
-                    }
+                    },
                   ],
                 },
                 {
@@ -868,17 +921,27 @@ export default withMermaid({
                     },
                     {
                       text: 'issue 模板',
-                      link: '/zh-CN/develop/contributing/issue_template'
-                    },{
+                      link: '/zh-CN/develop/contributing/issue_template',
+                    },
+                    {
                       text: '安全报告',
-                      link: '/zh-CN/develop/contributing/security'
+                      link: '/zh-CN/develop/contributing/security',
                     },
                     {
                       text: '软件协议',
-                      link: '/zh-CN/develop/contributing/license'
-                    }
+                      link: '/zh-CN/develop/contributing/license',
+                    },
                   ],
                 },
+              ],
+            },
+          ],
+          '/zh-CN/blog': [
+            {
+              text: '博客',
+              items: [
+                { text: '介绍', link: '/zh-CN/blog/' },
+                { text: '前后端分离', link: '/zh-CN/blog/decoupling-code-and-ui' },
               ],
             },
           ],

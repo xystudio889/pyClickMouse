@@ -1,7 +1,4 @@
 <layout name='general' direction='v' stretch=true>
-    <QLabel name='title' args=[title] style='big_text_24' />
-    <QLabel name='description' args=['!lang 7f'] style='dest' />
-    <UFrame name='line1' style='frame' />
     <layout name='lang_choice_layout' direction='h' stretch=true>
         <QLabel name='lang_choice_label' args=[f'{get_lang('45')}{get_lang('b5')}:']/>
         <QComboBox 
@@ -26,21 +23,21 @@
     <UFrame name='line2' style='frame' />
     <layout name='start_layout' direction='v' stretch=true>
         <UCheckBox name='start_checkbox' args=['!lang b6'] init_steps=[{'name': 'setChecked', 'args': [auto_start_manager.auto_start]}] signals={'checkStateChanged': self.on_auto_start_changed} />
-        <layout name='repair_start_layout' direction='h' stretch=true>
-            <QPushButton name='repair_start_button' args=['!lang 20'] signals={'clicked': self.repair_auto_start} />
-            <QLabel name='repair_start_tip' args=['!lang d1'] style='dest_small' />
+        <layout name='repair_start_layout' direction='h' stretch=false>
+            <QPushButton name='repair_start_button' args=['!lang 20'] signals={'clicked': self.repair_auto_start} stretch=0 />
+            <QLabel name='repair_start_tip' args=['!lang d1'] style='dest_small' stretch=1 />
         </layout>
     </layout>
     <UFrame name='line4' style='frame' show_if=dev_flags.get('new_settings',False) />
     <layout name='feedback_layout' direction='h'>
-        <QLabel name='feedback_label' args=['!lang c3'] stretch=1 />
+        <QLabel name='feedback_label' args=['!lang c3'] stretch=0 />
         <QLineEdit 
             name='feedback_input' 
             init_steps=[{'name': 'setText', 'args': [setting_value.feedback]}] 
-            stretch=6 
+            stretch=1 
             signals={'textChanged': lambda: self.on_setting_changed(self.get_code('general').find_widget('general.feedback_layout.feedback_input').text, SettingText.feedback)} 
         />
-        <QPushButton name='feedback_repair_button' args=['!lang 20'] strech=1 signals={'clicked': lambda: self.repair_settings(SettingText.feedback)} />
+        <QPushButton name='feedback_repair_button' args=['!lang 20'] strech=0 signals={'clicked': lambda: self.repair_settings(SettingText.feedback)} />
     </layout>
     <UFrame name='line3' style='frame' />
     <layout name='delay_layout' direction='v' stretch=true>
@@ -63,16 +60,33 @@
         <QLabel name='delay_label' style='big_text_16' />
         <QLabel name='delay_dest' style='dest_small' args=['!lang 8a'] />
     </layout>
-    <UFrame name='line5' style='frame' />
-    <UCheckBox 
-        name='hide_flag' 
-        args=['!lang d5'] 
-        init_steps=[{'name': 'setChecked', 'args': [setting_value.hide_flags]}] 
-        signals={'checkStateChanged': self.on_hide_flag_changed} 
-        show_if=dev_flags.get('new_settings',False) 
-    />
     <UFrame name='line6' style='frame' show_if=dev_flags.get('new_settings',False) />
     <layout name='repair_layout' direction='h' stretch=true>
         <QPushButton name='repair_button' args=['!lang 5e'] signals={'clicked': self.repair_all_settings} />
     </layout>
+
+    
+    <layout direction='h' stretch=true>
+        <QPushButton style='hyperlink' args=['Test'] />
+    </layout>
+    
+    <clickmouse::Expander name='about_expander' header='ClickMouse' description='© XyStuido 2026. All rights reserved.' show_if=dev_flags.get('new_settings',False)>
+        <headerIcon>
+            <QLabel name='headerIcon' init_steps=[{'name': 'setPixmap', 'args': [icon.pixmap(24, 24)]}] />
+        </headerIcon>
+        <ExpandedLayouts>
+            <ExpandedItem pressed=lambda: pyperclip.copy(code) >
+                <QLabel args=['To clone this repositry'] />
+                <layout direction='h' init_steps=[{'name': 'setSpacing', 'args': [16]}]>
+                    <stretch />
+                    <QLabel name='clone_code' args=[code] style='code' />
+                    <clickmouse::fonticon glyph='&#xE8C8;' size=14 color='#d0d0d0' />
+                </layout>
+            </ExpandedItem>
+            <ExpandedItem pressed=lambda: open_url(setting_value.feedback, 1000, 600, True) >
+                <QLabel args=['File a feature request or bug report'] />
+                <clickmouse::fonticon glyph='&#xE8A7;' size=14 color='#d0d0d0' />
+            </ExpandedItem>
+        </ExpandedLayouts>
+    </clickmouse::Expander>
 </layout>
