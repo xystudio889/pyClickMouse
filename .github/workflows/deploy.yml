@@ -3,10 +3,6 @@ name: Deploy to GitHub Pages
 # 1. 定义触发工作流的事件：当推送到分支时触发，手动触发
 on:
   push:
-    branches:
-      - main # 推送到 main 分支时触发
-      - release_preview # 推送到 release_preview 分支时触发
-      - develop # 推送到 develop 分支时触发
   workflow_dispatch:
 
 permissions:
