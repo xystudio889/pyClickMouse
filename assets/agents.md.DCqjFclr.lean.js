@@ -1,0 +1,1 @@
+import{_ as e,o as t,c as i,a2 as l}from"./chunks/framework.u1D-LItx.js";const p=JSON.parse('{"title":"agent对话模板","description":"","frontmatter":{},"headers":[],"relativePath":"agents.md","filePath":"agents.md"}'),n={name:"agents.md"};function r(o,a,s,h,d,_){return t(),i("div",null,[...a[0]||(a[0]=[l("",6)])])}const m=e(n,[["render",r]]);export{p as __pageData,m as default};
