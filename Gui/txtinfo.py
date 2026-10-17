@@ -186,6 +186,9 @@ class StyleClass:
     code = 'code'
     d_code = 'desc_code'
 
+    title = 'title_text'
+    desc = 'desc_text'
+
     none = ''
     
 class InputChange:

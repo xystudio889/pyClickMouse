@@ -433,7 +433,7 @@ class HighLightPanel(QWidget):
     """背景 #272727，左上角 8px 圆角，内容四周 36px 留白
 
     配色：底色默认值见 BG，可由 qss 里的 `.HighLightPanel { qproperty-bg_color: ... }` 覆盖
-          （临时配色表见 Gui/a.qss）；圆角、留白等形状属性仍由代码控制。
+          （临时配色表见 Gui/res/styles/dark.qss）；圆角、留白等形状属性仍由代码控制。
     """
 
     BG = QColor("#272727")     # 默认底色（qss 未加载时的兜底值）
@@ -496,36 +496,51 @@ class FontIcon(QLabel):
     angle 属性可直接交给 QPropertyAnimation 做旋转动画。
     icon_color / icon_size 也可由 qss 用 qproperty-* 覆盖。
 
+    配色由 qss 决定：默认取 `.FontIcon`（或全局文字色）的 color；
+    需要单独配色的位置在 qss 里用自己的 class 声明 color（如 `.ExpanderArrow`），
+    代码只在显式传入 color 时才把颜色写进控件自身样式表。
+
     字号通过「控件自身样式表」设置：全局样式表里的 `* { font-size: ... }`
     会覆盖 setFont()，但覆盖不了控件自身样式表，因此图标字号不会被带跑。
     """
 
-    def __init__(self, icon="", size: int = 20, color: str = "#FFFFFF", parent=None):
+    STYLE_CLASS = "FontIcon"
+
+    def __init__(self, icon="", size: int = 20, color: Optional[str] = None, parent=None):
         super().__init__(icon, parent)
 
-        self._color = QColor(color)
+        self._color = QColor(color) if color is not None else None
         self._icon_size = int(size)
         self._angle = 0.0
+        self._pixmap = None
+        self._pixmap_key = None
 
         self.setAlignment(Qt.AlignCenter)
         self.setMinimumWidth(0)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self._apply_style()
-
-        self._pixmap = None
-        self._pixmap_key = None
+        set_style(self, self.STYLE_CLASS)
 
     def _apply_style(self):
-        """把字号 + 颜色写进控件自身样式表（优先级高于全局 `*` 规则）。"""
+        """把字号写进控件自身样式表（优先级高于全局 `*` 规则）。
+
+        只有显式指定颜色时才写入 color，否则交给 qss 的 `.FontIcon` 决定。
+        """
         f = self.font()
         f.setPixelSize(self._icon_size)
         f.setFamilies(_FONT_FAMILIES)
         self.setFont(f)
-        self.setStyleSheet(
-            f"color: {self._color.name()}; background: transparent; "
-            f"font-size: {self._icon_size}px;"
-        )
+        css = f"background: transparent; font-size: {self._icon_size}px;"
+        if self._color is not None:
+            css += f" color: {self._color.name()};"
+        self.setStyleSheet(css)
         self.updateGeometry()
+
+    def _effective_color(self) -> QColor:
+        """当前生效的图标颜色：显式颜色优先，否则取 qss 设置的前景色。"""
+        if self._color is not None:
+            return self._color
+        return self.palette().color(self.foregroundRole())
 
     # --------------------------- 原地旋转 ---------------------------
     def get_angle(self) -> float:
@@ -541,13 +556,15 @@ class FontIcon(QLabel):
 
     # --------------------------- 配色 / 字号 ---------------------------
     def get_icon_color(self) -> QColor:
-        return self._color
+        return self._effective_color()
 
     def set_icon_color(self, color):
-        color = QColor(color)
-        if color != self._color:
-            self._color = color
-            # 旋转时由 self._color 自绘；未旋转时 QLabel 取自身样式表的颜色
+        new_color = QColor(color) if color is not None else QColor()
+        if not new_color.isValid():
+            new_color = None
+        if new_color != self._color:
+            self._color = new_color
+            # 旋转时由 _effective_color() 自绘；未旋转时 QLabel 取样式表的颜色
             self._apply_style()
 
     def get_icon_size(self) -> int:
@@ -568,8 +585,9 @@ class FontIcon(QLabel):
         直接把文字交给旋转后的 painter 画，在部分平台上不会输出任何像素，
         因此这里始终先渲染成位图再旋转。
         """
+        color = self._effective_color()
         dpr = self.devicePixelRatioF()
-        key = (self.size(), self.text(), self.font().key(), self._color.rgba(), dpr)
+        key = (self.size(), self.text(), self.font().key(), color.rgba(), dpr)
         if self._pixmap is None or self._pixmap_key != key:
             pm = QPixmap(int(self.width() * dpr), int(self.height() * dpr))
             pm.setDevicePixelRatio(dpr)
@@ -578,7 +596,7 @@ class FontIcon(QLabel):
             painter = QPainter(pm)
             painter.setRenderHint(QPainter.Antialiasing, True)
             painter.setRenderHint(QPainter.TextAntialiasing, True)
-            painter.setPen(self._color)
+            painter.setPen(color)
             painter.setFont(self.font())
             painter.drawText(QRect(QPoint(0, 0), self.size()), Qt.AlignCenter, self.text())
             painter.end()
@@ -586,6 +604,13 @@ class FontIcon(QLabel):
             self._pixmap = pm
             self._pixmap_key = key
         return self._pixmap
+
+    def changeEvent(self, event):
+        # 主题 / 样式变化会改变 qss 决定的颜色，缓存的旋转位图必须失效
+        if event.type() in (QEvent.PaletteChange, QEvent.StyleChange, QEvent.FontChange):
+            self._pixmap = None
+            self._pixmap_key = None
+        super().changeEvent(event)
 
     def paintEvent(self, event):
         # 未旋转时走 QLabel 默认绘制，保证与普通图标标签完全一致
@@ -604,8 +629,11 @@ class FontIcon(QLabel):
         painter.drawPixmap(0, 0, self._icon_pixmap())
 
 
-def fonticon(icon="", size: int = 20, color: str = "#FFFFFF") -> FontIcon:
-    """新建一个 fonticon 处理后的 QLabel（图标字体 + 居中 + 透明背景）。"""
+def fonticon(icon="", size: int = 20, color: Optional[str] = None) -> FontIcon:
+    """新建一个 fonticon 处理后的 QLabel（图标字体 + 居中 + 透明背景）。
+
+    color 为 None（默认）时颜色由 qss 决定；只有确实需要单独配色时才显式传入。
+    """
     return FontIcon(icon, size=size, color=color)
 
 
@@ -797,7 +825,7 @@ class TextLabel(QLabel):
 
     颜色与字号都写进控件自身样式表，优先级高于全局样式表里的
     `* { color: ...; font-size: ... }`（这类全局规则会覆盖 setFont() 的效果）；
-    并可由 qss 里的 `qproperty-text_color` / `qproperty-text_size` 覆盖（见 Gui/a.qss）。
+    并可由 qss 里的 `qproperty-text_color` / `qproperty-text_size` 覆盖（见 Gui/res/styles/dark.qss）。
     """
 
     def __init__(self, text: str = "", color: str = "#FFFFFF", size: int = 14, parent=None):
@@ -846,7 +874,7 @@ class Card(QWidget):
 
     配色：底色 / 边框色的默认值见 _BG、_BORDER，可由 qss 里的
           `.Card { qproperty-bg_color: ...; qproperty-border_color: ...; }` 覆盖
-          （临时配色表见 Gui/a.qss）；圆角、边框宽度等形状属性仍由代码控制。
+          （临时配色表见 Gui/res/styles/dark.qss）；圆角、边框宽度等形状属性仍由代码控制。
     """
 
     STYLE_CLASS = "Card"
@@ -966,12 +994,14 @@ class Card(QWidget):
         path.addRoundedRect(rect, self._radius, self._radius)
         painter.fillPath(path, self._bg_color)
 
-        pen = QPen(self._border_color)
-        pen.setWidthF(self._border_width)
-        painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
-        inner = rect.adjusted(0.5, 0.5, -0.5, -0.5)
-        painter.drawRoundedRect(inner, self._radius, self._radius)
+        # QPen 宽度为 0 时是 cosmetic pen（仍会画 1px），无边框必须直接跳过描边
+        if self._border_width > 0:
+            pen = QPen(self._border_color)
+            pen.setWidthF(self._border_width)
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            inner = rect.adjusted(0.5, 0.5, -0.5, -0.5)
+            painter.drawRoundedRect(inner, self._radius, self._radius)
 
 
 class ContentCard(Card):
@@ -1259,22 +1289,50 @@ class PressableRow(Card):
     参数：
         layout   —— 行内布局（挂载到 Card 上，边距由调用方决定）
         on_click —— 释放时调用的槽函数；也可以连接 clicked 信号
+        variant  —— 样式变体：
+                    "default" 独立使用：无边框、透明背景、上下左右 8px 内边距、4px 圆角，
+                              悬浮 / 按下只改背景色
+                    "menu"    挂载在 Expander 下时使用：卡片底色 + 边框配色
 
-    配色：普通 / 悬浮 / 按下三套颜色都在 qss 里（.PressableRow / .PressableRowHover /
-          .PressableRowPressed，见 Gui/a.qss），代码只按状态调用 set_style 切换 class。
+    挂载时切换样式（与 layout 挂载同理）：Expander.add_layout 会把 PressableRow
+    切到 "menu" 变体；也可直接调用 set_variant()。
+
+    配色：普通 / 悬浮 / 按下三套 class 都在 qss 里
+          （.PressableRow / .PressableRowHover / .PressableRowPressed 与
+          .ExpanderRow / .ExpanderRowHover / .ExpanderRowPressed，见 Gui/res/styles/dark.qss），
+          代码只按状态与变体调用 set_style 切换 class。
     """
 
     clicked = Signal()
+
+    VARIANT_DEFAULT = "default"
+    VARIANT_MENU = "menu"
 
     STYLE_CLASS = "PressableRow"
     HOVER_CLASS = "PressableRowHover"
     PRESSED_CLASS = "PressableRowPressed"
 
-    _BG = "#343434"        # 默认配色（qss 未加载时的兜底值）
-    _BORDER = "#232323"
+    MENU_STYLE_CLASS = "ExpanderRow"
+    MENU_HOVER_CLASS = "ExpanderRowHover"
+    MENU_PRESSED_CLASS = "ExpanderRowPressed"
 
-    def __init__(self, layout=None, on_click=None, parent=None):
-        # 底下的 Card.__init__ 会读取 self._BG / self._BORDER，并按 STYLE_CLASS 上色
+    _CLASSES = {
+        VARIANT_DEFAULT: (STYLE_CLASS, HOVER_CLASS, PRESSED_CLASS),
+        VARIANT_MENU: (MENU_STYLE_CLASS, MENU_HOVER_CLASS, MENU_PRESSED_CLASS),
+    }
+
+    _BG = "#343434"        # menu 变体默认配色（qss 未加载时的兜底值）
+    _BORDER = "#232323"
+    _RADIUS = 4            # 圆角（形状，不由 qss 控制）
+    _BORDER_WIDTH = 1      # menu 变体边框宽度（default 变体无边框）
+    _PADDING = 8           # default 变体上下左右内边距
+
+    def __init__(self, layout=None, on_click=None, parent=None,
+                 variant=VARIANT_DEFAULT):
+        # Card.__init__ 会读取 _source_margins / variant 相关状态
+        self._variant = self._normalize_variant(variant)
+        self._source_margins = None
+
         super().__init__(layout=layout, parent=parent)
 
         self._on_click = on_click
@@ -1284,19 +1342,85 @@ class PressableRow(Card):
         # 背景自绘，置为透明以免被父级样式表覆盖
         self.setStyleSheet("background: transparent;")
         self.setCursor(Qt.PointingHandCursor)
+        self._apply_variant()
+
+    # --------------------------- 变体 ---------------------------
+    @classmethod
+    def _normalize_variant(cls, variant) -> str:
+        if variant not in cls._CLASSES:
+            raise ValueError(f"未知的 PressableRow 变体：{variant!r}")
+        return variant
+
+    def variant(self) -> str:
+        return self._variant
+
+    def set_variant(self, variant):
+        """切换样式变体（挂载到 Expander 时由 Expander 调用）。"""
+        variant = self._normalize_variant(variant)
+        if variant == self._variant:
+            return
+        self._variant = variant
+        self._apply_variant()
+
+    def _apply_variant(self):
+        """按变体设置形状、内边距与配色 class。"""
+        if self._variant == self.VARIANT_MENU:
+            self._border_width = self._BORDER_WIDTH
+        else:
+            self._border_width = 0
+        self._radius = self._RADIUS
+
+        self._apply_padding()
+        self._sync_state_class()
+        self._sync_content_height()
+        self.updateGeometry()
+        self.update()
+
+    # --------------------------- 内边距 ---------------------------
+    def mount_layout(self, layout):
+        """挂载布局时记录调用方边距，便于切回 menu 变体时恢复。"""
+        super().mount_layout(layout)
+        self._source_margins = layout.contentsMargins()
+        self._apply_padding()
+
+    def _apply_padding(self):
+        """default 变体：上下左右 8px；menu 变体：恢复调用方设置的边距。"""
+        lay = self.layout()
+        if lay is None:
+            return
+        if self._variant == self.VARIANT_MENU:
+            if self._source_margins is None:
+                return
+            target = self._source_margins
+        else:
+            target = QMargins(self._PADDING, self._PADDING,
+                              self._PADDING, self._PADDING)
+        if lay.contentsMargins() != target:
+            lay.setContentsMargins(target)
+            self.updateGeometry()
 
     # --------------------------- 交互 ---------------------------
     def set_on_click(self, on_click):
         self._on_click = on_click
 
+    def _base_bg_color(self) -> QColor:
+        return QColor(self._BG) if self._variant == self.VARIANT_MENU else QColor(0, 0, 0, 0)
+
+    def _base_border_color(self) -> QColor:
+        return QColor(self._BORDER) if self._variant == self.VARIANT_MENU else QColor(0, 0, 0, 0)
+
     def _sync_state_class(self):
         """按当前状态切换样式 class（颜色定义在 qss 里）。"""
+        normal, hover, pressed = self._CLASSES[self._variant]
         if self._pressed:
-            set_style(self, self.PRESSED_CLASS)
+            set_style(self, pressed)
         elif self._hover:
-            set_style(self, self.HOVER_CLASS)
+            set_style(self, hover)
         else:
-            set_style(self, self.STYLE_CLASS)
+            # qss 未提供对应 class 时也要干净地回到常态配色
+            self._bg_color = self._base_bg_color()
+            self._border_color = self._base_border_color()
+            set_style(self, normal)
 
     def enterEvent(self, event):
         self._hover = True
@@ -1334,7 +1458,7 @@ class _Divider(QFrame):
     """下拉内容之间的 1px 分割线。
 
     颜色默认值见 _COLOR，可由 qss 里的
-    `.ExpanderDivider { qproperty-color: ... }` 覆盖（见 Gui/a.qss）。
+    `.ExpanderDivider { qproperty-color: ... }` 覆盖（见 Gui/res/styles/dark.qss）。
     """
 
     STYLE_CLASS = "ExpanderDivider"
@@ -1361,19 +1485,100 @@ class _Divider(QFrame):
 
     color = Property(QColor, get_color, set_color)
 
-def add_smart(layout, obj):
+def add_smart(layout, obj, stretch: int = 0):
     if isinstance(obj, QWidget):
-        layout.addWidget(obj)
+        layout.addWidget(obj, stretch)
     elif isinstance(obj, QLayout):
-        layout.addLayout(obj)
+        layout.addLayout(obj, stretch)
     elif isinstance(obj, QLayoutItem):
         layout.addItem(obj)
     else:
         raise TypeError(f"add_smart not supported type: {type(obj).__name__}")
 
+
+def _iter_labels(widget: QWidget):
+    """遍历控件自身（若是文字标签）及其内部的文字标签。"""
+    if isinstance(widget, QLabel):
+        yield widget
+    yield from widget.findChildren(QLabel)
+
+
+def _one_char_width(label: QLabel) -> int:
+    """一个字符的最小宽度（一行至少能放一个字符）。"""
+    fm = label.fontMetrics()
+    return max(1, fm.horizontalAdvance("M"), fm.horizontalAdvance("字"))
+
+
+def _as_side_widget(obj, hfw: bool = False):
+    """把一侧内容统一成可设置尺寸策略的控件；spacer 等无法包装的对象原样返回。
+
+    传入 QLayout 时会包进容器：外层行已提供内边距，内部布局的默认 9px 边距
+    （Qt 默认值）必须清零，否则那一侧会比纯控件高 18px，内容还会内缩。
+    hfw=True 用支持 heightForWidth 的容器（供左侧换行压缩使用）。
+    """
+    if isinstance(obj, QWidget):
+        return obj
+    if isinstance(obj, QLayout):
+        container = _HFWContainer() if hfw else QWidget()
+        container.setStyleSheet("background: transparent;")
+        obj.setContentsMargins(0, 0, 0, 0)
+        container.setLayout(obj)
+        return container
+    if isinstance(obj, QLayoutItem):
+        widget = obj.widget()
+        if widget is not None:
+            return widget
+        layout = obj.layout()
+        if layout is not None:
+            return _as_side_widget(layout, hfw)
+    return obj
+
+
+def _prepare_expander_side(obj, compressible: bool):
+    """按左右两侧的不同需求设置尺寸策略。
+
+    左侧（compressible=True）：文字自动换行，可一路压缩到一行一个字符；
+    右侧（compressible=False）：保持原有尺寸，不随可用宽度收缩。
+    """
+    widget = _as_side_widget(obj, hfw=compressible)
+    if not isinstance(widget, QWidget):
+        return obj
+
+    if compressible:
+        for label in _iter_labels(widget):
+            label.setWordWrap(True)
+            label.setMinimumWidth(_one_char_width(label))
+            label.setSizePolicy(_hfw_policy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+        if isinstance(widget, QLabel):
+            widget.setSizePolicy(_hfw_policy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+        else:
+            policy = widget.sizePolicy()
+            policy.setHorizontalPolicy(QSizePolicy.Preferred)
+            lay = widget.layout()
+            # 只有真正支持 heightForWidth 的内容才开启，否则布局会算出错误高度
+            policy.setHeightForWidth(bool(lay is not None and lay.hasHeightForWidth()))
+            widget.setSizePolicy(policy)
+            # 容器最小宽度 = 内部内容的最小宽度（文字已按一个字符为下限）
+            widget.setMinimumWidth(widget.minimumSizeHint().width())
+    else:
+        # 不换行 + Fixed：sizeHint 即上限，右侧不会被压缩
+        for label in _iter_labels(widget):
+            label.setWordWrap(False)
+            label_policy = label.sizePolicy()
+            label_policy.setHeightForWidth(False)
+            label.setSizePolicy(label_policy)
+        policy = widget.sizePolicy()
+        policy.setHorizontalPolicy(QSizePolicy.Fixed)
+        policy.setHeightForWidth(False)
+        widget.setSizePolicy(policy)
+    return widget
+
+
 def create_expander_row(left_widget, right_widget, press_command=None) -> PressableRow | QLayout:
     '''
     创建一个两边布局的项目
+
+    左侧按可用宽度自动换行压缩（最小压缩到一行一个字符），右侧保持原尺寸不被压缩。
 
     参数：
         left_widget   —— 左侧组件
@@ -1381,11 +1586,10 @@ def create_expander_row(left_widget, right_widget, press_command=None) -> Pressa
         press_command —— 按下的操作，为None不注册
     '''
     layout = QHBoxLayout()
-    layout.setContentsMargins(60, 20, 45, 20)
+    layout.setContentsMargins(60, 20, 16, 20)
 
-    add_smart(layout, left_widget)
-    layout.addStretch()
-    add_smart(layout, right_widget)
+    add_smart(layout, _prepare_expander_side(left_widget, compressible=True), stretch=1)
+    add_smart(layout, _prepare_expander_side(right_widget, compressible=False), stretch=0)
 
     if press_command:
         return PressableRow(layout=layout, on_click=press_command)
@@ -1400,8 +1604,8 @@ class Expander(Card):
         subtitle     —— 标题文字
         description  —— 描述文字
         layouts      —— 下拉内容列表，元素可以是 QLayout，也可以是 QWidget
-                        （例如 PressableRow，按下触发槽函数）；相邻两项间自动插入
-                        1px 分割线
+                        （例如 PressableRow，按下触发槽函数；挂载时会自动切到
+                        「菜单」样式变体）；相邻两项间自动插入 1px 分割线
         expanded     —— 初始是否展开（默认收起）
         duration     —— 展开 / 收起动画时长（ms），<= 0 表示立即切换
         right_layout —— 自定义右侧布局（可选），放在下拉箭头左侧，间隔 8px；
@@ -1409,8 +1613,8 @@ class Expander(Card):
 
     配色：下拉区底色 / 文字 / 箭头 / 分割线的颜色都在 qss 里
           （.Expander、.ExpanderSubtitle、.ExpanderDescription、.ExpanderArrow、
-          .ExpanderDivider，见 Gui/a.qss），代码只用 set_style 挂 class，
-          具体颜色值不写在代码里（默认值仅作 qss 未加载时的兜底）。
+          .ExpanderDivider，见 Gui/res/styles/dark.qss），代码只用 set_style 挂 class，
+          具体颜色值不写在代码里。
 
     布局（不随宽度自适应缩放）：
         16px │ 图标(跨两行) 20px 标题 ···· [右侧布局] 8px 箭头(居右) │ 16px
@@ -1427,7 +1631,6 @@ class Expander(Card):
     _RIGHT_GAP = 8         # 右侧布局 ↔ 箭头
     _DURATION = 250        # 展开 / 收起动画时长
     _ARROW_ICON = "\uE70D"
-    _ARROW_COLOR = "#F7F7F7"     # 默认配色，可由 qss 的 .ExpanderArrow 覆盖
     _ARROW_SIZE = 12
 
     _SUBTITLE_COLOR = "#FFFFFF"  # 默认配色，可由 qss 的 .ExpanderSubtitle 覆盖
@@ -1460,11 +1663,12 @@ class Expander(Card):
 
         # ================= 标题行 =================
         self._title_label = _as_icon_label(title)
-        self._arrow = fonticon(self._ARROW_ICON, size=self._ARROW_SIZE, color=self._ARROW_COLOR)
+        self._arrow = fonticon(self._ARROW_ICON, size=self._ARROW_SIZE)
         set_style(self._arrow, self.ARROW_CLASS)
 
         self._header = PressableRow(layout=self._build_header_layout(subtitle, description),
-                                    on_click=self.toggle, parent=self)
+                                    on_click=self.toggle, parent=self,
+                                    variant=PressableRow.VARIANT_MENU)
         self._root.addWidget(self._header)
         if right_layout is not None:
             self.set_right_layout(right_layout)
@@ -1647,6 +1851,9 @@ class Expander(Card):
 
     def add_layout(self, obj):
         """追加一个下拉项（自动补 1px 分割线）。"""
+        # 挂载时切换样式：Expander 内的 PressableRow 使用菜单配色
+        if isinstance(obj, PressableRow):
+            obj.set_variant(PressableRow.VARIANT_MENU)
         if self._items:
             self._body_layout.addWidget(self._make_divider())
         if isinstance(obj, QLayout):
@@ -1670,11 +1877,32 @@ class Expander(Card):
         return line
 
     def _body_height(self) -> int:
-        return self._body_layout.sizeHint().height()
+        """展开后的内容高度。
+
+        文字换行时内容高度随宽度变化，因此优先用布局的 heightForWidth；
+        没有 heightForWidth 的内容退回 sizeHint。
+        """
+        lay = self._body_layout
+        hint = lay.sizeHint().height()
+        if lay.hasHeightForWidth():
+            # 下拉区与 Expander 同宽（根布局无边距），resizeEvent 里 body 的宽度还是旧值，
+            # 因此优先用自身的宽度计算
+            width = self.width() if self.width() > 0 else self._body.width()
+            if width > 0:
+                return max(hint, lay.heightForWidth(width))
+        return hint
 
     def _resize_body(self):
         """收起时高度锁 0，展开时按内容高度。"""
         self._body.setMaximumHeight(self._body_height() if self._expanded else 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # 宽度变化会改变换行内容的高度，展开状态下需要同步下拉区高度
+        anim = getattr(self, "_body_anim", None)
+        if (self._expanded and anim is not None
+                and anim.state() != QAbstractAnimation.Running):
+            self._resize_body()
 
     # --------------------------- 展开 / 收起 ---------------------------
     def is_expanded(self) -> bool:

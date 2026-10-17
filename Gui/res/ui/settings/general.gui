@@ -1,7 +1,4 @@
 <layout name='general' direction='v' stretch=true>
-    <QLabel name='title' args=[title] style='big_text_20' />
-    <QLabel name='description' args=['!lang 7f'] style='dest' />
-    <UFrame name='line1' style='frame' />
     <layout name='lang_choice_layout' direction='h' stretch=true>
         <QLabel name='lang_choice_label' args=[f'{get_lang('45')}{get_lang('b5')}:']/>
         <QComboBox 
@@ -67,16 +64,29 @@
     <layout name='repair_layout' direction='h' stretch=true>
         <QPushButton name='repair_button' args=['!lang 5e'] signals={'clicked': self.repair_all_settings} />
     </layout>
-    <clickmouse_Expander name='expander1'>
+
+    
+    <layout direction='h' stretch=true>
+        <QPushButton style='hyperlink' args=['Test'] />
+    </layout>
+    
+    <clickmouse::Expander name='about_expander' header='ClickMouse' description='© XyStuido 2026. All rights reserved.' show_if=dev_flags.get('new_settings',False)>
         <headerIcon>
             <QLabel name='headerIcon' init_steps=[{'name': 'setPixmap', 'args': [icon.pixmap(24, 24)]}] />
         </headerIcon>
-    </clickmouse_Expander>
-    <clickmouse_Expander name='expander2' headerIcon='&#xE702;' header='Icon Test' description='This is a test description.'>
-        <Layouts>
-            <line>
-                
-            </line>
-        </Layouts>
-    </clickmouse_Expander>
+        <ExpandedLayouts>
+            <ExpandedItem pressed=lambda: pyperclip.copy(code) >
+                <QLabel args=['To clone this repositry'] />
+                <layout direction='h' init_steps=[{'name': 'setSpacing', 'args': [16]}]>
+                    <stretch />
+                    <QLabel name='clone_code' args=[code] style='code' />
+                    <clickmouse::fonticon glyph='&#xE8C8;' size=14 color='#d0d0d0' />
+                </layout>
+            </ExpandedItem>
+            <ExpandedItem pressed=lambda: open_url(setting_value.feedback, 1000, 600, True) >
+                <QLabel args=['File a feature request or bug report'] />
+                <clickmouse::fonticon glyph='&#xE8A7;' size=14 color='#d0d0d0' />
+            </ExpandedItem>
+        </ExpandedLayouts>
+    </clickmouse::Expander>
 </layout>

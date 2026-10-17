@@ -1,6 +1,7 @@
-import { withMermaid } from 'vitepress-plugin-mermaid';
+// import { withMermaid } from 'vitepress-plugin-mermaid' // 暂时禁用，兼容性出问题了
+import { defineConfig } from 'vitepress'
 
-export default withMermaid({
+export default defineConfig({
   base: '/pyClickMouse/',
   head: [['link', { rel: 'icon', href: '/imgs/icons/icon.ico' }]],
   markdown: {
@@ -356,6 +357,19 @@ export default withMermaid({
                           text: '3.0.0.11.dev1',
                           link: '/en/updatelog/beta/3/30011dev1',
                         },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  text: 'Feature',
+                  collapsed: true,
+                  items: [
+                    {
+                      text: 'New UI Visual',
+                      collapsed: true,
+                      items: [
+                        { text: '2026-10-17', link: '/en/updatelog/feature/new-ui-visual/2026-10-17' }
                       ],
                     },
                   ],
@@ -803,6 +817,19 @@ export default withMermaid({
                           text: '3.0.0.11.dev1',
                           link: '/zh-CN/updatelog/beta/3/30011dev1',
                         },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  text: 'Feature 版',
+                  collapsed: true,
+                  items: [
+                    {
+                      text: '新的 UI 视觉',
+                      collapsed: true,
+                      items: [
+                        { text: '2026-10-17', link: '/zh-CN/updatelog/feature/new-ui-visual/2026-10-17' }
                       ],
                     },
                   ],

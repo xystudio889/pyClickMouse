@@ -2469,12 +2469,11 @@ class SettingWindow(SelectUI, UMainWindow):
         ) # 设置窗口属性
 
         # 变量
+        self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui']
         if dev_flags.get('new_settings', False):
-            self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3'), 'About']
-            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui', 'about.gui']
+            self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('cb'), get_lang('d3')]
         else:
             self.items = [get_lang('42'), get_lang('a6'), get_lang('43'), get_lang('44'), get_lang('69'), filter_hotkey(get_lang('5f')), get_lang('d3')]
-            self.ui_file_name = ['general.gui', 'style.gui', 'clicker.gui', 'updater.gui', 'hotkey.gui', 'document.gui', 'notify.gui', 'flags.gui', 'about.gui']
 
         # 主程序
         self.app = get_application_instance()
@@ -2508,10 +2507,8 @@ class SettingWindow(SelectUI, UMainWindow):
         if dev_flags.get('new_settings', False):
             self.page_notify = self.items[6] # 通知设置
             self.page_flags = self.items[7] # 标志设置
-            self.page_about = self.items[8]
         else:
             self.page_flags = self.items[6] # 标志设置
-            self.page_about = ''
             self.page_notify = ''
         
     def check_values(self):
@@ -2527,6 +2524,19 @@ class SettingWindow(SelectUI, UMainWindow):
     def create_page(self, title):
         logger.info(f'Loading setting page: {title}')
         page = QWidget()
+
+        # 标题标签
+        title_label = QLabel(title)
+
+        # 内容标签
+        content_label = QLabel('')
+
+        if dev_flags.get('new_visual', False):
+            set_style(title_label, StyleClass.title)
+            set_style(content_label, StyleClass.desc)
+        else:
+            set_style(title_label, StyleClass.big_20)
+            set_style(content_label, StyleClass.dest)
 
         def set_content_label(text):
             logger.debug(f'Set content label: {text}')
@@ -2550,18 +2560,12 @@ class SettingWindow(SelectUI, UMainWindow):
             page.setLayout(layout)
         else:
             layout = QVBoxLayout(page)
-            # 标题标签
-            title_label = QLabel(title)
-            set_style(title_label, StyleClass.big_20)
 
-            # 内容标签
-            content_label = QLabel(get_lang('7d'))
-            set_style(content_label, StyleClass.dest)
-            
-            # 布局
-            layout.addWidget(title_label)
-            layout.addWidget(content_label)
-            layout.addWidget(create_horizontal_line())
+        # 布局
+        if not dev_flags.get('new_visual', False):
+            layout.insertWidget(0, create_horizontal_line())
+        layout.insertWidget(0, content_label)
+        layout.insertWidget(0, title_label)
 
         layout.setContentsMargins(0, 0, 12, 0)
         set_style(page, StyleClass.content)
@@ -2569,9 +2573,15 @@ class SettingWindow(SelectUI, UMainWindow):
         # 添加一些示例设置控件
         match title:
             case self.page_general:
+                set_content_label(get_lang('7f'))
+
                 auto_start_manager.updated.connect(lambda enb: self.get_code('general').find_widget('general.start_layout.start_checkbox').setChecked(enb))
                 self.get_code('general').find_widget('general.delay_layout.delay_label').setText(f'{get_lang('b0')}:{setting_value.soft_delay}{get_lang("ms", source=unit_lang)}')
+            case self.page_style:
+                set_content_label(get_lang('a7'))
             case self.page_click:
+                set_content_label(get_lang('84'))
+
                 self.default_delay: QLineEdit = self.get_code('clicker').find_widget('clicker.delay_layout.delay_input_layout.delay_input')
                 self.delay_combo: QComboBox = self.get_code('clicker').find_widget('clicker.delay_layout.delay_input_layout.delay_combo')
                 self.use_default_delay: QCheckBox = self.get_code('clicker').find_widget('clicker.delay_layout.error_use_default_delay')
@@ -2798,49 +2808,14 @@ class SettingWindow(SelectUI, UMainWindow):
                         layout.addWidget(checkbox)
                         layout.addWidget(key)
                         layout.addWidget(desc)
-                        layout.addWidget(create_horizontal_line())
-            case self.page_about:
-                version_layout = QHBoxLayout()
-
-                version = QLabel(__version__)
-                set_style(version, StyleClass.desc_card)
-                version_layout.addWidget(version)
-
-                iconImg = QLabel()
-                # 按窗口大小自适应缩放，保持宽高比
-                iconImg.setPixmap(icon.pixmap(24, 24))
-
-                copy_command_layout = QHBoxLayout() # 复制代码的 layout
-                copy_command_layout.setSpacing(16)
-
-                code_label = QLabel(code)
-                code_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-                set_style(code_label, StyleClass.code)
-
-                copy_icon = fonticon('\uE8C8', 14)
-
-                copy_command_layout.addStretch()
-                copy_command_layout.addWidget(code_label)
-                copy_command_layout.addWidget(copy_icon)
-
-                clone_layout = create_expander_row(QLabel('To clone this repository'), copy_command_layout, lambda: pyperclip.copy(code))
-
-                expander = Expander(
-                        title=iconImg,
-                        subtitle="Clickmouse",
-                        description="© 2026 XyStudio. All rights reserved.",
-                        right_layout = version_layout,
-                        layouts=[
-                            clone_layout,
-                        ]
-                    )
-
-                layout.addWidget(expander)
-            
+                        layout.addWidget(create_horizontal_line())    
         restart = uiml.compile_ui_file(get_resource_path('ui', 'settings', 'bottom.gui'), additional=self.addtional_local_value)
         
         layout.addLayout(UIWindow(restart).show())
         layout.addStretch(1)
+
+        if not content_label.text().strip():
+            layout.removeWidget(content_label)
 
         if dev_flags.get('new_visual', False):
             # d_11(dest_small) 说明文字自动换行，否则其最小宽度会阻止内容区域随窗口压缩

@@ -289,6 +289,8 @@ class QtThread(QThread):
         result = self.func(*self.args, **self.kwargs)
         self.finished.emit(result)
 
+class UIMLException(Exception):... # UIML语法错误
+
 def _move_content(d):
     '''移动 content，同义转换'''
     contents = d.pop("content", [])
@@ -320,34 +322,73 @@ def widget_replacer(ui_data: str):
         )
         return uiml.default_replacer(unicode) # 交由uiml进行替换
 
+_STRETCH_TYPE = 'stretch' # <stretch stretch=n> 伸缩占位组件的标签名
+_STRETCH_KEY = 'stretch_item' # UIMLLayout 字典树中标记伸缩占位组件的键
+
+# 解析阶段已消费的键，不再传给 UIMLLayout 的字典树（uiml 的 additional_used_layout_key 实际加到了 widget 列表）
+additional_used_widget_key = ['show_if']
+additional_used_layout_key = ['show_if', 'pressed']
+
+def _is_stretch(ui_data):
+    '''判断子组件是否为 <stretch stretch=n> 伸缩占位组件'''
+    return isinstance(ui_data, dict) and ui_data.get('type') == _STRETCH_TYPE
+
+def _compile_stretch(ui_data):
+    '''编译伸缩占位组件，返回 UIMLLayout 可识别的伸缩标记'''
+    if not ui_data.get('show_if', True):
+        return None
+    stretch = ui_data.get('stretch', 1)
+    return {'name': ui_data.get('name', _STRETCH_TYPE), _STRETCH_KEY: True, 'stretch': stretch if isinstance(stretch, int) else 1}
+
+def _compile_content(ui_data, namespace, additional_value, allow_stretch=True):
+    '''顺序编译布局的子组件，<stretch> 在 u 模式下禁用'''
+    compiled_list = []
+    for item in ui_data.get('content', []):
+        if _is_stretch(item):
+            compiled = _compile_stretch(item) if allow_stretch else None
+        else:
+            compiled = uiml.compile_ui(item, namespace, additional=additional_value) # 递归解析
+        if compiled is None:
+            continue
+        compiled_list.append(compiled)
+    return compiled_list
+
+def _parse_layout(ui_data: Dict[str, Any], namespace, additional_value):
+    '''
+    解析普通布局，等价于 uiml.default_layout_parser，额外支持 <stretch stretch=n> 子组件
+    '''
+    other_values = {k: v for k, v in ui_data.items() if k not in ('name', 'direction', 'content', 'stretch')}
+    return {'name': ui_data.get('name'), 'direction': ui_data.get('direction'), 'content': _compile_content(ui_data, namespace, additional_value), 'stretch': ui_data.get('stretch', False), **other_values}
+
 def layout_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
     additional_value = additional if additional is not None else {} # 额外参数
     if not ui_data.get('show_if', True):
         return None
+    ui_data = {k: v for k, v in ui_data.items() if k not in additional_used_layout_key} # 已消费的键不传给 UIMLLayout
     if ui_data.get('direction').lower() == 'u':
-        input_compiled_list = []
         # 索引0 -- 字
         # 索引1 -- 输入框
         # 索引2 -- 选择框
         inputs = ui_data['content'][1]
-        for input in inputs['content']:
-            input_compiled_list.append(uiml.compile_ui(input, namespace, additional_value)) # 递归解析
         combos = ui_data['content'][2] # 组合框
-        combos_compiled_list = []
-        for combo in combos['content']:
-            combos_compiled_list.append(uiml.compile_ui(combo, namespace, additional_value)) # 递归解析
-        return {'name': ui_data.get('name'), 'direction': ui_data.get('direction'), "texts": ui_data['content'][0]['values'], 'inputs': input_compiled_list, 'combos': combos_compiled_list}
-    return uiml.default_layout_parser(ui_data, namespace, additional_value) # 交由uiml进行替换
+        return {
+            'name': ui_data.get('name'), 'direction': ui_data.get('direction'), 
+            "texts": ui_data['content'][0]['values'], 
+            'inputs': _compile_content(inputs, namespace, additional_value, allow_stretch=False), 
+            'combos': _compile_content(combos, namespace, additional_value, allow_stretch=False)
+        }
+
+    return _parse_layout(ui_data, namespace, additional_value) # 支持 <stretch> 的布局解析
 
 def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
+    from uiStyles.widgets import Expander, PressableRow, fonticon, create_expander_row
+
     additional_value = additional if additional is not None else {} # 额外参数
     show_value = ui_data.get('show_if', True)
     if not show_value:
         return None
 
-    if ui_data['type'] == 'clickmouse_Expander':
-        from uiStyles.widgets import Expander, fonticon
-
+    if ui_data['type'] == 'clickmouse::Expander':
         _move_content(ui_data)
 
         for key in list(ui_data.keys()):  # 用 list 复制键，避免遍历时修改字典结构
@@ -364,7 +405,69 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
         header = ui_data.get('header', None)
         description = ui_data.get('description', None)
 
-        return {'name': ui_data.get('name'), 'content': Expander(title=show_headericon, subtitle=header, description=description)}
+        right_layout = ui_data.get('rightLayout', [])
+
+        if len(right_layout) > 1 :
+            raise UIMLException(f'The component "clickmouse::Expander.rightLayout" must have zero or one child component')
+        elif len(right_layout) == 1:
+            if right_layout[0]['type'] != 'layout':
+                raise UIMLException(f'The child component type of "clickmouse::Expander.rightLayout" must be "uiml::layout"')
+
+            right_layout_window = UIWindow(uiml.compile_ui(right_layout[0], namespace, additional_value)).show() # 编译ui
+        elif len(right_layout) == 0:
+            right_layout_window = None
+
+        expanded_layout = ui_data.get('ExpandedLayouts', [])
+        expanded_line = [] # 展开列表
+        for item in expanded_layout:
+            if item.get('type') == 'ExpandedItem':
+                if len(item.get('content', [])) != 2:
+                    raise UIMLException(f'The component "clickmouse::Expander.ExpandedLayouts.ExpandedItem" must have two child components')
+                left_item = UIWindow(uiml.compile_ui(item['content'][0], namespace, additional_value)).show() # 编译左侧菜单
+                right_item = UIWindow(uiml.compile_ui(item['content'][1], namespace, additional_value)).show() # 编译右侧菜单
+                expanded_line.append(create_expander_row(left_item, right_item, press_command=item.get('pressed', None)))
+            elif item.get('type') == 'layout':
+                pressed = item.get('pressed', None)
+                layout = UIWindow(uiml.compile_ui(item, namespace, additional_value)).show() # 编译ui
+
+                if pressed:
+                    expanded_line.append(PressableRow(layout, pressed))
+                else:
+                    expanded_line.append(layout)
+            else:
+                raise UIMLException(f'The child component type of "clickmouse::Expander.ExpandedLayouts" must be "uiml::layout" or "clickmouse::Expander.ExpandedLayouts.ExpandedItem"') # 特殊布局必须是 layout
+
+        return {
+            'name': ui_data.get('name'), 
+            'content': Expander(
+                title=show_headericon, 
+                subtitle=header, 
+                description=description,
+                right_layout=right_layout_window, 
+                layouts=expanded_line,
+            )
+        }
+    elif ui_data['type'] == 'clickmouse::PressableLayout': # 按下布局
+        pressed = ui_data.get('pressed', None)
+
+        content = ui_data.get('content', [])
+        if len(content) > 1:
+            raise UIMLException(f'The component "clickmouse::PressableRow" must have zero or one child component')
+        elif len(content) == 1:
+            if content[0]['type'] != 'layout':
+                raise UIMLException(f'The child component type of "clickmouse::PressableRow" must be "uiml::layout"')
+            layout = UIWindow(uiml.compile_ui(content[0], namespace, additional_value)).show() # 编译ui
+            return {
+                'name': ui_data.get('name'), 
+                'content': PressableRow(layout, pressed)
+            }
+    elif ui_data['type'] == 'clickmouse::fonticon':
+        widget = fonticon(widget_replacer(ui_data.get('glyph', '')), size=ui_data.get('size', 14), color=ui_data.get('color', None))
+
+        return {
+            'name': ui_data.get('name'), 
+            'content': widget
+        }
 
     uiml_value = uiml.default_widget_parser(ui_data, namespace, additional_value) # 交由uiml进行替换
 
@@ -372,7 +475,7 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
 
 uiml.set_namespace(
     value_replace_func=widget_replacer, layout_parser_func=layout_parser, widget_parser_func=widget_parser, 
-    additional_used_widget_key=['show_if'], additional_used_layout_key=['show_if'], reverse=True,
+    additional_used_widget_key=additional_used_widget_key, additional_used_layout_key=additional_used_layout_key, reverse=True,
     enable_value_convert=True
 ) # 设置uiml的控制函数
 
@@ -495,6 +598,21 @@ class UIWindow(uiml.UIMLLayout):
         if draw_on_end: # 在布局末尾绘制拉伸
             self._add_stretch(list_content, layout) # 添加伸缩
         return self.return_layout(layout)
+
+    def _for_loop(self, list_content, layout):
+        for item in list_content['content']:
+            if item.get(_STRETCH_KEY): # <stretch stretch=n>，相当于在此处 AddStretch(n)
+                layout.addStretch(item.get('stretch', 1))
+                continue
+            widget = self.draw_layout(item)
+            if widget[1] == 'widget':
+                func = layout.addWidget
+            elif widget[1] == 'layout':
+                func = layout.addLayout
+            else:
+                raise ValueError('Content must be a widget or a layout')
+            adder = self.adder(widget)
+            func(*adder[0], **adder[1])
             
     def extend_widget(self, widget_info):
         widget = list(super().extend_widget(widget_info))
