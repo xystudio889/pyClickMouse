@@ -28,7 +28,8 @@ jobs:
 
       # 安装项目依赖
       - name: Install Dependencies 📦
-        run: npm ci
+        run: |
+          npm ci || (echo "npm ci failed, falling back to npm install" && npm install)
 
       # 构建项目（生成静态文件到 dist/ 或 build/ 目录）
       - name: Build Project 🏗️
