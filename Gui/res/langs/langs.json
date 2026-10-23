@@ -218,7 +218,9 @@
             "d9": "If you enable it, click input blanks will use the default value when another one is filled. (by default, only all of the input boxes is blank will use the default value).",
             "da": "If you enable it, unit comboboxes as unit, and unit input as number. epresenting the unit (by default, only the combo box equal to the settings will use the default value).",
             "db": "All",
-            "dc": "Refresh"
+            "dc": "Refresh",
+            "off": "Off",
+            "on": "On"
         }
     },
     {
@@ -440,7 +442,9 @@
             "d9": "如果启用，点击输入框空白时会使用默认值，当其他输入框有值时，不会使用默认值。(默认情况下，只有所有输入框都为空时才会使用默认值)",
             "da": "如果启用，单位组合框作为单位，单位输入框作为数字代表单位(默认情况下，只有设置的值等于组合框的值时才会使用默认值)",
             "db": "全部",
-            "dc": "刷新"
+            "dc": "刷新",
+            "off": "关",
+            "on": "开"
         }
     }
 ]

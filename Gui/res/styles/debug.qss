@@ -1,0 +1,7 @@
+QLabel[level=1] {
+    background-color: red;
+}
+
+QLabel[level=2] {
+    background-color: blue;
+}

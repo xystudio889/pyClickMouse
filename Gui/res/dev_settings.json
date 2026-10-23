@@ -20,5 +20,11 @@
         "key": "new_visual",
         "desc": "New Clickmouse visual. This needs to restart.",
         "need_restart": true
+    },
+    {
+        "name": "Debug test",
+        "key": "debugee",
+        "desc": "Debug the ui.This needs to restart.",
+        "need_restart": true
     }
 ]

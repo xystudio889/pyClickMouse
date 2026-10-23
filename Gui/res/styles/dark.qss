@@ -390,9 +390,56 @@ QListWidget::item:hover:selected {
     font-family: "Consolas", "Courier New", Courier, monospace;
 }
 
-.desc_code {
-    color: #C1C1C1;
-    font-size: 13px;
+.DevFlagCode {
+    qproperty-text_color: #C1C1C1;
+}
+
+/* ===== 关 ===== */
+ToggleSwitch[visualState="off"] {
+    qproperty-trackColor:  #272727;
+    qproperty-borderColor: #9b9da6;
+    qproperty-thumbColor:  #cecece;
+    qproperty-labelColor:  #ffffff;
+}
+
+/* ===== 关 · 悬浮 ===== */
+ToggleSwitch[visualState="off-hover"] {
+    qproperty-trackColor:  #343434;
+    qproperty-borderColor: #9ea0aa;
+    qproperty-thumbColor:  #d1d1d1;
+    qproperty-labelColor:  #ffffff;
+}
+
+/* ===== 关 · 按下 ===== */
+ToggleSwitch[visualState="off-pressed"] {
+    qproperty-trackColor:  #3a3a3a;
+    qproperty-borderColor: #a1a2a4;
+    qproperty-thumbColor:  #d2d2d2;
+    qproperty-labelColor:  #ffffff;
+}
+
+/* ===== 开 ===== */
+ToggleSwitch[visualState="on"] {
+    qproperty-trackColor:  #61b1ff;
+    qproperty-borderColor: #61b1ff;
+    qproperty-thumbColor:  #000000;
+    qproperty-labelColor:  #ffffff;
+}
+
+/* ===== 开 · 悬浮 ===== */
+ToggleSwitch[visualState="on-hover"] {
+    qproperty-trackColor:  #52a9ff;
+    qproperty-borderColor: #61b1ff;
+    qproperty-thumbColor:  #000000;
+    qproperty-labelColor:  #ffffff;
+}
+
+/* ===== 开 · 按下 ===== */
+ToggleSwitch[visualState="on-pressed"] {
+    qproperty-trackColor:  #3fa0ff;
+    qproperty-borderColor: #4fa8ff;
+    qproperty-thumbColor:  #000000;
+    qproperty-labelColor:  #ffffff;
 }
 
 /* 元数据 */

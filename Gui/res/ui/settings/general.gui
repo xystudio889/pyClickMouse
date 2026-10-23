@@ -64,11 +64,6 @@
     <layout name='repair_layout' direction='h' stretch=true>
         <QPushButton name='repair_button' args=['!lang 5e'] signals={'clicked': self.repair_all_settings} />
     </layout>
-
-    
-    <layout direction='h' stretch=true>
-        <QPushButton style='hyperlink' args=['Test'] />
-    </layout>
     
     <clickmouse::Expander name='about_expander' header='ClickMouse' description='© XyStuido 2026. All rights reserved.' show_if=dev_flags.get('new_settings',False)>
         <headerIcon>
@@ -89,4 +84,42 @@
             </ExpandedItem>
         </ExpandedLayouts>
     </clickmouse::Expander>
+    <layout direction='v' stretch=true show_if=dev_flags.get('debugee',False) >
+        <clickmouse::Expander name='about_expander' headerIcon='&#xE880;' header='ClickMouse' description='© XyStuido 2026. All rights reserved.' duration=0 expanded=true show_if=dev_flags.get('new_settings',False)>
+            <ExpandedLayouts>
+                <ExpandedItem pressed=lambda: pyperclip.copy(code) >
+                    <QLabel args=['To clone this repositry'] />
+                    <layout direction='h' init_steps=[{'name': 'setSpacing', 'args': [16]}]>
+                        <stretch />
+                        <QLabel name='clone_code' args=[code] style='code' />
+                        <clickmouse::fonticon glyph='&#xE8C8;' size=14 color='#d0d0d0' />
+                    </layout>
+                </ExpandedItem>
+                <ExpandedItem pressed=lambda: open_url(setting_value.feedback, 1000, 600, True) >
+                    <QLabel args=['File a feature request or bug report'] />
+                    <clickmouse::fonticon glyph='&#xE8A7;' size=14 color='#d0d0d0' />
+                </ExpandedItem>
+            </ExpandedLayouts>
+        </clickmouse::Expander>
+        <clickmouse::contentCard name='test_expander' header='ClickMouse' description='© XyStuido 2026. All rights reserved.' duration=0 expanded=true show_if=dev_flags.get('new_settings',False) headerIcon='&#xE880;'>
+            <rightLayout>
+                <layout direction='v' init_steps=[{'name': 'setSpacing', 'args': [16]}]>
+                <QComboBox></QComboBox>
+                <QComboBox></QComboBox>
+                </layout>
+            </rightLayout>
+        </clickmouse::contentCard>
+        <clickmouse::Card name='test_card' header='ClickMouse' description='© XyStuido 2026. All rights reserved.' duration=0 expanded=true show_if=dev_flags.get('new_settings',False)>
+            <layout>
+                <layout direction='v' init_steps=[{'name': 'setSpacing', 'args': [16]}]>
+                <QComboBox></QComboBox>
+                <QComboBox></QComboBox>
+                </layout>
+            </layout>
+        </clickmouse::Card>
+        <clickmouse::toggleSwitch signals={'stateChanged': lambda state: print('toggleSwitch state changed', state)} />
+        <layout direction='h' stretch=true>
+            <QPushButton style='hyperlink' args=['Test'] />
+        </layout>
+    </layout>
 </layout>

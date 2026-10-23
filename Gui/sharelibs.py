@@ -18,13 +18,6 @@ from typing import *
 setting_path = Path('data', 'settings.json')
 setting_path.parent.mkdir(parents=True, exist_ok=True)
 
-_UNICODE = re.compile(r'&#[xX]([0-9a-fA-F]+);',)
-_WIDGET_MAPPING = {
-    'title': 'headerIcon',
-    'subtitle': 'header',
-    'description': 'description'
-}
-        
 def multi_replace(text, replace_dict):
     '''一次性替换多个子串'''
     # 将字典键按长度降序排序，避免长词被短词部分覆盖
@@ -289,8 +282,6 @@ class QtThread(QThread):
         result = self.func(*self.args, **self.kwargs)
         self.finished.emit(result)
 
-class UIMLException(Exception):... # UIML语法错误
-
 def _move_content(d):
     '''移动 content，同义转换'''
     contents = d.pop("content", [])
@@ -315,12 +306,7 @@ def widget_replacer(ui_data: str):
         else:
             return get_lang(ui_data.split(' ')[1], source=globals()[ui_data.split(' ')[2]]) # 语言解析
     else:
-        unicode = re.sub(
-            _UNICODE,
-            lambda m: chr(int(m.group(1), 16)),
-            ui_data
-        )
-        return uiml.default_replacer(unicode) # 交由uiml进行替换
+        return uiml.default_replacer(ui_data) # 交由uiml进行替换
 
 _STRETCH_TYPE = 'stretch' # <stretch stretch=n> 伸缩占位组件的标签名
 _STRETCH_KEY = 'stretch_item' # UIMLLayout 字典树中标记伸缩占位组件的键
@@ -381,7 +367,8 @@ def layout_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
     return _parse_layout(ui_data, namespace, additional_value) # 支持 <stretch> 的布局解析
 
 def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
-    from uiStyles.widgets import Expander, PressableRow, fonticon, create_expander_row
+    from uiStyles.widgets import Expander, PressableRow, fonticon, create_expander_row, Card, ContentCard, ToggleSwitch
+    from PySide6.QtCore import QEasingCurve
 
     additional_value = additional if additional is not None else {} # 额外参数
     show_value = ui_data.get('show_if', True)
@@ -408,10 +395,10 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
         right_layout = ui_data.get('rightLayout', [])
 
         if len(right_layout) > 1 :
-            raise UIMLException(f'The component "clickmouse::Expander.rightLayout" must have zero or one child component')
+            raise uiml.UIMLException(f'The component "clickmouse::Expander.rightLayout" must have zero or one child component')
         elif len(right_layout) == 1:
             if right_layout[0]['type'] != 'layout':
-                raise UIMLException(f'The child component type of "clickmouse::Expander.rightLayout" must be "uiml::layout"')
+                raise uiml.UIMLException(f'The child component type of "clickmouse::Expander.rightLayout" must be "uiml::layout"')
 
             right_layout_window = UIWindow(uiml.compile_ui(right_layout[0], namespace, additional_value)).show() # 编译ui
         elif len(right_layout) == 0:
@@ -422,7 +409,7 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
         for item in expanded_layout:
             if item.get('type') == 'ExpandedItem':
                 if len(item.get('content', [])) != 2:
-                    raise UIMLException(f'The component "clickmouse::Expander.ExpandedLayouts.ExpandedItem" must have two child components')
+                    raise uiml.UIMLException(f'The component "clickmouse::Expander.ExpandedLayouts.ExpandedItem" must have two child components')
                 left_item = UIWindow(uiml.compile_ui(item['content'][0], namespace, additional_value)).show() # 编译左侧菜单
                 right_item = UIWindow(uiml.compile_ui(item['content'][1], namespace, additional_value)).show() # 编译右侧菜单
                 expanded_line.append(create_expander_row(left_item, right_item, press_command=item.get('pressed', None)))
@@ -435,7 +422,7 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
                 else:
                     expanded_line.append(layout)
             else:
-                raise UIMLException(f'The child component type of "clickmouse::Expander.ExpandedLayouts" must be "uiml::layout" or "clickmouse::Expander.ExpandedLayouts.ExpandedItem"') # 特殊布局必须是 layout
+                raise uiml.UIMLException(f'The child component type of "clickmouse::Expander.ExpandedLayouts" must be "uiml::layout" or "clickmouse::Expander.ExpandedLayouts.ExpandedItem"') # 特殊布局必须是 layout
 
         return {
             'name': ui_data.get('name'), 
@@ -445,6 +432,8 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
                 description=description,
                 right_layout=right_layout_window, 
                 layouts=expanded_line,
+                expanded=ui_data.get('expanded', False), 
+                duration=ui_data.get('duration', 250), 
             )
         }
     elif ui_data['type'] == 'clickmouse::PressableLayout': # 按下布局
@@ -452,10 +441,10 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
 
         content = ui_data.get('content', [])
         if len(content) > 1:
-            raise UIMLException(f'The component "clickmouse::PressableRow" must have zero or one child component')
+            raise uiml.UIMLException(f'The component "clickmouse::PressableRow" must have zero or one child component')
         elif len(content) == 1:
             if content[0]['type'] != 'layout':
-                raise UIMLException(f'The child component type of "clickmouse::PressableRow" must be "uiml::layout"')
+                raise uiml.UIMLException(f'The child component type of "clickmouse::PressableRow" must be "uiml::layout"')
             layout = UIWindow(uiml.compile_ui(content[0], namespace, additional_value)).show() # 编译ui
             return {
                 'name': ui_data.get('name'), 
@@ -463,6 +452,79 @@ def widget_parser(ui_data: Dict[str, Any], namespace=None, additional=None):
             }
     elif ui_data['type'] == 'clickmouse::fonticon':
         widget = fonticon(widget_replacer(ui_data.get('glyph', '')), size=ui_data.get('size', 14), color=ui_data.get('color', None))
+
+        return {
+            'name': ui_data.get('name'), 
+            'content': widget
+        }
+    elif ui_data['type'] == 'clickmouse::Card':
+        _move_content(ui_data)
+
+        layout = ui_data.get('layout', '')
+
+        if len(layout) > 1:
+            raise uiml.UIMLException(f'The component "clickmouse::Card.layout" must have zero or one child component')
+        elif len(layout) == 1:
+            if layout[0]['type'] != 'layout':
+                raise uiml.UIMLException(f'The child component type of "clickmouse::Card" must be "uiml::layout"') # 特殊布局必须是 layout
+            show_layout = UIWindow(uiml.compile_ui(layout[0], namespace, additional_value)).show() # 编译ui
+
+        return {
+            'name': ui_data.get('name'), 
+            'content': Card(show_layout)
+        }
+    elif ui_data['type'] == 'clickmouse::contentCard':
+        _move_content(ui_data)
+
+        for key in list(ui_data.keys()):  # 用 list 复制键，避免遍历时修改字典结构
+            if key not in ('name', 'type'):
+                ui_data[key] = widget_replacer(ui_data[key])
+
+        headericon = ui_data.get('headerIcon', None)
+
+        if isinstance(headericon, list):
+            show_headericon = widget_parser(headericon[0], namespace, additional_value)['content']
+        elif isinstance(headericon, str):
+            show_headericon = fonticon(headericon, size=20)
+
+        header = ui_data.get('header', None)
+        description = ui_data.get('description', None)
+
+        layout = ui_data.get('rightLayout', [])
+
+        if len(layout) > 1 :
+            raise uiml.UIMLException(f'The component "clickmouse::Expander.rightLayout" must have zero or one child component')
+        elif len(layout) == 1:
+            if layout[0]['type'] != 'layout':
+                raise uiml.UIMLException(f'The child component type of "clickmouse::Expander.rightLayout" must be "uiml::layout"')
+
+            layout_window = UIWindow(uiml.compile_ui(layout[0], namespace, additional_value)).show() # 编译ui
+        elif len(layout) == 0:
+            layout_window = None
+
+        return {
+            'name': ui_data.get('name'), 
+            'content': ContentCard(
+                title=show_headericon, 
+                subtitle=header, 
+                description=description, 
+                wrap_threshold=ui_data.get('maxWarp', 475), 
+                no_icon_threshold=ui_data.get('maxNoIcon', 100), 
+                right_layout=layout_window
+            )
+        }
+    elif ui_data['type'] == 'clickmouse::toggleSwitch':
+        widget = ToggleSwitch(
+            state_text = (ui_data.get('offText', get_lang('off')), ui_data.get('onText', get_lang('on'))),
+            checked = ui_data.get('checked', False), 
+            track_width = ui_data.get('width', 40), 
+            track_height = ui_data.get('height', 20), 
+            animation_duration = ui_data.get('duration', 250), 
+            easing_curve = ui_data.get('easing_curve', QEasingCurve.OutCubic), 
+        )
+
+        for sign, func in ui_data.get('signals', {}).items():
+            getattr(widget, sign).connect(func) # 连接信号，需要专门处理
 
         return {
             'name': ui_data.get('name'), 
