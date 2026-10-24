@@ -369,7 +369,8 @@ export default defineConfig({
                       text: 'New UI Visual',
                       collapsed: true,
                       items: [
-                        { text: '2026-10-17', link: '/en/updatelog/feature/new-ui-visual/2026-10-17' }
+                        { text: '2026-10-17', link: '/en/updatelog/feature/new-ui-visual/2026-10-17' },
+                        { text: '2026-10-24', link: '/en/updatelog/feature/new-ui-visual/2026-10-24' }
                       ],
                     },
                   ],
@@ -829,7 +830,8 @@ export default defineConfig({
                       text: '新的 UI 视觉',
                       collapsed: true,
                       items: [
-                        { text: '2026-10-17', link: '/zh-CN/updatelog/feature/new-ui-visual/2026-10-17' }
+                        { text: '2026-10-17', link: '/zh-CN/updatelog/feature/new-ui-visual/2026-10-17' },
+                        { text: '2026-10-24', link: '/zh-CN/updatelog/feature/new-ui-visual/2026-10-24' }
                       ],
                     },
                   ],

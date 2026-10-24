@@ -48,16 +48,16 @@ def _is_already_auto_logged(func):
     )
 
 
-def _wrap_logged_method(logger, func, display_name, service_id, log_func, strip_first_arg=False):
+def _wrap_logged_method(logger, func, function_name, service_id, log_func):
     '''
-    包装类方法：记录调用/返回，并让方法内部通过 logger 输出的日志继承类的 service_id。
-    strip_first_arg=True 时在调用日志中隐藏 self/cls 参数。
+    包装类方法：以 auto_logger 的格式记录调用/返回，
+    其中 function_name 形如 "ClassName.method"（相当于 auto_logger 的 parent 设置），
+    并让方法内部通过 logger 输出的日志继承类的 service_id。
     '''
     @functools.wraps(func)
-    def wrapper(*all_args, **kwargs):
-        display_args = all_args[1:] if strip_first_arg else all_args
+    def wrapper(*args, **kwargs):
         log_func(
-            f'Calling method: {display_name} args={display_args} kwargs={kwargs}',
+            f'Running function: {function_name} args={args} kwargs={kwargs}',
             extra={'service_id': service_id},
         )
         token = _service_id_scope.set(
@@ -65,18 +65,18 @@ def _wrap_logged_method(logger, func, display_name, service_id, log_func, strip_
         )
         try:
             try:
-                result = func(*all_args, **kwargs)
+                result = func(*args, **kwargs)
             except Exception:
                 logger.exception(
                     service_id,
-                    f'Method {display_name} raised an unexpected exception',
+                    f'Function {function_name} raised an unexpected exception',
                     extra={'service_id': service_id},
                 )
                 raise
         finally:
             _service_id_scope.reset(token)
         log_func(
-            f'Method {display_name} returned: {result!r}',
+            f'Function {function_name} running successfull, returned: {result}',
             extra={'service_id': service_id},
         )
         return result
@@ -305,11 +305,19 @@ class Logger:
                 )
                 try:
                     result = func(*args, **kwargs)
-                except Exception as e:
-                    trace = traceback.format_exc()
-                    self.exception(out_service_id, f'Function {function_name} raised an unexpected exception', extra={'service_id': out_service_id, **end_extra_out}, mode=ExceptionVal.raise_trace | ExceptionVal.output_msg | ExceptionVal.exit)
-                    QMessageBox.critical(None, 'An unexpected error occurred', f'An unexpected error occurred in {function_name}: \n{trace}\nPlease look the log path: {self.log_file.resolve()} and send me the log file on issue: https://github.com/xystudiocode/pyClickMouse/issues/new/choose')
-                    sys.exit(1)  # 退出程序
+                except Exception:
+                    # 只记录并重新抛出，不在装饰器里结束进程：
+                    # auto_logger 也会装饰 Qt 事件回调（closeEvent、eventFilter 等），
+                    # 在事件回调中调用 sys.exit() 会让整个进程无提示地以退出码 1
+                    # 结束（SystemExit 被 PySide 直接处理），很难排查。
+                    # 是否终止程序交给调用方（如 __main__ 的顶层 try/except）决定。
+                    self.exception(
+                        out_service_id,
+                        f'Function {function_name} raised an unexpected exception',
+                        extra={'service_id': out_service_id, **end_extra_out},
+                        mode=ExceptionVal.raise_trace,
+                    )
+                    raise
                 finally:
                     _service_id_scope.reset(scope_token)
                 log_func(f'Function {function_name} running successfull, returned: {result}', extra={'service_id': out_service_id, **end_extra_out})
@@ -325,10 +333,11 @@ class Logger:
         '''
         auto_logger 的类装饰器版本:
         - 记录类的初始化操作，参数列表按 __init__ 的签名显示（name=value 形式）；
-        - 记录类方法的调用与返回；
+        - 记录类方法的调用与返回，日志中的函数名为 "ClassName.method"
+          （等价于 auto_logger 的 parent 设置）；
         - 类方法内部的 logger.info / warning 等日志自动继承本装饰器设置的 service_id；
         - 类方法自身已用 auto_logger 装饰时保留 auto_logger 的选项（不重复包装，其 service_id 优先）；
-        - 方法异常会记录日志后继续抛出，不会像 auto_logger 那样弹窗退出。
+        - 方法异常会记录日志后继续抛出（auto_logger 也已改为同样的行为，不再弹窗退出）。
         '''
         log_func = self._log_func_for_level(level)
 
@@ -396,7 +405,6 @@ class Logger:
                     f'{class_name}.{method_name}',
                     class_service_id,
                     log_func,
-                    strip_first_arg=not isinstance(member, staticmethod),
                 )
                 setattr(cls, method_name, wrapper_factory(wrapped) if wrapper_factory else wrapped)
 

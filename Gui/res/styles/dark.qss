@@ -394,6 +394,10 @@ QListWidget::item:hover:selected {
     qproperty-text_color: #C1C1C1;
 }
 
+.DevFlagRequire {
+    qproperty-text_color: #fce100;
+}
+
 /* ===== 关 ===== */
 ToggleSwitch[visualState="off"] {
     qproperty-trackColor:  #272727;
@@ -446,3 +450,66 @@ ToggleSwitch[visualState="on-pressed"] {
 .meta { 
     mode: dark;
 }
+
+/* ===== GlassKit 材质（FrostStyle）：可直接在此调整 ===== */
+/* BUBBLE_BACKGROUND_NORMAL —— 窗口整体玻璃（GlassBackdrop 默认） */
+GlassBackdrop {
+    qproperty-frostTint: #272727;
+    qproperty-frostOpacity: 80;
+    qproperty-frostBlur: 32;
+    qproperty-frostFrost: 3;
+    qproperty-frostNoise: 3;
+    qproperty-frostSheen: 0;
+    qproperty-frostSaturation: 100;
+    qproperty-frostBrightness: 60;
+    qproperty-frostBorder: 24;
+    qproperty-frostRadius: 18;
+    qproperty-frostVignette: 0;
+}
+
+/* BUBBLE_BACKGROUND_THIN —— 更透的窗口玻璃（apply_glass_style(w, "thin")） */
+GlassBackdrop[glassStyle="thin"] {
+    qproperty-frostTint: #232323;
+    qproperty-frostOpacity: 80;
+    qproperty-frostBlur: 32;
+    qproperty-frostFrost: 3;
+    qproperty-frostNoise: 3;
+    qproperty-frostSheen: 0;
+    qproperty-frostSaturation: 100;
+    qproperty-frostBrightness: 60;
+    qproperty-frostBorder: 24;
+    qproperty-frostRadius: 18;
+    qproperty-frostVignette: 0;
+}
+
+/* BUBBLE_SIDEBAR_NORMAL —— 菜单栏/侧边栏（GlassMenuBar 默认） */
+GlassMenuBar {
+    qproperty-frostTint: #202020;
+    qproperty-frostOpacity: 75;
+    qproperty-frostBlur: 48;
+    qproperty-frostFrost: 5;
+    qproperty-frostNoise: 0;
+    qproperty-frostSheen: 0;
+    qproperty-frostSaturation: 110;
+    qproperty-frostBrightness: 60;
+    qproperty-frostBorder: 24;
+    qproperty-frostRadius: 18;
+    qproperty-frostVignette: 0;
+}
+
+/* BUBBLE_SIDEBAR_THIN —— 更透的侧边栏 */
+GlassMenuBar[glassStyle="thin"] {
+    qproperty-frostTint: #131313;
+    qproperty-frostOpacity: 40;
+    qproperty-frostBlur: 48;
+    qproperty-frostFrost: 5;
+    qproperty-frostNoise: 0;
+    qproperty-frostSheen: 10;
+    qproperty-frostSaturation: 130;
+    qproperty-frostBrightness: 120;
+    qproperty-frostBorder: 24;
+    qproperty-frostRadius: 18;
+    qproperty-frostVignette: 0;
+}
+
+/* 自绘面板（GlassPanel）需要独立材质时，可仿照上面的写法添加 GlassPanel { ... }。 */

@@ -22,14 +22,16 @@ def get_resource_path(*paths):
         if not resource.exists():
             raise FileNotFoundError('Resource folder missing: res not found')
         return str(resource.joinpath(*paths))
-    except Exception:
+    except Exception as e:
+        print(e)
         sys.exit(1)
 
 try:
     lang_path = Path('res', 'langs')
     with open(lang_path / 'langs.json', 'r', encoding='utf-8') as f:
         langs = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
+except (FileNotFoundError, json.JSONDecodeError) as e:
+    print(e)
     sys.exit(1)
     
 def load_settings():

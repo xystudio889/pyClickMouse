@@ -2,13 +2,13 @@
     {
         "name": "More settings",
         "key": "new_settings",
-        "desc": "To add more settings include: Toast settings, Enable hotkey checkbox, Feedback settings and more...",
+        "desc": "To add more settings.",
         "need_restart": true
     },
     {
         "name": "Decoupling UI and program",
         "key": "decoupling",
-        "desc": "To decouple the UI and program.This need to restart the program to take effect."
+        "desc": "To decouple the UI and program."
     },
     {
         "name": "Inline website",
@@ -18,13 +18,28 @@
     {
         "name": "New UI visual",
         "key": "new_visual",
-        "desc": "New Clickmouse visual. This needs to restart.",
+        "desc": "New Clickmouse visual.",
         "need_restart": true
     },
     {
         "name": "Debug test",
         "key": "debugee",
-        "desc": "Debug the ui.This needs to restart.",
+        "desc": "Debug the ui.",
         "need_restart": true
+    },
+    {
+        "name": "Inline Window",
+        "key": "inline_window",
+        "need_restart": true,
+        "desc": "Inline window will show all the window layout in a window.",
+        "requires": ["new_visual"],
+        "disabled": true
+    },
+    {
+        "name": "Transparent visual",
+        "key": "transparent_visual",
+        "desc": "Transparent visual.",
+        "need_restart": true,
+        "requires": ["new_visual"]
     }
 ]

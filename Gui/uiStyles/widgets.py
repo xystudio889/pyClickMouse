@@ -3126,13 +3126,14 @@ class DevFlagCard(ContentCard):
     flagChanged = Signal(bool)
 
     _CODE_COLOR = "#C1C1C1"
+    _REQIRE_COLOR = "#fce100"
     _CODE_SIZE = 12
     _CODE_FAMILIES = ["Consolas", "Courier New", "Courier", "monospace"]
     _GAP_SUBTITLE_CODE = 2     # 副标题 ↔ 代码行
     _GAP_CODE_DESC = 4         # 代码行 ↔ 描述
 
     def __init__(self, title="\uE799", subtitle="副标题文字", code="",
-                 description="描述说明文字", checked=False,
+                 description="描述说明文字", items=None, needs_restart=False, checked=False,
                  state_text: tuple[str, str] = (get_lang('off'), get_lang('on')),
                  wrap_threshold=475,
                  no_icon_threshold=100, parent=None):
@@ -3146,13 +3147,29 @@ class DevFlagCard(ContentCard):
             parent=parent,
         )
 
+        self.items = [] if items is None else items # 项目列表
+
         # ================= 代码行：副标题 -2px- 代码 -4px- 描述 =================
         self._code_label = TextLabel(code, self._CODE_COLOR, self._CODE_SIZE)
         _prep_text_label(self._code_label)
         code_font = self._code_label.font()
         code_font.setFamilies(self._CODE_FAMILIES)
         self._code_label.setFont(code_font)
+
+        self._reqires_label = TextLabel('', self._REQIRE_COLOR, self._CODE_SIZE)
+        _prep_text_label(self._reqires_label)
+
+        self._restart_label = TextLabel('This flag need to restart the application.', self._REQIRE_COLOR, self._CODE_SIZE)
+        _prep_text_label(self._restart_label)
+
         set_style(self._code_label, "DevFlagCode")
+        set_style(self._reqires_label, "DevFlagRequire")
+        set_style(self._restart_label, "DevFlagRequire")
+
+        self._reqires_label.setVisible(bool(self.items))
+        self._restart_label.setVisible(needs_restart)
+
+        self._reqires_label.setText(f'Requires: {",".join(self.items)}')
 
         # ContentCard 的中间列默认 spacing=2，这里改为显式的 2px / 4px 间隔
         self._mid_layout.setSpacing(0)
@@ -3162,11 +3179,20 @@ class DevFlagCard(ContentCard):
             0, self._GAP_SUBTITLE_CODE, QSizePolicy.Minimum, QSizePolicy.Fixed)
         self._gap_code_desc = QSpacerItem(
             0, self._GAP_CODE_DESC, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self._gap_desc_reqires = QSpacerItem(
+            0, self._GAP_CODE_DESC, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self._gap_requires_restart = QSpacerItem(
+            0, self._GAP_CODE_DESC, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
         self._mid_layout.addWidget(self._subtitle_label, 1, Qt.AlignVCenter)
         self._mid_layout.addItem(self._gap_subtitle_code)
         self._mid_layout.addWidget(self._code_label, 0, Qt.AlignVCenter)
         self._mid_layout.addItem(self._gap_code_desc)
         self._mid_layout.addWidget(self._desc_label, 1, Qt.AlignVCenter)
+        self._mid_layout.addItem(self._gap_desc_reqires)
+        self._mid_layout.addWidget(self._reqires_label, 1, Qt.AlignVCenter)
+        self._mid_layout.addItem(self._gap_requires_restart)
+        self._mid_layout.addWidget(self._restart_label, 1, Qt.AlignVCenter)
 
         # ================= 右侧固定 ToggleSwitch（不可自定义） =================
         self._toggle_switch = ToggleSwitch(
