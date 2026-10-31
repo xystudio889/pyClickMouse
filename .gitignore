@@ -742,3 +742,7 @@ cache/
 source/
 
 demo/
+Gui/key
+Gui/res/default_key
+*.wpd
+keycrypter.py
