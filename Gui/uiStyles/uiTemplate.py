@@ -86,6 +86,8 @@ class SelectUI(QMainWindow):
         
         # 创建右侧滚动区域
         self.right_scroll = VScrollArea()
+        # 经典 UI 的内容区也随窗口大小自适应：让页面宽度跟随滚动区域视口伸缩
+        self.right_scroll.setWidgetResizable(True)
         self.main_layout.addWidget(self.right_scroll, 5)  # 拉伸系数为5
         
     def init_ui_old(self):

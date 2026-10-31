@@ -446,6 +446,22 @@ ToggleSwitch[visualState="on-pressed"] {
     qproperty-labelColor:  #ffffff;
 }
 
+/* ===== 禁用 · 关 ===== */
+ToggleSwitch[visualState="disabled-off"] {
+    qproperty-trackColor:  #272727;
+    qproperty-borderColor: #434343;
+    qproperty-thumbColor:  #6f6f6f;
+    qproperty-labelColor:  #ffffff;
+}
+
+/* ===== 禁用 · 开 ===== */
+ToggleSwitch[visualState="disabled-on"] {
+    qproperty-trackColor:  #434343;
+    qproperty-borderColor: #404040;
+    qproperty-thumbColor:  #a7a7a7;
+    qproperty-labelColor:  #ffffff;
+}
+
 /* 元数据 */
 .meta { 
     mode: dark;

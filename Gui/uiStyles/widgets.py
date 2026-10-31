@@ -1815,7 +1815,6 @@ def _prepare_expander_side(obj, compressible: bool):
         widget.setSizePolicy(policy)
     return widget
 
-
 def create_expander_row(left_widget, right_widget, press_command=None) -> PressableRow | QLayout:
     '''
     创建一个两边布局的项目
@@ -2263,114 +2262,6 @@ class Expander(Card):
     def arrow(self) -> FontIcon:
         return self._arrow
 
-
-# ============================================================================
-#  组件示例（可直接运行：python test.py）
-#  ---------------------------------------------------------------------------
-#  每个组件一条示例；同样的用法也写在各组件 docstring 的「示例」里。
-#  ContentCard 可用下方按钮切换 Wide / Warp / NoIcon / Auto，ShowIcon 恢复图标，并观察三个信号。
-# ============================================================================
-
-_DEMO_QSS = """
-/* 演示专用：set_style 示例用到的自定义 class（不影响库本身） */
-.DemoAccent {
-    qproperty-bg_color: #2F5D8C;
-    qproperty-border_color: #4C8BF5;
-}
-
-/* 层级（level）演示：1 级的内容控件（FontIcon / QLabel 家族）红底，
-   便于看到组件把子控件推到了 1 级；Card / Expander 等容器本身不染色，
-   这样 Expander 不会整块变红，红色只落在其内部的图标、文字上。
-   level 动态属性由 levels.LevelManager 计算。 */
-QLabel[level="1"] {
-    background-color: #C62828;
-}
-
-/* 演示窗口的深色滚动条 */
-QScrollBar:vertical {
-    background: #1E1E1E;
-    width: 12px;
-    margin: 0;
-}
-QScrollBar::handle:vertical {
-    background: #4A4A4A;
-    border-radius: 6px;
-    min-height: 24px;
-}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0;
-}
-"""
-
-
-def _demo_pixmap(size: int = 56, color: str = "#4C8BF5", text: str = "") -> QPixmap:
-    """画一张示例图片，避免演示依赖外部图片文件。"""
-    pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.transparent)
-
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.Antialiasing, True)
-    path = QPainterPath()
-    path.addRoundedRect(QRectF(0, 0, size, size), size * 0.24, size * 0.24)
-    painter.fillPath(path, QColor(color))
-
-    if text:
-        font = painter.font()
-        font.setPixelSize(int(size * 0.42))
-        font.setBold(True)
-        painter.setFont(font)
-        painter.setPen(QColor("#FFFFFF"))
-        painter.drawText(QRect(0, 0, size, size), Qt.AlignCenter, text)
-    painter.end()
-    return pixmap
-
-
-def _demo_section(title: str, description: str = "") -> QWidget:
-    """示例区标题。"""
-    box = QWidget()
-    layout = QVBoxLayout(box)
-    layout.setContentsMargins(0, 20, 0, 4)
-    layout.setSpacing(2)
-    layout.addWidget(TextLabel(title, "#FFFFFF", 16))
-    if description:
-        layout.addWidget(TextLabel(description, "#9A9A9A", 12))
-    return box
-
-
-def _demo_right_layout(icon: str = "\uE76C") -> QHBoxLayout:
-    """ContentCard / Expander 通用的右侧布局示例。"""
-    layout = QHBoxLayout()
-    layout.setContentsMargins(0, 0, 0, 0)
-    layout.addWidget(fonticon(icon, size=14))
-    return layout
-
-
-def _demo_mode_buttons(card) -> QHBoxLayout:
-    """生成切换 ContentCard 显示模式 / 图标显隐的 PressableRow 按钮。"""
-    row = QHBoxLayout()
-    row.setSpacing(8)
-
-    def add_button(label, on_click):
-        button_layout = QHBoxLayout()
-        button_layout.setContentsMargins(12, 6, 12, 6)
-        button_layout.addWidget(TextLabel(label, "#FFFFFF", 13))
-        row.addWidget(PressableRow(
-            layout=button_layout,
-            variant=PressableRow.VARIANT_MENU,
-            on_click=on_click))
-
-    for label, mode in (
-        ("Wide", ContentCardState.Wide),
-        ("Warp", ContentCardState.Warp),
-        ("NoIcon", ContentCardState.NoIcon),
-        ("Auto", ContentCardState.Auto),
-    ):
-        add_button(label, lambda m=mode: card.setCardMode(m))
-    # 图标显隐独立于宽 / 窄：NoIcon 之后可以用 ShowIcon 重新显示
-    add_button("ShowIcon", lambda: card.hideIcon(False))
-    row.addStretch(1)
-    return row
-
 @dataclass
 class _Colors:
     track: QColor
@@ -2395,7 +2286,12 @@ def _mix_color(a: QColor, b: QColor, t: float) -> QColor:
     )
 
 class ToggleSwitch(QAbstractButton):
-    """胶囊形开关，支持悬浮和拖动指示器。"""
+    """胶囊形开关，支持悬浮和拖动指示器。
+
+    禁用（``setEnabled(False)``）时：用户无法用鼠标 / 键盘切换状态，
+    但程序仍可通过 ``setChecked()`` 修改；配色由 qss 的 ``visualState`` 为
+    ``disabled-off`` / ``disabled-on`` 的规则决定。
+    """
 
     stateChanged = Signal(bool)
 
@@ -2599,6 +2495,20 @@ class ToggleSwitch(QAbstractButton):
     # ------------------------------------------------------------------ Qt
     def changeEvent(self, event: QEvent) -> None:
         super().changeEvent(event)
+
+        if event.type() == QEvent.EnabledChange:
+            # 禁用时清除悬浮 / 按下 / 键盘焦点状态，避免交互视觉残留。
+            self._hovered = False
+            self._mouse_down = False
+            self._keyboard_focus = False
+            self._stop_stretch_animation()
+            self._stretch = 0.0
+            self.setCursor(Qt.PointingHandCursor if self.isEnabled() else Qt.ArrowCursor)
+            self._update_visual_state()
+            self._sync_display_colours()
+            self.update()
+            return
+
         if event.type() in (QEvent.FontChange, QEvent.StyleChange):
             self._refresh_size()
             if event.type() == QEvent.StyleChange:
@@ -2613,6 +2523,8 @@ class ToggleSwitch(QAbstractButton):
 
     def enterEvent(self, event) -> None:
         super().enterEvent(event)
+        if not self.isEnabled():
+            return
         if not self._hovered:
             self._hovered = True
             if not self._mouse_down:
@@ -2678,7 +2590,11 @@ class ToggleSwitch(QAbstractButton):
         event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
-        if event.button() != Qt.LeftButton or not self._mouse_down:
+        if (
+            event.button() != Qt.LeftButton
+            or not self._mouse_down
+            or not self.isEnabled()
+        ):
             event.ignore()
             return
 
@@ -2694,6 +2610,9 @@ class ToggleSwitch(QAbstractButton):
         event.accept()
 
     def keyPressEvent(self, event) -> None:
+        if not self.isEnabled():
+            event.ignore()
+            return
         # 空格 / 回车的键盘行为交给 QAbstractButton 处理。
         if event.key() in (Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter):
             if not event.isAutoRepeat():
@@ -2701,6 +2620,9 @@ class ToggleSwitch(QAbstractButton):
         super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event) -> None:
+        if not self.isEnabled():
+            event.ignore()
+            return
         super().keyReleaseEvent(event)
         self.update()
 
@@ -2820,7 +2742,10 @@ class ToggleSwitch(QAbstractButton):
             self._repolish()
 
     def _apply_visual_state(self, force: bool = False) -> None:
-        if self._mouse_down:
+        if not self.isEnabled():
+            # 禁用态与开 / 关组合，颜色由 qss 中 disabled-on / disabled-off 选择器提供
+            state = "disabled-on" if self.isChecked() else "disabled-off"
+        elif self._mouse_down:
             state = "on-pressed" if self.isChecked() else "off-pressed"
         elif self._hovered:
             state = "on-hover" if self.isChecked() else "off-hover"

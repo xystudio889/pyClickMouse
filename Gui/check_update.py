@@ -1,12 +1,23 @@
 '''检查更新'''
 from packaging.version import parse
 import requests
-import keycrypter
 from pathlib import Path
 from sharelibs import get_lang, get_resource_path, __version__
 import json
 from traceback import format_exc
 import re
+
+web_data = None
+enable_update = True
+try:
+    import keycrypter # 使用加密保护
+except ImportError:
+    try:
+        with open('key.json', 'r', encoding='utf-8') as f: # 使用明文读取
+            keys = json.load(f)
+    except FileNotFoundError:
+        keys = None
+        enable_update = False
 
 def get_value_by_indices(data, indices_list):
     result = []
@@ -26,22 +37,31 @@ def get_value_by_indices(data, indices_list):
 folder = Path(__file__).parent.resolve() # 获取资源文件夹
 
 # 加载敏感信息
-try:
-    with open('key') as f:
-        key = f.read()
-    keys = keycrypter.decrypt(key)
-    with open(get_resource_path('update.json'), 'r', encoding='utf-8') as f:
-        keys_update = json.load(f)
-        
-    for i in keys_update:
-        if i['website_name'] == 'github': # TODO:这是临时方案，后续需要改为读取设置
-            web_data = i
-            break
-    else:
+if enable_update:
+    try:
+        keys = keycrypter.decrypt()
+        with open(get_resource_path('update.json'), 'r', encoding='utf-8') as f:
+            keys_update = json.load(f)
+            
+        for i in keys_update:
+            if i['website_name'] == 'github': # TODO:这是临时方案，后续需要改为读取设置
+                web_data = i
+                break
+        else:
+            web_data = None
+    except FileNotFoundError:
+        keys = None
+        keys_update = None
         web_data = None
-except FileNotFoundError:
-    keys = None
-    keys_update = None
+
+        enable_update = False
+    except ModuleNotFoundError:
+        keys_update = None
+        web_data = None
+
+        enable_update = False
+else:
+    web_data = None
 
 # 检察更新的函数
 def get_version(include_prerelease: bool=False) -> str | None:
@@ -78,7 +98,15 @@ def get_version(include_prerelease: bool=False) -> str | None:
 def check_update(
     include_prerelease=False
 ):
-    '''检查更新'''
+    '''检查更新
+
+    返回值固定为包含 5 个元素的列表：
+        [0] 是否需要更新（bool；检查失败时为 None）
+        [1] 最新版本号；检查失败时为 -1
+        [2] 检查失败时的错误信息，正常时为 None
+        [3] 最新版本压缩包的哈希数据 [hash, hash_type]，没有发布编译包时为 None
+        [4] 最新版本的原始 tag（用于下载地址和更新日志路径）
+    '''
     # 获取版本号
     installed_version = __version__
     version = get_version(
@@ -89,8 +117,8 @@ def check_update(
     latest_version = version[0]
     version_data = version[1]
     if version_data == -1:
-        # 出错
-        return latest_version, -1, -1, -1
+        # 出错，保持与正常结果相同的返回结构
+        return [None, -1, latest_version, None, None]
     
     # 获取哈希
     if web_data['has_hash']:
@@ -106,7 +134,8 @@ def check_update(
     # 判断是否需要更新
     if latest_version:
         if installed_version == 'dev': 
-            return False, latest_version, ''
+            # 开发版本（源码运行）无法与正式版本比较大小，但要保持返回结构一致
+            return [False, latest_version, None, hash_data, version[-1]]
         installed_parsed = parse(installed_version)
         latest_parsed = parse(latest_version)
         needs_update = installed_parsed < latest_parsed

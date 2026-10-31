@@ -27,26 +27,26 @@ BUBBLE_BACKGROUND_THIN = FrostStyle(
 
 # Whole-window desktop glass material.
 BUBBLE_BACKGROUND_NORMAL = FrostStyle(
-    tint="#303030",
-    opacity=80,
-    blur=32,
+    tint="#272727",
+    opacity=90,
+    blur=48,
     frost=3,
     noise=3,
     sheen=0,
-    saturation=100,
+    saturation=75,
     brightness=60,
 ) # 透明模式
 
 # Whole-window desktop glass material.
 BUBBLE_SIDEBAR_NORMAL = FrostStyle(
-    tint="#2c2c2c",
-    opacity=40,
-    blur=40,
+    tint="#202020",
+    opacity=70,
+    blur=48,
     frost=5,
     noise=0,
     sheen=40,
-    saturation=150,
-    brightness=75,
+    saturation=80,
+    brightness=55,
 ) # 透明模式
 
 # Whole-window desktop glass material.

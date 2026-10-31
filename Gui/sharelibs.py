@@ -544,95 +544,29 @@ uiml.set_namespace(
 class UIWindow(uiml.UIMLLayout):
     def __init__(self, list=None):
         super().__init__(list)
-        
-    def find_widget(self, path: str, data=None):
-        '''
-        在嵌套字典结构中按点分隔路径查找元素。
 
-        规则：
-        - 路径中的每一段对应字典中的 'name' 字段。
-        - 若当前节点是布局（含有 'direction' 键），且不是最后一段，则自动进入其子元素继续查找。
-        - 普通布局（direction 非 'u'）的子元素在 'content' 列表中。
-        - 特殊布局（direction == 'u'）的子元素在 'inputs' 和 'combos' 列表中（'texts' 不参与导航）。
-        - 最后一段如果是普通布局，返回其 'content' 列表；如果是 'u' 布局，返回 {'texts':..., 'inputs':..., 'combos':...}；如果是控件，返回其 'content'。
-        - 路径必须完整且精确，找不到时抛出 KeyError。
+    def layout_loader(self, current, part):
+        direction = current.get('direction', '').lower()
 
-        参数:
-            path: 点分隔的路径字符串，如 "layout.vlayout.checkbox2"
-            data: 根字典（例如 {'name': 'layout', 'direction': 'h', 'content': [...]}）
+        if direction == 'u':
+            # 特殊布局：返回 texts、inputs、combos 组成的字典
+            return {
+                'texts': current.get('texts', []),
+                'inputs': current.get('inputs', []),
+                'combos': current.get('combos', [])
+            }
+        return super().layout_loader(current, part) # 交给 UIML 进行操作
 
-        返回:
-            根据路径找到的控件对象、布局的 content 列表，或 'u' 布局的 texts/inputs/combos 字典。
-        '''
-        data = self.list if data is None else data
-        parts = path.split('.')
-        if not parts:
-            raise ValueError("Empty path")
+    def subelement_finder(self, current, next):
+        # 从 inputs 和 combos 中查找子元素
+        direction = current.get('direction', '').lower()
 
-        # 根节点名称必须匹配第一段
-        if data.get('name') != parts[0]:
-            raise KeyError(f"Root name mismatch: expected '{parts[0]}', got '{data.get('name')}'")
-
-        current = data
-
-        for i, part in enumerate(parts):
-            # 检查当前节点名称是否匹配
-            if current.get('name') != part:
-                raise KeyError(f"Name mismatch: expected '{part}', got '{current.get('name')}'")
-
-            # 最后一段
-            if i == len(parts) - 1:
-                if 'direction' in current:
-                    direction = current.get('direction', '').lower()
-                    if direction == 'u':
-                        # 特殊布局：返回 texts、inputs、combos 组成的字典
-                        return {
-                            'texts': current.get('texts', []),
-                            'inputs': current.get('inputs', []),
-                            'combos': current.get('combos', [])
-                        }
-                    else:
-                        # 普通布局：返回 content 列表
-                        content = current.get('content')
-                        if content is None:
-                            raise ValueError(f"Layout '{part}' has no content")
-                        if not isinstance(content, list):
-                            raise TypeError(f"Layout '{part}' content is not a list")
-                        return content
-                else:
-                    # 控件：返回 content 属性
-                    content = current.get('content')
-                    if content is None:
-                        raise ValueError(f"Widget '{part}' has no content")
-                    return content
-
-            # 不是最后一段，当前节点必须是布局
-            if 'direction' not in current:
-                raise KeyError(f"'{part}' is not a layout, cannot traverse further")
-
-            direction = current.get('direction', '').lower()
-            next_name = parts[i + 1]
-            found = None
-
-            if direction == 'u':
-                # 从 inputs 和 combos 中查找子元素
-                for child in current.get('inputs', []) + current.get('combos', []):
-                    if child.get('name') == next_name:
-                        found = child
-                        break
-            else:
-                # 普通布局从 content 中查找
-                for child in current.get('content', []):
-                    if child.get('name') == next_name:
-                        found = child
-                        break
-
-            if found is None:
-                raise KeyError(f"Child '{next_name}' not found in layout '{part}'")
-            current = found
-
-        # 正常流程不会执行到这里
-        return None
+        if direction == 'u':
+            for child in current.get('inputs', []) + current.get('combos', []):
+                if child.get('name') == next:
+                    found = child
+                    return found
+        return super().subelement_finder(current, next)
     
     def return_layout(self, layout):
         return layout, 'layout', 0

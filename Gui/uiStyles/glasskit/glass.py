@@ -13,9 +13,9 @@ from typing import Protocol
 
 import shiboken6
 
-from PySide6.QtCore import Property
-
-from uiStyles.QUI import *  # noqa: F401
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 
 from .imaging import (
     DesktopSource,

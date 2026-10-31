@@ -21,7 +21,7 @@ try:
     from pynput import keyboard # 热键功能库
     import pyautogui # 鼠标操作库
     from time import sleep, time # 延迟
-    from check_update import check_update, web_data, download_file # 更新检查
+    from check_update import check_update, web_data, download_file, enable_update # 更新检查
     from uiStyles import indexes as style_indexes
     from sharelibs import __version__ # 版本号
     import winreg # 注册表库
@@ -589,6 +589,9 @@ class Updater:
         '''
         检查是否应该检查更新
         '''
+        if not enable_update:
+            return False # 禁用更新统一返回False
+
         last_check_time = update_cache.get('last_check_time')
         if not last_check_time:
             return True
@@ -1138,11 +1141,17 @@ class ColorGetter(QObject):
                     [['.selected:hover', 'background-color'], ColorGetter.lighten_color_hex(accent_color, -0.1)],
                     [['.selected:pressed', 'background-color'], ColorGetter.lighten_color_hex(accent_color, -0.15)],
                     [['.selected:pressed', 'color'], ColorGetter.lighten_color_hex(accent_color, -0.8)],
-                    [['.selected', 'border'], f'1px solid {ColorGetter.lighten_color_hex(accent_color, -0.05)}',],
-                    [['.selected', 'border-bottom-color'], ColorGetter.lighten_color_hex(accent_color, -0.15),],
                     [['QCheckBox', 'color'], 'black'],
                     [['QListWidget::item:selected', 'border-left-color'], accent_color],
                 ])
+
+                if dev_flags.get('new_visual', False):
+                    steps.extend(
+                        [
+                            [['.selected', 'border'], f'1px solid {ColorGetter.lighten_color_hex(accent_color, -0.05)}',],
+                            [['.selected', 'border-bottom-color'], ColorGetter.lighten_color_hex(accent_color, -0.15),],
+                        ]
+                    )
             else:
                 steps.extend([
                     [['.selected', 'background-color'], self.windows_color],
@@ -1150,10 +1159,15 @@ class ColorGetter(QObject):
                     [['.selected', 'border-bottom-color'], ColorGetter.lighten_color_hex(self.windows_color, -0.35),],
                     [['.selected:pressed', 'background-color'], ColorGetter.lighten_color_hex(self.windows_color, 0.3)],
                     [['.selected:hover', 'background-color'], ColorGetter.lighten_color_hex(self.windows_color, 0.2)],
-                    [['.selected:pressed', 'border'], f'1px solid {ColorGetter.lighten_color_hex(self.windows_color, 0.1)}',],
-                    [['.selected:pressed', 'border-bottom-color'], ColorGetter.lighten_color_hex(self.windows_color, -0.35),],
                     [['QListWidget::item:selected', 'border-left-color'], self.windows_color],
                 ])
+                if dev_flags.get('new_visual', False):
+                    steps.extend(
+                        [
+                            [['.selected:pressed', 'border'], f'1px solid {ColorGetter.lighten_color_hex(self.windows_color, 0.1)}',],
+                            [['.selected:pressed', 'border-bottom-color'], ColorGetter.lighten_color_hex(self.windows_color, -0.35),],
+                        ]
+                    )
             for step in steps:
                 select_styles = select_styles.replace(step[0], StyleReplaceMode.ALL, step[1], output_json=False)
         
@@ -1185,8 +1199,9 @@ class MainWindow(UMainWindow):
             self.init_ui_old()
         #self.setFixedSize(self.width(), self.height()) # 固定窗口大小
 
-        logger.debug('Check updates')
-        self.on_check_update()
+        if enable_update:
+            logger.debug('Check updates')
+            self.on_check_update()
 
     def _set_style(self):
         with open(get_resource_path('styles/dark.qss'), 'r', encoding='utf-8') as f:
@@ -1466,6 +1481,8 @@ class MainWindow(UMainWindow):
 
         # 更新菜单动作
         update_check: QAction = update_menu.addAction(get_lang('07'))
+        update_check.triggered.connect(lambda: self.on_update(True))
+        update_check.setEnabled(enable_update) # 更新功能不可用时禁用菜单项
         update_log: QAction = update_menu.addAction(get_lang('08'))
 
         # 帮助菜单
@@ -1521,7 +1538,6 @@ class MainWindow(UMainWindow):
         about_action.triggered.connect(self.show_about)
         update_log.triggered.connect(self.show_update_log)
         clean_cache_action.triggered.connect(self.show_clean_cache)
-        update_check.triggered.connect(lambda: self.on_update(True))
         settings_action.triggered.connect(self.show_setting)
         exit_action.triggered.connect(app.quit)
         create_issue_action.triggered.connect(lambda: open_url(setting_value.feedback, 1000, 600, True))
@@ -1648,14 +1664,16 @@ class MainWindow(UMainWindow):
 
     def on_check_update(self):
         # 检查更新
-        if setting_value.update_enabled:
+        if setting_value.update_enabled and enable_update:
             self.update_checked = True
             if should_check_update_res:
+                print('checking update by thread')
                 self.check_update_thread = QtThread(check_update, args=(False,))
                 self.check_update_thread.finished.connect(self.on_check_update_result)
                 self.check_update_thread.start()
             else:
                 logger.info('Checking update by cache')
+                print('checking resulut by cache')
                 self.on_check_update_result(update_cache)
             
     def save(self):
@@ -1674,33 +1692,44 @@ class MainWindow(UMainWindow):
             result = check_data
         else:
             result = [update_cache['should_update'], update_cache['latest_version'], None, update_cache['hash'], update_cache['update_version_tag']] # 使用缓存
-        
-        if result[3] is None and web_data['has_hash']: # 哈希为空，但是有哈希属性，说明这个版本没有发布的编译压缩包
+
+        # 统一结果结构：长度不足（如旧版 check_update 返回 3 元组）时按检查失败处理，避免索引越界
+        if not isinstance(result, (list, tuple)) or len(result) < 5:
+            logger.critical(f'Invalid check update result: {result!r}')
+            result = [None, -1, f'Invalid update check result: {result!r}', None, None]
+        else:
+            result = list(result) # 后续可能要修改 result[0]，统一转成可变的列表
+
+        print(result)
+
+        # 检查失败：result[1] == -1，错误信息在 result[2]
+        if result[1] == -1:
+            logger.critical(f'Check update failed:\n{result[2]}')
+            if setting_value.update_notify:
+                MessageBox.critical(self, get_lang('14'), f'{get_lang('18')}\n{result[2]}')
+            return
+
+        if result[3] is None and web_data is not None and web_data['has_hash']: # 哈希为空，但是有哈希属性，说明这个版本没有发布的编译压缩包
             self.save()
             result[0] = False # 因为没有最新版本，没有编译后版本，所以认为不需要更新
             return
 
         # 检查结果处理
         if setting_value.update_notify:
-            if result[1] != -1:  # -1表示函数出错
-                self.save()
-                if result[0]:  # 检查到需要更新
-                    logger.info('Check update result: need update')
-                    # 弹出更新窗口
-                    self.show_update_in_start = True
-                    if should_check_update_res:
-                        # 弹出更新提示
-                        self.on_update()
-            else:
-                if self.check_update_thread.isFinished():
-                    logger.critical(f'Check update failed:\n{result[0]}')
-                    MessageBox.critical(self, get_lang('14'), f'{get_lang('18')}\n{result[0]}')
+            self.save()
+            if result[0]:  # 检查到需要更新
+                logger.info('Check update result: need update')
+                # 弹出更新窗口
+                self.show_update_in_start = True
+                if should_check_update_res:
+                    # 弹出更新提示
+                    self.on_update()
 
     def on_update(self, judge=False):
         '''显示更新提示'''
         logger.info('Showing update window')
         if judge:
-            if setting_value.update_enabled:
+            if setting_value.update_enabled and enable_update:
                 if result[0]: # 检查到需要更新
                     self.open_update()
                 else:
@@ -2536,6 +2565,10 @@ class SettingWindow(SelectUI, UMainWindow):
         else:
             self.page_flags = self.items[6] # 标志设置
             self.page_notify = ''
+
+        if not enable_update:
+            self.items.remove(self.page_update)
+        print(self.items)
         
     def check_values(self):
         '''检查设置值'''
@@ -2608,6 +2641,30 @@ class SettingWindow(SelectUI, UMainWindow):
 
         return result
 
+    def set_dev_flag_toggle(self, flag_name: str, checked: bool) -> bool:
+        """
+        同步开发标志开关的 UI 状态（阻塞信号，不触发状态改变处理函数）。
+
+        控件不存在或底层 C++ 对象已销毁时返回 False，并移除失效引用。
+        """
+        toggle = self.dev_flag_toggles.get(flag_name)
+        if toggle is None:
+            return False
+        try:
+            # 通过代码修改状态时 ToggleSwitch 也会发出 stateChanged，
+            # 这里阻塞信号，避免重入 on_dev_flag_changed 导致重复保存和重复重启提示。
+            toggle.blockSignals(True)
+            try:
+                toggle.setChecked(checked)
+            finally:
+                toggle.blockSignals(False)
+        except RuntimeError:
+            # 控件底层 C++ 对象已销毁（例如未加入布局的卡片被回收）
+            logger.warning(f'Dev flag widget {flag_name} was destroyed, remove it from cache.')
+            self.dev_flag_toggles.pop(flag_name, None)
+            return False
+        return True
+
     def enable_required_dev_flags(self, flag_name: str) -> list[str]:
         """
         连锁启用 flag_name 在 dev_settings 中声明的全部依赖（包含多层子依赖）。
@@ -2622,20 +2679,12 @@ class SettingWindow(SelectUI, UMainWindow):
         enabled = []
         index_items = list(self.dev_flag_index.values())
         for req_key in self.resolve_requires_keys(index_items, item):
-            toggle = self.dev_flag_toggles.get(req_key)
-            if toggle is None or toggle.isChecked():
-                continue
-
-            # 通过代码修改状态时 ToggleSwitch 也会发出 stateChanged，
-            # 这里阻塞信号，避免重入 on_dev_flag_changed 导致重复保存和重复重启提示。
-            toggle.blockSignals(True)
-            try:
-                toggle.setChecked(True)
-            finally:
-                toggle.blockSignals(False)
-
-            self.save_dev_config(True, req_key)
-            enabled.append(req_key)
+            was_enabled = dev_flags.get(req_key, False)
+            # 同步 UI（控件不可用时忽略），配置状态无论如何都保证已启用
+            self.set_dev_flag_toggle(req_key, True)
+            if not was_enabled:
+                self.save_dev_config(True, req_key)
+                enabled.append(req_key)
 
         if enabled:
             logger.info(f'Dev flags linked by {flag_name}: {", ".join(enabled)}')
@@ -2681,19 +2730,12 @@ class SettingWindow(SelectUI, UMainWindow):
 
         disabled = []
         for dependent_key in self.resolve_dependent_keys(flag_name):
-            toggle = self.dev_flag_toggles.get(dependent_key)
-            if toggle is None or not toggle.isChecked():
-                continue
-
-            # 同 enable_required_dev_flags：阻塞信号，避免重入 on_dev_flag_changed
-            toggle.blockSignals(True)
-            try:
-                toggle.setChecked(False)
-            finally:
-                toggle.blockSignals(False)
-
-            self.save_dev_config(False, dependent_key)
-            disabled.append(dependent_key)
+            was_enabled = dev_flags.get(dependent_key, False)
+            # 同步 UI（控件不可用时忽略），配置状态无论如何都保证已禁用
+            self.set_dev_flag_toggle(dependent_key, False)
+            if was_enabled:
+                self.save_dev_config(False, dependent_key)
+                disabled.append(dependent_key)
 
         if disabled:
             logger.info(f'Dev flags disabled with {flag_name}: {", ".join(disabled)}')
@@ -2967,22 +3009,25 @@ class SettingWindow(SelectUI, UMainWindow):
                 self.package_warning.setChecked(setting_value.show_package_warning)
                 
                 # 布局
-                layout.addWidget(self.notice_update_notify)
-                layout.addWidget(self.notice_update_ok_notify)
-                layout.addWidget(create_horizontal_line())
+                if enable_update:
+                    layout.addWidget(self.notice_update_notify)
+                    layout.addWidget(self.notice_update_ok_notify)
+                    layout.addWidget(create_horizontal_line())
                 layout.addWidget(self.start_warning)
                 layout.addWidget(tip_label)
                 layout.addWidget(self.package_warning)
                 
                 # 连接信号
-                self.notice_update_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.notice_update_notify.isChecked, SettingText.update_notify))
-                self.notice_update_notify.checkStateChanged.connect(self.on_sync_notice)
-                self.notice_update_ok_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.notice_update_ok_notify.isChecked, SettingText.update_ok_notify))
-                self.notice_update_ok_notify.checkStateChanged.connect(self.on_sync_ok_notice)
                 self.start_warning.checkStateChanged.connect(self.on_enable_warn)
                 self.package_warning.checkStateChanged.connect(lambda: self.on_setting_changed(self.package_warning.isChecked, SettingText.show_package_warning))
-               
-                self.on_enable_update(self.enable_update.isChecked())
+
+                if enable_update:
+                    self.notice_update_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.notice_update_notify.isChecked, SettingText.update_notify))
+                    self.notice_update_notify.checkStateChanged.connect(self.on_sync_notice)
+                    self.notice_update_ok_notify.checkStateChanged.connect(lambda: self.on_setting_changed(self.notice_update_ok_notify.isChecked, SettingText.update_ok_notify))
+                    self.notice_update_ok_notify.checkStateChanged.connect(self.on_sync_ok_notice)
+                
+                    self.on_enable_update(self.enable_update.isChecked())
                 self.on_warning_update(self.start_warning.isChecked())
             case self.page_flags:
                 set_content_label(get_lang('d4'))
@@ -3012,11 +3057,13 @@ class SettingWindow(SelectUI, UMainWindow):
                             toggle_switch = widget.toggle_switch()
                             toggle_switch.setChecked(dev_flags.get(i['key'], False))
 
+                            # disabled 的卡片仍然显示，但开关禁止用户切换（程序仍可连锁修改状态）
+                            toggle_switch.setEnabled(not i.get('disabled', False))
+
                             toggle_switch.stateChanged.connect(lambda chk, idx=i['key']: self.on_dev_flag_changed(chk, idx))
                             self.dev_flag_toggles[i['key']] = toggle_switch
 
-                            if not i.get('disabled', False):
-                                layout.addWidget(widget)
+                            layout.addWidget(widget)
                         else:
                             checkbox: UCheckBox = UCheckBox(i['name'])
 
@@ -3036,7 +3083,8 @@ class SettingWindow(SelectUI, UMainWindow):
                             layout.addWidget(checkbox)
                             layout.addWidget(key)
                             layout.addWidget(desc)
-                            layout.addWidget(create_horizontal_line())    
+                            layout.addWidget(create_horizontal_line())  
+
         restart = uiml.compile_ui_file(get_resource_path('ui', 'settings', 'bottom.gui'), additional=self.addtional_local_value)
         
         layout.addLayout(UIWindow(restart).show())
@@ -3045,12 +3093,13 @@ class SettingWindow(SelectUI, UMainWindow):
         if not content_label.text().strip():
             layout.removeWidget(content_label)
 
-        if dev_flags.get('new_visual', False):
-            # d_11(dest_small) 说明文字自动换行，否则其最小宽度会阻止内容区域随窗口压缩
-            for label in page.findChildren(QLabel):
-                if label.property('class') == StyleClass.d_11:
-                    label.setWordWrap(True)
+        # d_11(dest_small) 说明文字自动换行，否则其最小宽度会阻止内容区域随窗口压缩。
+        # 新视觉和经典 UI 都启用。
+        for label in page.findChildren(QLabel):
+            if label.property('class') == StyleClass.d_11:
+                label.setWordWrap(True)
 
+        if dev_flags.get('new_visual', False):
             card = HighLightPanel()
             # 让内容区域的宽度可以随窗口任意压缩，而不是被内容的最小宽度卡住
             card.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
@@ -3058,6 +3107,8 @@ class SettingWindow(SelectUI, UMainWindow):
 
             return card
         else:
+            # 经典 UI 同样让内容区域的宽度跟随窗口压缩，而不是被内容的最小宽度卡住
+            page.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
             return page
         
     def on_clicker_changed(self, func, value, checkbox: UCheckBox=None):
